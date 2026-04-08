@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemadesigner version="6.5">
+<source>
+<database charset="utf8mb4" collation="utf8mb4_general_ci">evaconsena</database>
+</source>
+<canvas zoom="100">
+<tables>
+<table name="aprendiz" view="colnames">
+<left>23</left>
+<top>41</top>
+<width>105</width>
+<height>163</height>
+<sql_create_table>CREATE TABLE `aprendiz` (
+  `ApreID` int(11) NOT NULL,
+  `Aprenom1` varchar(50) NOT NULL,
+  `Aprenom2` varchar(50) DEFAULT NULL,
+  `Apreape1` varchar(50) NOT NULL,
+  `Apreape2` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`ApreID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="aprendizficha" view="colnames">
+<left>680</left>
+<top>-2</top>
+<width>115</width>
+<height>112</height>
+<sql_create_table>CREATE TABLE `aprendizficha` (
+  `AFficCodFK` int(11) DEFAULT NULL,
+  `AFApreIDFK` int(11) DEFAULT NULL,
+  KEY `AFApreIDFK` (`AFApreIDFK`),
+  KEY `AFficCodFK` (`AFficCodFK`),
+  CONSTRAINT `aprendizficha_ibfk_1` FOREIGN KEY (`AFApreIDFK`) REFERENCES `aprendiz` (`ApreID`),
+  CONSTRAINT `aprendizficha_ibfk_2` FOREIGN KEY (`AFficCodFK`) REFERENCES `ficha` (`FicCod`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="competencia" view="colnames">
+<left>863</left>
+<top>318</top>
+<width>115</width>
+<height>129</height>
+<sql_create_table>CREATE TABLE `competencia` (
+  `ComCod` int(11) NOT NULL,
+  `ComNom` varchar(200) NOT NULL,
+  `ComCodPro` int(11) NOT NULL,
+  PRIMARY KEY (`ComCod`),
+  KEY `ComCodAre` (`ComCodPro`),
+  CONSTRAINT `COMP-PRO` FOREIGN KEY (`ComCodPro`) REFERENCES `programa` (`ProCod`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci</sql_create_table>
+</table>
+<table name="evaluacion" view="colnames">
+<left>471</left>
+<top>143</top>
+<width>134</width>
+<height>129</height>
+<sql_create_table>CREATE TABLE `evaluacion` (
+  `EvaCod` int(11) NOT NULL,
+  `EvaFicCod` int(11) NOT NULL,
+  `EvaNotaMax` int(11) NOT NULL COMMENT 'Nota Maxima',
+  `EvaNotaAproba` int(11) NOT NULL COMMENT 'Nota Minima Aprobatoria',
+  `EvaEst` char(1) NOT NULL,
+  `EvaUsucod` varchar(20) NOT NULL,
+  `EvaFecha` date NOT NULL,
+  `EvaObs` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`EvaCod`),
+  KEY `lll` (`EvaUsucod`),
+  KEY `EvaFicCod` (`EvaFicCod`),
+  CONSTRAINT `evaluacion_ibfk_1` FOREIGN KEY (`EvaFicCod`) REFERENCES `ficha` (`FicCod`),
+  CONSTRAINT `lll` FOREIGN KEY (`EvaUsucod`) REFERENCES `usuario` (`UsuCod`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci</sql_create_table>
+</table>
+<table name="evaluacionpreguntas" view="colnames">
+<left>266</left>
+<top>394</top>
+<width>115</width>
+<height>112</height>
+<sql_create_table>CREATE TABLE `evaluacionpreguntas` (
+  `EPevacodFK` int(11) NOT NULL,
+  `PrecodFK` int(11) NOT NULL,
+  PRIMARY KEY (`EPevacodFK`,`PrecodFK`),
+  KEY `PrecodFK` (`PrecodFK`),
+  CONSTRAINT `evaluacionpreguntas_ibfk_1` FOREIGN KEY (`EPevacodFK`) REFERENCES `evaluacion` (`EvaCod`),
+  CONSTRAINT `evaluacionpreguntas_ibfk_2` FOREIGN KEY (`PrecodFK`) REFERENCES `preguntas` (`PreCod`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="ficha" view="colnames">
+<left>870</left>
+<top>48</top>
+<width>117</width>
+<height>112</height>
+<sql_create_table>CREATE TABLE `ficha` (
+  `FicCod` int(11) NOT NULL,
+  `FicProCodFK` int(11) NOT NULL,
+  PRIMARY KEY (`FicCod`),
+  KEY `FicProCodFK` (`FicProCodFK`),
+  CONSTRAINT `ficha_ibfk_1` FOREIGN KEY (`FicProCodFK`) REFERENCES `programa` (`ProCod`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="preguntas" view="colnames">
+<left>405</left>
+<top>468</top>
+<width>124</width>
+<height>117</height>
+<sql_create_table>CREATE TABLE `preguntas` (
+  `PreCod` int(11) NOT NULL,
+  `PreTemcodFK` int(11) NOT NULL,
+  `PreDet` varchar(200) NOT NULL,
+  `PreRptaOk` varchar(100) NOT NULL,
+  `PreRpta1` varchar(100) NOT NULL,
+  `PreRpta2` varchar(100) NOT NULL,
+  `PreRpta3` varchar(100) NOT NULL,
+  PRIMARY KEY (`PreCod`),
+  KEY `PreTemcodFK` (`PreTemcodFK`),
+  CONSTRAINT `preguntas_ibfk_1` FOREIGN KEY (`PreTemcodFK`) REFERENCES `temas` (`Temcod`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci</sql_create_table>
+</table>
+<table name="programa" view="colnames">
+<left>980</left>
+<top>178</top>
+<width>91</width>
+<height>112</height>
+<sql_create_table>CREATE TABLE `programa` (
+  `ProCod` int(11) NOT NULL,
+  `ProNom` varchar(200) NOT NULL,
+  PRIMARY KEY (`ProCod`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci</sql_create_table>
+</table>
+<table name="respuestaglobal" view="colnames">
+<left>225</left>
+<top>107</top>
+<width>121</width>
+<height>129</height>
+<sql_create_table>CREATE TABLE `respuestaglobal` (
+  `RGApreIDFK` int(11) NOT NULL,
+  `RGEvaCodFK` int(11) NOT NULL,
+  `RGPuntaje` int(11) DEFAULT NULL,
+  PRIMARY KEY (`RGApreIDFK`,`RGEvaCodFK`),
+  KEY `RGEvaCodFK` (`RGEvaCodFK`),
+  CONSTRAINT `respuestaglobal_ibfk_1` FOREIGN KEY (`RGApreIDFK`) REFERENCES `aprendiz` (`ApreID`),
+  CONSTRAINT `respuestaglobal_ibfk_2` FOREIGN KEY (`RGEvaCodFK`) REFERENCES `evaluacion` (`EvaCod`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="resultado" view="colnames">
+<left>739</left>
+<top>403</top>
+<width>117</width>
+<height>129</height>
+<sql_create_table>CREATE TABLE `resultado` (
+  `ResCod` int(11) NOT NULL,
+  `ResNom` varchar(200) NOT NULL,
+  `ResCodCom` int(11) NOT NULL,
+  PRIMARY KEY (`ResCod`),
+  KEY `ResCodCom` (`ResCodCom`),
+  CONSTRAINT `resultado_ibfk_1` FOREIGN KEY (`ResCodCom`) REFERENCES `competencia` (`ComCod`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci</sql_create_table>
+</table>
+<table name="resultadoevaluacion" view="colnames">
+<left>133</left>
+<top>298</top>
+<width>147</width>
+<height>146</height>
+<sql_create_table>CREATE TABLE `resultadoevaluacion` (
+  `ResEvaApreIDFK` int(11) NOT NULL,
+  `ResEvaCodFK` int(11) NOT NULL,
+  `ResPreCodFK` int(11) NOT NULL,
+  `ResEvaRespuesta` int(11) NOT NULL,
+  PRIMARY KEY (`ResEvaApreIDFK`,`ResEvaCodFK`,`ResPreCodFK`),
+  KEY `ResEvaCodFK` (`ResEvaCodFK`),
+  KEY `ResPreCodFK` (`ResPreCodFK`),
+  CONSTRAINT `resultadoevaluacion_ibfk_2` FOREIGN KEY (`ResEvaCodFK`) REFERENCES `evaluacionpreguntas` (`EPevacodFK`),
+  CONSTRAINT `resultadoevaluacion_ibfk_3` FOREIGN KEY (`ResPreCodFK`) REFERENCES `evaluacionpreguntas` (`PrecodFK`),
+  CONSTRAINT `resultadoevaluacion_ibfk_4` FOREIGN KEY (`ResEvaApreIDFK`) REFERENCES `aprendiz` (`ApreID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="temas" view="colnames">
+<left>558</left>
+<top>415</top>
+<width>137</width>
+<height>118</height>
+<sql_create_table>CREATE TABLE `temas` (
+  `Temcod` int(11) NOT NULL,
+  `TemDescripcion` varchar(70) NOT NULL,
+  `TemResCod` int(11) NOT NULL,
+  PRIMARY KEY (`Temcod`),
+  KEY `TemResCod` (`TemResCod`),
+  CONSTRAINT `temas_ibfk_1` FOREIGN KEY (`TemResCod`) REFERENCES `resultado` (`ResCod`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="usuario" view="colnames">
+<left>695</left>
+<top>219</top>
+<width>93</width>
+<height>180</height>
+<sql_create_table>CREATE TABLE `usuario` (
+  `UsuCod` varchar(20) NOT NULL,
+  `UsuNom` varchar(50) NOT NULL,
+  `UsuApe` varchar(50) NOT NULL,
+  `UsuRol` char(1) NOT NULL,
+  `UsuPass` varchar(50) NOT NULL,
+  `UsuEst` char(1) NOT NULL,
+  PRIMARY KEY (`UsuCod`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci</sql_create_table>
+</table>
+</tables>
+</canvas>
+</schemadesigner>

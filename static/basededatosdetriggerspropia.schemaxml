@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemadesigner version="6.5">
+<source>
+<database charset="utf8mb4" collation="utf8mb4_general_ci">asisitenciasena</database>
+</source>
+<canvas zoom="100">
+<tables>
+<table name="aprendiz" view="standard">
+<left>331</left>
+<top>60</top>
+<width>223</width>
+<height>146</height>
+<sql_create_table>CREATE TABLE `aprendiz` (
+  `apre_id` int(20) NOT NULL,
+  `apre_nom1` varchar(20) NOT NULL,
+  `apre_ape` varchar(20) NOT NULL,
+  `apre_telefono` varchar(20) NOT NULL,
+  PRIMARY KEY (`apre_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="asistencia" view="standard">
+<left>331</left>
+<top>303</top>
+<width>219</width>
+<height>163</height>
+<sql_create_table>CREATE TABLE `asistencia` (
+  `asi_fecha_ini` date NOT NULL,
+  `asi_fecha_fin` date NOT NULL,
+  `asi_cod` varchar(20) NOT NULL,
+  `asi_ins_id_fk` int(20) NOT NULL,
+  PRIMARY KEY (`asi_cod`),
+  KEY `asi_ins_id_fk` (`asi_ins_id_fk`),
+  CONSTRAINT `asistencia_ibfk_1` FOREIGN KEY (`asi_ins_id_fk`) REFERENCES `instructor` (`ins_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="auditoria" view="standard">
+<left>12</left>
+<top>190</top>
+<width>233</width>
+<height>129</height>
+<sql_create_table>CREATE TABLE `auditoria` (
+  `aud_cod` int(20) NOT NULL,
+  `aud_nom` varchar(20) NOT NULL,
+  `aud_apre_id_fk` int(20) NOT NULL,
+  PRIMARY KEY (`aud_cod`),
+  KEY `aud_apre_id_fk` (`aud_apre_id_fk`),
+  CONSTRAINT `auditoria_ibfk_1` FOREIGN KEY (`aud_apre_id_fk`) REFERENCES `aprendiz` (`apre_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="control" view="standard">
+<left>21</left>
+<top>25</top>
+<width>243</width>
+<height>112</height>
+<sql_create_table>CREATE TABLE `control` (
+  `con_cod` int(20) NOT NULL AUTO_INCREMENT,
+  `con_apre_id_fk` int(20) NOT NULL,
+  `inasistencia` int(20) NOT NULL,
+  `asistencias` int(1) NOT NULL,
+  PRIMARY KEY (`con_cod`),
+  KEY `con_apre_id_fk` (`con_apre_id_fk`),
+  CONSTRAINT `control_ibfk_1` FOREIGN KEY (`con_apre_id_fk`) REFERENCES `aprendiz` (`apre_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="instructor" view="standard">
+<left>789</left>
+<top>340</top>
+<width>204</width>
+<height>146</height>
+<sql_create_table>CREATE TABLE `instructor` (
+  `ins_id` int(20) NOT NULL,
+  `ins_nom` varchar(20) NOT NULL,
+  `ins_ape` varchar(20) NOT NULL,
+  `ins_correo` varchar(30) NOT NULL,
+  PRIMARY KEY (`ins_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+<table name="asistenaciaaprendiz" view="standard">
+<left>605</left>
+<top>109</top>
+<width>196</width>
+<height>112</height>
+<sql_create_table>CREATE TABLE `asistenaciaaprendiz` (
+  `aa_apre_id_fk` int(20) NOT NULL,
+  `aa_asi_id_fk` varchar(20) NOT NULL,
+  `aa_estado` varchar(1) NOT NULL,
+  `aa_fecha` date NOT NULL,
+  KEY `aa_asi_id_fk` (`aa_asi_id_fk`),
+  KEY `aa_apre_id_fk` (`aa_apre_id_fk`),
+  CONSTRAINT `asistenaciaaprendiz_ibfk_2` FOREIGN KEY (`aa_asi_id_fk`) REFERENCES `asistencia` (`asi_cod`),
+  CONSTRAINT `asistenaciaaprendiz_ibfk_3` FOREIGN KEY (`aa_apre_id_fk`) REFERENCES `aprendiz` (`apre_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci</sql_create_table>
+</table>
+</tables>
+</canvas>
+</schemadesigner>
