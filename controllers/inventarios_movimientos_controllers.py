@@ -1,0 +1,75 @@
+from flask import jsonify, request, current_app
+from services.inventarios_movimientos_service import listarInventariosMovimientos, registrarInventariosMovimientos
+
+def cnlistadoinventariosmovimientos():
+    try:
+        datos = listarInventariosMovimientos()
+        return jsonify(datos), 200
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
+
+def cnregistrarinventariosmovimientos():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"mensaje": "No se enviaron datos JSON"}), 400
+
+        requerido = ["inm_id", "inm_tipo_movimiento", "inm_pro_id_fk", "inm_cantidad", "inm_fecha", "inm_motivo", "inm_usu_id_fk"]
+        faltantes = [x for x in requerido if x not in data]
+        if faltantes:
+            return jsonify({"mensaje": f"Faltan los siguientes campos: {faltantes}"}), 400
+
+        # Validar tipo movimiento
+        tipos_validos = ["Entrada", "Salida", "Ajuste"]
+        if data["inm_tipo_movimiento"] not in tipos_validos:
+            return jsonify({"mensaje": f"Tipo de movimiento inválido. Valores permitidos: {tipos_validos}"}), 400
+
+        # Validar cantidad positiva
+        try:
+            cantidad = int(data["inm_cantidad"])
+            if cantidad <= 0:
+                return jsonify({"mensaje": "La cantidad debe ser mayor a 0"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"mensaje": "La cantidad debe ser un número entero"}), 400
+
+        # Validar duplicado
+        c = current_app.mysql.connection.cursor()
+        c.execute("SELECT inm_id FROM t_inventario_movimiento WHERE inm_id = %s", (data["inm_id"],))
+        if c.fetchone():
+            c.close()
+            return jsonify({"mensaje": f"Ya existe un movimiento con el ID {data['inm_id']}"}), 409
+
+        # Validar que el producto exista
+        c.execute("SELECT pro_id FROM t_producto WHERE pro_id = %s", (data["inm_pro_id_fk"],))
+        if not c.fetchone():
+            c.close()
+            return jsonify({"mensaje": f"No existe un producto con el ID {data['inm_pro_id_fk']}"}), 404
+
+        # Validar que el usuario exista
+        c.execute("SELECT usu_id FROM t_usuario WHERE usu_id = %s", (data["inm_usu_id_fk"],))
+        if not c.fetchone():
+            c.close()
+            return jsonify({"mensaje": f"No existe un usuario con el ID {data['inm_usu_id_fk']}"}), 404
+
+        # Validar lote si se envía
+        lote_id = data.get("inm_lot_id_fk")
+        if lote_id:
+            c.execute("SELECT lot_id FROM t_lote WHERE lot_id = %s", (lote_id,))
+            if not c.fetchone():
+                c.close()
+                return jsonify({"mensaje": f"No existe un lote con el ID {lote_id}"}), 404
+        c.close()
+
+        resultado = registrarInventariosMovimientos(
+            data["inm_id"], data["inm_tipo_movimiento"], data["inm_pro_id_fk"],
+            data["inm_cantidad"], data["inm_fecha"], data["inm_motivo"],
+            data["inm_usu_id_fk"], lote_id
+        )
+        return jsonify({"mensaje": "Movimiento de inventario registrado correctamente", "datos": resultado}), 201
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500

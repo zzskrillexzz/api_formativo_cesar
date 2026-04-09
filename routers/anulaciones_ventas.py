@@ -1,0 +1,12 @@
+from flask import Blueprint
+from controllers.anulaciones_ventas_controllers import cnlistadoanulacionesventas, cnregistraranulacionesventas
+
+anulaciones_ventas_bp = Blueprint('anulaciones_ventas', __name__)
+
+@anulaciones_ventas_bp.route('/')
+def listado():
+    return cnlistadoanulacionesventas()
+
+@anulaciones_ventas_bp.route('/', methods=["POST"])
+def registrar():
+    return cnregistraranulacionesventas()

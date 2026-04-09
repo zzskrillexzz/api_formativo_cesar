@@ -1,18 +1,36 @@
-from .cliente import clientes_bp
-from .pedido import pedido_bp
-from .factura import facturas_bp
-from .producto import productos_bp
-from .detalle_de_pedido_route import detalles_bp
-from .proveedor import proveedores_bp
-from .inventario_movimiento import inventario_bp
-#from .usuario import usuarios_bp
+from .clientes import clientes_bp
+from .pedidos import pedidos_bp
+from .facturas import facturas_bp
+from .productos import productos_bp
+from .detalles_pedidos import detalles_pedidos_bp
+from .proveedores import proveedores_bp
+from .inventarios_movimientos import inventarios_movimientos_bp
+from .lotes import lotes_bp
+from .compras import compras_bp
+from .detalles_compras import detalles_compras_bp
+from .anulaciones_ventas import anulaciones_ventas_bp
+from .alertas_vencimientos import alertas_vencimientos_bp
+from .kardex import kardex_bp
+from .reportes import reportes_bp
+from .sesiones import sesiones_bp
+from .usuarios import usuarios_bp
+from .proveedores_productos import proveedores_productos_bp
 
 def cargarruta(app):
     app.register_blueprint(clientes_bp, url_prefix='/clientes')
-    app.register_blueprint(pedido_bp, url_prefix='/pedidos')
+    app.register_blueprint(pedidos_bp, url_prefix='/pedidos')
     app.register_blueprint(facturas_bp, url_prefix='/facturas')
     app.register_blueprint(productos_bp, url_prefix='/productos')
-    app.register_blueprint(detalles_bp, url_prefix='/detalles')
+    app.register_blueprint(detalles_pedidos_bp, url_prefix='/detalles_pedidos')
     app.register_blueprint(proveedores_bp, url_prefix='/proveedores')
-    app.register_blueprint(inventario_bp, url_prefix='/inventario')
-#    app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
+    app.register_blueprint(inventarios_movimientos_bp, url_prefix='/inventarios_movimientos')
+    app.register_blueprint(lotes_bp, url_prefix='/lotes')
+    app.register_blueprint(compras_bp, url_prefix='/compras')
+    app.register_blueprint(detalles_compras_bp, url_prefix='/detalles_compras')
+    app.register_blueprint(anulaciones_ventas_bp, url_prefix='/anulaciones_ventas')
+    app.register_blueprint(alertas_vencimientos_bp, url_prefix='/alertas_vencimientos')
+    app.register_blueprint(kardex_bp, url_prefix='/kardex')
+    app.register_blueprint(reportes_bp, url_prefix='/reportes')
+    app.register_blueprint(sesiones_bp, url_prefix='/sesiones')
+    app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
+    app.register_blueprint(proveedores_productos_bp, url_prefix='/proveedores_productos')
