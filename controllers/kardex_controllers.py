@@ -1,5 +1,5 @@
 from flask import jsonify, request, current_app
-from services.kardex_service import listarKardex, registrarKardex
+from services.kardex_service import listarKardex, registrarKardex, buscarKardex, editarKardex, eliminarKardex
 
 def cnlistadokardex():
     try:
@@ -80,4 +80,61 @@ def cnregistrarkardex():
     except Exception as e:
         import traceback
         print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
+
+
+
+def cneditarkardex():
+    try:
+        data = request.get_json()
+        if not data or "kar_id" not in data:
+            return jsonify({"mensaje": "ID de kardex requerido"}), 400
+
+        # Validar si el registro existe
+        if not buscarKardex(data["kar_id"]):
+            return jsonify({"mensaje": "El registro de kardex no existe"}), 404
+
+        # Validar foráneas (Producto, Lote, Movimiento)
+        c = current_app.mysql.connection.cursor()
+        
+        # Producto
+        c.execute("SELECT pro_id FROM t_producto WHERE pro_id = %s", (data["kar_pro_id_fk"],))
+        if not c.fetchone():
+            c.close()
+            return jsonify({"mensaje": "Producto no encontrado"}), 404
+            
+        # Lote
+        c.execute("SELECT lot_id FROM t_lote WHERE lot_id = %s", (data["kar_lot_id_fk"],))
+        if not c.fetchone():
+            c.close()
+            return jsonify({"mensaje": "Lote no encontrado"}), 404
+
+        c.close()
+
+        resultado = editarKardex(
+            data["kar_id"], data["kar_pro_id_fk"], data["kar_lot_id_fk"],
+            data["kar_inm_id_fk"], data["kar_fecha"], data["kar_tipo"],
+            data["kar_cantidad"], data["kar_saldo_anterior"], data["kar_saldo_actual"],
+            data["kar_costo_unitario"], data["kar_costo_total"]
+        )
+        return jsonify({"mensaje": "Kardex actualizado correctamente", "datos": resultado}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def cneliminarkardex(kar_id):
+    try:
+        if not buscarKardex(kar_id):
+            return jsonify({"mensaje": "Registro no encontrado"}), 404
+        return jsonify(eliminarKardex(kar_id)), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def cnbuscarkardex():
+    try:
+        kar_id = request.args.get("kar_id")
+        resultado = buscarKardex(kar_id)
+        if resultado:
+            return jsonify(resultado), 200
+        return jsonify({"mensaje": "Registro no encontrado"}), 404
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
