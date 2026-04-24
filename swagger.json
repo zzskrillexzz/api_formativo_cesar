@@ -49,23 +49,14 @@
     "/pedidos/{id}": {
       "get": {
         "tags": ["PEDIDOS"],
-        "summary": "obtener datos por id",
+        "summary": "Obtener datos por id",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
-            "description": "datos del pedido",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Pedido" }
-              }
-            }
+            "description": "Datos del pedido",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pedido" } } }
           },
           "404": { "description": "Pedido no encontrado" }
         }
@@ -74,20 +65,11 @@
         "tags": ["PEDIDOS"],
         "summary": "Actualizar un pedido",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Pedido" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pedido" } } }
         },
         "responses": {
           "200": { "description": "Pedido actualizado correctamente" },
@@ -98,12 +80,7 @@
         "tags": ["PEDIDOS"],
         "summary": "Eliminar un pedido",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": { "description": "Pedido eliminado correctamente" },
@@ -120,10 +97,7 @@
             "description": "Lista de sesiones",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Sesion" }
-                }
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Sesion" } }
               }
             }
           }
@@ -134,37 +108,22 @@
         "summary": "Crear una nueva sesión",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Sesion" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Sesion" } } }
         },
-        "responses": {
-          "201": { "description": "Sesion creada exitosamente" }
-        }
+        "responses": { "201": { "description": "Sesion creada exitosamente" } }
       }
     },
     "/sesiones/{id}": {
       "get": {
         "tags": ["SESSION"],
-        "summary": "obtener datos por id",
+        "summary": "Obtener datos por id",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
-            "description": "datos de la sesión",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Sesion" }
-              }
-            }
+            "description": "Datos de la sesión",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Sesion" } } }
           },
           "404": { "description": "Sesion no encontrada" }
         }
@@ -173,20 +132,11 @@
         "tags": ["SESSION"],
         "summary": "Actualizar una sesión",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Sesion" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Sesion" } } }
         },
         "responses": {
           "200": { "description": "Sesion actualizada correctamente" },
@@ -197,12 +147,7 @@
         "tags": ["SESSION"],
         "summary": "Eliminar una sesión",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": { "description": "Sesion eliminada correctamente" },
@@ -219,10 +164,7 @@
             "description": "Lista de usuarios",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Usuario" }
-                }
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Usuario" } }
               }
             }
           }
@@ -233,37 +175,22 @@
         "summary": "Crear un nuevo usuario",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Usuario" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Usuario" } } }
         },
-        "responses": {
-          "201": { "description": "Usuario creado exitosamente" }
-        }
+        "responses": { "201": { "description": "Usuario creado exitosamente" } }
       }
     },
     "/usuarios/{id}": {
       "get": {
         "tags": ["USUARIOS"],
-        "summary": "obtener datos por id",
+        "summary": "Obtener datos por id",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
-            "description": "datos del usuario",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Usuario" }
-              }
-            }
+            "description": "Datos del usuario",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Usuario" } } }
           },
           "404": { "description": "Usuario no encontrado" }
         }
@@ -272,20 +199,11 @@
         "tags": ["USUARIOS"],
         "summary": "Actualizar un usuario",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Usuario" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Usuario" } } }
         },
         "responses": {
           "200": { "description": "Usuario actualizado correctamente" },
@@ -296,12 +214,7 @@
         "tags": ["USUARIOS"],
         "summary": "Eliminar un usuario",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": { "description": "Usuario eliminado correctamente" },
@@ -318,10 +231,7 @@
             "description": "Lista de reportes",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Reporte" }
-                }
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Reporte" } }
               }
             }
           }
@@ -332,37 +242,22 @@
         "summary": "Crear un nuevo reporte",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Reporte" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Reporte" } } }
         },
-        "responses": {
-          "201": { "description": "Reporte creado exitosamente" }
-        }
+        "responses": { "201": { "description": "Reporte creado exitosamente" } }
       }
     },
     "/reportes/{id}": {
       "get": {
         "tags": ["REPORTES"],
-        "summary": "obtener datos por id",
+        "summary": "Obtener datos por id",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
-            "description": "datos del reporte",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Reporte" }
-              }
-            }
+            "description": "Datos del reporte",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Reporte" } } }
           },
           "404": { "description": "Reporte no encontrado" }
         }
@@ -371,20 +266,11 @@
         "tags": ["REPORTES"],
         "summary": "Actualizar un reporte",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Reporte" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Reporte" } } }
         },
         "responses": {
           "200": { "description": "Reporte actualizado correctamente" },
@@ -395,16 +281,11 @@
         "tags": ["REPORTES"],
         "summary": "Eliminar un reporte",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": { "description": "Reporte eliminado correctamente" },
-          "404": { "description": "reporte no encontrado" }
+          "404": { "description": "Reporte no encontrado" }
         }
       }
     },
@@ -417,10 +298,7 @@
             "description": "Lista de clientes",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Cliente" }
-                }
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Cliente" } }
               }
             }
           }
@@ -431,37 +309,22 @@
         "summary": "Crear un nuevo cliente",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Cliente" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cliente" } } }
         },
-        "responses": {
-          "201": { "description": "Cliente creado exitosamente" }
-        }
+        "responses": { "201": { "description": "Cliente creado exitosamente" } }
       }
     },
     "/clientes/{id}": {
       "get": {
         "tags": ["CLIENTES"],
-        "summary": "obtener datos por id",
+        "summary": "Obtener datos por id",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
-            "description": "datos del cliente",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Cliente" }
-              }
-            }
+            "description": "Datos del cliente",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cliente" } } }
           },
           "404": { "description": "Cliente no encontrado" }
         }
@@ -470,20 +333,11 @@
         "tags": ["CLIENTES"],
         "summary": "Actualizar un cliente",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Cliente" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cliente" } } }
         },
         "responses": {
           "200": { "description": "Cliente actualizado correctamente" },
@@ -494,12 +348,7 @@
         "tags": ["CLIENTES"],
         "summary": "Eliminar un cliente",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": { "description": "Cliente eliminado correctamente" },
@@ -516,10 +365,7 @@
             "description": "Lista de kardex",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Kardex" }
-                }
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Kardex" } }
               }
             }
           }
@@ -530,37 +376,22 @@
         "summary": "Crear un nuevo kardex",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Kardex" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Kardex" } } }
         },
-        "responses": {
-          "201": { "description": "Kardex creado exitosamente" }
-        }
+        "responses": { "201": { "description": "Kardex creado exitosamente" } }
       }
     },
     "/kardex/{id}": {
       "get": {
         "tags": ["KARDEX"],
-        "summary": "obtener datos por id",
+        "summary": "Obtener datos por id",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
-            "description": "datos del kardex",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Kardex" }
-              }
-            }
+            "description": "Datos del kardex",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Kardex" } } }
           },
           "404": { "description": "Kardex no encontrado" }
         }
@@ -569,20 +400,11 @@
         "tags": ["KARDEX"],
         "summary": "Actualizar un kardex",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Kardex" }
-            }
-          }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Kardex" } } }
         },
         "responses": {
           "200": { "description": "Kardex actualizado correctamente" },
@@ -593,128 +415,986 @@
         "tags": ["KARDEX"],
         "summary": "Eliminar un kardex",
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": { "description": "Kardex eliminado correctamente" },
           "404": { "description": "Kardex no encontrado" }
         }
       }
+    },
+
+    "/alertas-vencimientos": {
+      "get": {
+        "tags": ["ALERTAS VENCIMIENTOS"],
+        "summary": "Obtener todas las alertas de vencimiento",
+        "responses": {
+          "200": {
+            "description": "Lista de alertas de vencimiento",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AlertaVencimiento" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["ALERTAS VENCIMIENTOS"],
+        "summary": "Crear una nueva alerta de vencimiento",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertaVencimiento" } } }
+        },
+        "responses": { "201": { "description": "Alerta de vencimiento creada exitosamente" } }
+      }
+    },
+    "/alertas-vencimientos/{id}": {
+      "get": {
+        "tags": ["ALERTAS VENCIMIENTOS"],
+        "summary": "Obtener datos por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos de la alerta de vencimiento",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertaVencimiento" } } }
+          },
+          "404": { "description": "Alerta de vencimiento no encontrada" }
+        }
+      },
+      "put": {
+        "tags": ["ALERTAS VENCIMIENTOS"],
+        "summary": "Actualizar una alerta de vencimiento",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertaVencimiento" } } }
+        },
+        "responses": {
+          "200": { "description": "Alerta de vencimiento actualizada correctamente" },
+          "404": { "description": "Alerta de vencimiento no encontrada" }
+        }
+      },
+      "delete": {
+        "tags": ["ALERTAS VENCIMIENTOS"],
+        "summary": "Eliminar una alerta de vencimiento",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Alerta de vencimiento eliminada correctamente" },
+          "404": { "description": "Alerta de vencimiento no encontrada" }
+        }
+      }
+    },
+
+    "/anulaciones-ventas": {
+      "get": {
+        "tags": ["ANULACIONES VENTAS"],
+        "summary": "Obtener todas las anulaciones de ventas",
+        "responses": {
+          "200": {
+            "description": "Lista de anulaciones de ventas",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AnulacionVenta" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["ANULACIONES VENTAS"],
+        "summary": "Crear una nueva anulación de venta",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AnulacionVenta" } } }
+        },
+        "responses": { "201": { "description": "Anulación de venta creada exitosamente" } }
+      }
+    },
+    "/anulaciones-ventas/{id}": {
+      "get": {
+        "tags": ["ANULACIONES VENTAS"],
+        "summary": "Obtener datos por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos de la anulación de venta",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AnulacionVenta" } } }
+          },
+          "404": { "description": "Anulación de venta no encontrada" }
+        }
+      },
+      "put": {
+        "tags": ["ANULACIONES VENTAS"],
+        "summary": "Actualizar una anulación de venta",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AnulacionVenta" } } }
+        },
+        "responses": {
+          "200": { "description": "Anulación de venta actualizada correctamente" },
+          "404": { "description": "Anulación de venta no encontrada" }
+        }
+      },
+      "delete": {
+        "tags": ["ANULACIONES VENTAS"],
+        "summary": "Eliminar una anulación de venta",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Anulación de venta eliminada correctamente" },
+          "404": { "description": "Anulación de venta no encontrada" }
+        }
+      }
+    },
+
+    "/compras": {
+      "get": {
+        "tags": ["COMPRAS"],
+        "summary": "Obtener todas las compras",
+        "responses": {
+          "200": {
+            "description": "Lista de compras",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Compra" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["COMPRAS"],
+        "summary": "Crear una nueva compra",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Compra" } } }
+        },
+        "responses": { "201": { "description": "Compra creada exitosamente" } }
+      }
+    },
+    "/compras/{id}": {
+      "get": {
+        "tags": ["COMPRAS"],
+        "summary": "Obtener datos por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos de la compra",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Compra" } } }
+          },
+          "404": { "description": "Compra no encontrada" }
+        }
+      },
+      "put": {
+        "tags": ["COMPRAS"],
+        "summary": "Actualizar una compra",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Compra" } } }
+        },
+        "responses": {
+          "200": { "description": "Compra actualizada correctamente" },
+          "404": { "description": "Compra no encontrada" }
+        }
+      },
+      "delete": {
+        "tags": ["COMPRAS"],
+        "summary": "Eliminar una compra",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Compra eliminada correctamente" },
+          "404": { "description": "Compra no encontrada" }
+        }
+      }
+    },
+
+    "/detalles-compras": {
+      "get": {
+        "tags": ["DETALLES COMPRAS"],
+        "summary": "Obtener todos los detalles de compras",
+        "responses": {
+          "200": {
+            "description": "Lista de detalles de compras",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DetalleCompra" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["DETALLES COMPRAS"],
+        "summary": "Crear un nuevo detalle de compra",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DetalleCompra" } } }
+        },
+        "responses": { "201": { "description": "Detalle de compra creado exitosamente" } }
+      }
+    },
+    "/detalles-compras/{id}": {
+      "get": {
+        "tags": ["DETALLES COMPRAS"],
+        "summary": "Obtener datos por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos del detalle de compra",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DetalleCompra" } } }
+          },
+          "404": { "description": "Detalle de compra no encontrado" }
+        }
+      },
+      "put": {
+        "tags": ["DETALLES COMPRAS"],
+        "summary": "Actualizar un detalle de compra",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DetalleCompra" } } }
+        },
+        "responses": {
+          "200": { "description": "Detalle de compra actualizado correctamente" },
+          "404": { "description": "Detalle de compra no encontrado" }
+        }
+      },
+      "delete": {
+        "tags": ["DETALLES COMPRAS"],
+        "summary": "Eliminar un detalle de compra",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Detalle de compra eliminado correctamente" },
+          "404": { "description": "Detalle de compra no encontrado" }
+        }
+      }
+    },
+
+    "/detalles-pedidos": {
+      "get": {
+        "tags": ["DETALLES PEDIDOS"],
+        "summary": "Obtener todos los detalles de pedidos",
+        "responses": {
+          "200": {
+            "description": "Lista de detalles de pedidos",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DetallePedido" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["DETALLES PEDIDOS"],
+        "summary": "Crear un nuevo detalle de pedido",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DetallePedido" } } }
+        },
+        "responses": { "201": { "description": "Detalle de pedido creado exitosamente" } }
+      }
+    },
+    "/detalles-pedidos/{id}": {
+      "get": {
+        "tags": ["DETALLES PEDIDOS"],
+        "summary": "Obtener datos por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos del detalle de pedido",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DetallePedido" } } }
+          },
+          "404": { "description": "Detalle de pedido no encontrado" }
+        }
+      },
+      "put": {
+        "tags": ["DETALLES PEDIDOS"],
+        "summary": "Actualizar un detalle de pedido",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DetallePedido" } } }
+        },
+        "responses": {
+          "200": { "description": "Detalle de pedido actualizado correctamente" },
+          "404": { "description": "Detalle de pedido no encontrado" }
+        }
+      },
+      "delete": {
+        "tags": ["DETALLES PEDIDOS"],
+        "summary": "Eliminar un detalle de pedido",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Detalle de pedido eliminado correctamente" },
+          "404": { "description": "Detalle de pedido no encontrado" }
+        }
+      }
+    },
+
+    "/facturas": {
+      "get": {
+        "tags": ["FACTURAS"],
+        "summary": "Obtener todas las facturas",
+        "responses": {
+          "200": {
+            "description": "Lista de facturas",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Factura" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["FACTURAS"],
+        "summary": "Crear una nueva factura",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Factura" } } }
+        },
+        "responses": { "201": { "description": "Factura creada exitosamente" } }
+      }
+    },
+    "/facturas/{id}": {
+      "get": {
+        "tags": ["FACTURAS"],
+        "summary": "Obtener datos por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos de la factura",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Factura" } } }
+          },
+          "404": { "description": "Factura no encontrada" }
+        }
+      },
+      "put": {
+        "tags": ["FACTURAS"],
+        "summary": "Actualizar una factura",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Factura" } } }
+        },
+        "responses": {
+          "200": { "description": "Factura actualizada correctamente" },
+          "404": { "description": "Factura no encontrada" }
+        }
+      },
+      "delete": {
+        "tags": ["FACTURAS"],
+        "summary": "Eliminar una factura",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Factura eliminada correctamente" },
+          "404": { "description": "Factura no encontrada" }
+        }
+      }
+    },
+
+    "/inventarios-movimientos": {
+      "get": {
+        "tags": ["INVENTARIOS MOVIMIENTOS"],
+        "summary": "Obtener todos los movimientos de inventario",
+        "responses": {
+          "200": {
+            "description": "Lista de movimientos de inventario",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/InventarioMovimiento" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["INVENTARIOS MOVIMIENTOS"],
+        "summary": "Crear un nuevo movimiento de inventario",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InventarioMovimiento" } } }
+        },
+        "responses": { "201": { "description": "Movimiento de inventario creado exitosamente" } }
+      }
+    },
+    "/inventarios-movimientos/{id}": {
+      "get": {
+        "tags": ["INVENTARIOS MOVIMIENTOS"],
+        "summary": "Obtener datos por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos del movimiento de inventario",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InventarioMovimiento" } } }
+          },
+          "404": { "description": "Movimiento de inventario no encontrado" }
+        }
+      },
+      "put": {
+        "tags": ["INVENTARIOS MOVIMIENTOS"],
+        "summary": "Actualizar un movimiento de inventario",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InventarioMovimiento" } } }
+        },
+        "responses": {
+          "200": { "description": "Movimiento de inventario actualizado correctamente" },
+          "404": { "description": "Movimiento de inventario no encontrado" }
+        }
+      },
+      "delete": {
+        "tags": ["INVENTARIOS MOVIMIENTOS"],
+        "summary": "Eliminar un movimiento de inventario",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Movimiento de inventario eliminado correctamente" },
+          "404": { "description": "Movimiento de inventario no encontrado" }
+        }
+      }
+    },
+
+    "/lotes": {
+      "get": {
+        "tags": ["LOTES"],
+        "summary": "Obtener todos los lotes",
+        "responses": {
+          "200": {
+            "description": "Lista de lotes",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Lote" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["LOTES"],
+        "summary": "Crear un nuevo lote",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Lote" } } }
+        },
+        "responses": { "201": { "description": "Lote creado exitosamente" } }
+      }
+    },
+    "/lotes/{id}": {
+      "get": {
+        "tags": ["LOTES"],
+        "summary": "Obtener datos por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos del lote",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Lote" } } }
+          },
+          "404": { "description": "Lote no encontrado" }
+        }
+      },
+      "put": {
+        "tags": ["LOTES"],
+        "summary": "Actualizar un lote",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Lote" } } }
+        },
+        "responses": {
+          "200": { "description": "Lote actualizado correctamente" },
+          "404": { "description": "Lote no encontrado" }
+        }
+      },
+      "delete": {
+        "tags": ["LOTES"],
+        "summary": "Eliminar un lote",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Lote eliminado correctamente" },
+          "404": { "description": "Lote no encontrado" }
+        }
+      }
+    },
+
+    "/mas-vendidos": {
+      "get": {
+        "tags": ["MAS VENDIDOS"],
+        "summary": "Obtener el ranking de productos más vendidos",
+        "responses": {
+          "200": {
+            "description": "Lista de productos más vendidos ordenados por total vendido",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/MasVendido" } }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/productos": {
+      "get": {
+        "tags": ["PRODUCTOS"],
+        "summary": "Obtener todos los productos",
+        "responses": {
+          "200": {
+            "description": "Lista de productos",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Producto" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["PRODUCTOS"],
+        "summary": "Crear un nuevo producto",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Producto" } } }
+        },
+        "responses": { "201": { "description": "Producto creado exitosamente" } }
+      }
+    },
+    "/productos/{id}": {
+      "get": {
+        "tags": ["PRODUCTOS"],
+        "summary": "Obtener datos por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos del producto",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Producto" } } }
+          },
+          "404": { "description": "Producto no encontrado" }
+        }
+      },
+      "put": {
+        "tags": ["PRODUCTOS"],
+        "summary": "Actualizar un producto",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Producto" } } }
+        },
+        "responses": {
+          "200": { "description": "Producto actualizado correctamente" },
+          "404": { "description": "Producto no encontrado" }
+        }
+      },
+      "delete": {
+        "tags": ["PRODUCTOS"],
+        "summary": "Eliminar un producto",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Producto eliminado correctamente" },
+          "404": { "description": "Producto no encontrado" }
+        }
+      }
+    },
+
+    "/proveedores": {
+      "get": {
+        "tags": ["PROVEEDORES"],
+        "summary": "Obtener todos los proveedores",
+        "responses": {
+          "200": {
+            "description": "Lista de proveedores",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Proveedor" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["PROVEEDORES"],
+        "summary": "Crear un nuevo proveedor",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Proveedor" } } }
+        },
+        "responses": { "201": { "description": "Proveedor creado exitosamente" } }
+      }
+    },
+    "/proveedores/{id}": {
+      "get": {
+        "tags": ["PROVEEDORES"],
+        "summary": "Obtener datos por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos del proveedor",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Proveedor" } } }
+          },
+          "404": { "description": "Proveedor no encontrado" }
+        }
+      },
+      "put": {
+        "tags": ["PROVEEDORES"],
+        "summary": "Actualizar un proveedor",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Proveedor" } } }
+        },
+        "responses": {
+          "200": { "description": "Proveedor actualizado correctamente" },
+          "404": { "description": "Proveedor no encontrado" }
+        }
+      },
+      "delete": {
+        "tags": ["PROVEEDORES"],
+        "summary": "Eliminar un proveedor",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Proveedor eliminado correctamente" },
+          "404": { "description": "Proveedor no encontrado" }
+        }
+      }
+    },
+
+    "/proveedores-productos": {
+      "get": {
+        "tags": ["PROVEEDORES PRODUCTOS"],
+        "summary": "Obtener todas las relaciones proveedor-producto",
+        "responses": {
+          "200": {
+            "description": "Lista de relaciones proveedor-producto",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ProveedorProducto" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["PROVEEDORES PRODUCTOS"],
+        "summary": "Crear una nueva relación proveedor-producto",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProveedorProducto" } } }
+        },
+        "responses": { "201": { "description": "Relación proveedor-producto creada exitosamente" } }
+      }
+    },
+    "/proveedores-productos/{prov_id}/{pro_id}": {
+      "get": {
+        "tags": ["PROVEEDORES PRODUCTOS"],
+        "summary": "Obtener una relación proveedor-producto por sus ids",
+        "parameters": [
+          { "name": "prov_id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID del proveedor" },
+          { "name": "pro_id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID del producto" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos de la relación proveedor-producto",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProveedorProducto" } } }
+          },
+          "404": { "description": "Relación proveedor-producto no encontrada" }
+        }
+      },
+      "delete": {
+        "tags": ["PROVEEDORES PRODUCTOS"],
+        "summary": "Eliminar una relación proveedor-producto",
+        "parameters": [
+          { "name": "prov_id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID del proveedor" },
+          { "name": "pro_id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID del producto" }
+        ],
+        "responses": {
+          "200": { "description": "Relación proveedor-producto eliminada correctamente" },
+          "404": { "description": "Relación proveedor-producto no encontrada" }
+        }
+      }
     }
   },
 
-  
-
-  
   "components": {
     "schemas": {
       "Pedido": {
         "type": "object",
         "properties": {
-          "ped_id": { 
-            "type": "string",
-            "description": "id del pedido" 
-          },
-          "ped_fecha": { 
-            "type": "string",
-            "format": "date",
-            "description": "fecha del pedido" 
-          },
-          "ped_metodo_pago": { 
-            "type": "string",
-            "description": "método de pago del pedido" 
-          },
-          "ped_estado_entrega": { 
-            "type": "string",
-            "description": "estado de entrega del pedido" 
-          },
-          "ped_total": { 
-            "type": "number",
-            "format": "float",
-            "description": "total del pedido" 
-          },
-          "ped_cli_id_fk": { 
-            "type": "string",
-            "description": "id del cliente del pedido" 
-          },
-          "ped_usu_id_fk": { 
-            "type": "string",
-            "description": "id del usuario del pedido" 
-          }
+          "ped_id": { "type": "string", "description": "ID del pedido" },
+          "ped_fecha": { "type": "string", "format": "date", "description": "Fecha del pedido" },
+          "ped_metodo_pago": { "type": "string", "description": "Método de pago del pedido" },
+          "ped_estado_entrega": { "type": "string", "description": "Estado de entrega del pedido" },
+          "ped_total": { "type": "number", "format": "float", "description": "Total del pedido" },
+          "ped_cli_id_fk": { "type": "string", "description": "ID del cliente del pedido" },
+          "ped_usu_id_fk": { "type": "string", "description": "ID del usuario del pedido" }
         }
       },
       "Usuario": {
-      "type": "object",
-      "properties": {
-        "usu_id": { "type": "string", "description": "id del usuario" },
-        "usu_nombre": { "type": "string", "description": "nombre del usuario" },
-        "usu_rol": { "type": "string", "description": "rol del usuario" },
-        "usu_correo": { "type": "string", "format": "email", "description": "correo del usuario" },
-        "usu_contrasena": { "type": "string", "description": "contraseña del usuario" },
-        "usu_estado": { "type": "string", "description": "estado del usuario" },
-        "usu_ultimo_acceso": { "type": "string", "format": "date-time", "description": "último acceso del usuario" }
-        }
-      },
-      "Sesion":{
         "type": "object",
         "properties": {
-          "ses_id": { "type": "string", "description": "id de la sesión" },
-          "ses_usu_id_fk": { "type": "string", "description": "id del usuario de la sesión" },
-          "ses_fecha_inicio": { "type": "string", "format": "date-time", "description": "fecha de inicio de la sesión" },
-          "ses_fecha_fin": { "type": "string", "format": "date-time", "description": "fecha de fin de la sesión" },
-          "ses_ip":{
-            "type": "string",
-            "description": "dirección IP de la sesión"
-          },
-          "ses_activa":{
-            "type": "interger",
-            "description": "indica si la sesión está activa"
-          }
+          "usu_id": { "type": "string", "description": "ID del usuario" },
+          "usu_nombre": { "type": "string", "description": "Nombre del usuario" },
+          "usu_rol": { "type": "string", "description": "Rol del usuario" },
+          "usu_correo": { "type": "string", "format": "email", "description": "Correo del usuario" },
+          "usu_contrasena": { "type": "string", "description": "Contraseña del usuario" },
+          "usu_estado": { "type": "string", "description": "Estado del usuario" },
+          "usu_ultimo_acceso": { "type": "string", "format": "date-time", "description": "Último acceso del usuario" }
         }
       },
-      "reporte":{
+      "Sesion": {
         "type": "object",
         "properties": {
-          "rep_id": { "type": "string", "description": "id del reporte" },
-          "rep_fecha": { "type": "string", "format": "date-time", "description": "fecha del reporte" },
-          "rep_tipo": { "type": "string", "description": "tipo del reporte" },
-          "rep_parametros": { "type": "string", "description": "parámetros del reporte" },
-          "rep_usu_id_fk": { "type": "string", "description": "id del usuario del reporte" },
-          "rep_resultados": { "type": "string", "description": "resultados del reporte" }
+          "ses_id": { "type": "string", "description": "ID de la sesión" },
+          "ses_usu_id_fk": { "type": "string", "description": "ID del usuario de la sesión" },
+          "ses_fecha_inicio": { "type": "string", "format": "date-time", "description": "Fecha de inicio de la sesión" },
+          "ses_fecha_fin": { "type": "string", "format": "date-time", "description": "Fecha de fin de la sesión" },
+          "ses_ip": { "type": "string", "description": "Dirección IP de la sesión" },
+          "ses_activa": { "type": "integer", "description": "Indica si la sesión está activa (1 = activa, 0 = inactiva)" }
         }
+      },
+      "Reporte": {
+        "type": "object",
+        "properties": {
+          "rep_id": { "type": "string", "description": "ID del reporte" },
+          "rep_tipo": { "type": "string", "description": "Tipo del reporte" },
+          "rep_fecha": { "type": "string", "format": "date-time", "description": "Fecha del reporte" },
+          "rep_parametros": { "type": "string", "description": "Parámetros del reporte" },
+          "rep_usu_id_fk": { "type": "string", "description": "ID del usuario que generó el reporte" },
+          "rep_resultados": { "type": "string", "description": "Resultados del reporte" }
+        }
+      },
+      "Cliente": {
+        "type": "object",
+        "properties": {
+          "cli_id": { "type": "string", "description": "ID del cliente" },
+          "cli_nombre": { "type": "string", "description": "Nombre del cliente" },
+          "cli_correo": { "type": "string", "format": "email", "description": "Correo del cliente" },
+          "cli_telefono": { "type": "string", "description": "Teléfono del cliente" },
+          "cli_direccion": { "type": "string", "description": "Dirección del cliente" },
+          "cli_tipo_documento": { "type": "string", "description": "Tipo de documento del cliente" }
+        }
+      },
+      "Kardex": {
+        "type": "object",
+        "properties": {
+          "kar_id": { "type": "string", "description": "ID del kardex" },
+          "kar_fecha": { "type": "string", "format": "date-time", "description": "Fecha del kardex" },
+          "kar_cantidad": { "type": "number", "format": "float", "description": "Cantidad del kardex" },
+          "kar_pro_id_fk": { "type": "string", "description": "ID del producto del kardex" },
+          "kar_lot_id_fk": { "type": "string", "description": "ID del lote del kardex" },
+          "kar_inm_id_fk": { "type": "string", "description": "ID del movimiento de inventario del kardex" },
+          "kar_tipo": { "type": "string", "description": "Tipo del kardex (entrada o salida)" },
+          "kar_saldo_anterior": { "type": "number", "format": "float", "description": "Saldo anterior del kardex" },
+          "kar_saldo_actual": { "type": "number", "format": "float", "description": "Saldo actual del kardex" },
+          "kar_costo_unitario": { "type": "number", "format": "float", "description": "Costo unitario del kardex" },
+          "kar_costo_total": { "type": "number", "format": "float", "description": "Costo total del kardex" }
+        }
+      },
+
+      "AlertaVencimiento": {
+        "type": "object",
+        "properties": {
+          "alv_id": { "type": "string", "description": "ID de la alerta de vencimiento" },
+          "alv_pro_id_fk": { "type": "string", "description": "ID del producto relacionado" },
+          "alv_lot_id_fk": { "type": "string", "description": "ID del lote relacionado" },
+          "alv_fecha_generacion": { "type": "string", "format": "date-time", "description": "Fecha en que se generó la alerta" },
+          "alv_fecha_vencimiento": { "type": "string", "format": "date-time", "description": "Fecha de vencimiento del lote" },
+          "alv_dias_restantes": { "type": "integer", "description": "Días restantes para el vencimiento" },
+          "alv_estado": { "type": "string", "description": "Estado de la alerta (Activa, Resuelta, etc.)" },
+          "alv_usu_id_fk": { "type": "string", "description": "ID del usuario que recibe la alerta" }
+        }
+      },
+      "AnulacionVenta": {
+        "type": "object",
+        "properties": {
+          "anu_id": { "type": "string", "description": "ID de la anulación de venta" },
+          "anu_fac_id_fk": { "type": "string", "description": "ID de la factura anulada" },
+          "anu_usu_id_fk": { "type": "string", "description": "ID del usuario que realizó la anulación" },
+          "anu_fecha": { "type": "string", "format": "date-time", "description": "Fecha de la anulación" },
+          "anu_motivo": { "type": "string", "description": "Motivo de la anulación" }
+        }
+      },
+      "Compra": {
+        "type": "object",
+        "properties": {
+          "com_id": { "type": "string", "description": "ID de la compra" },
+          "com_fecha": { "type": "string", "format": "date", "description": "Fecha de la compra" },
+          "com_prov_id_fk": { "type": "string", "description": "ID del proveedor de la compra" },
+          "com_usu_id_fk": { "type": "string", "description": "ID del usuario que registró la compra" },
+          "com_total": { "type": "number", "format": "float", "description": "Total de la compra" },
+          "com_estado": { "type": "string", "description": "Estado de la compra (Pendiente, Completada, Anulada)" },
+          "com_observacion": { "type": "string", "description": "Observaciones adicionales de la compra" }
+        }
+      },
+      "DetalleCompra": {
+        "type": "object",
+        "properties": {
+          "dco_id": { "type": "string", "description": "ID del detalle de compra" },
+          "dco_com_id_fk": { "type": "string", "description": "ID de la compra asociada" },
+          "dco_pro_id_fk": { "type": "string", "description": "ID del producto comprado" },
+          "dco_lot_id_fk": { "type": "string", "description": "ID del lote asociado" },
+          "dco_cantidad": { "type": "number", "format": "float", "description": "Cantidad comprada" },
+          "dco_precio_compra": { "type": "number", "format": "float", "description": "Precio unitario de compra" },
+          "dco_subtotal": { "type": "number", "format": "float", "description": "Subtotal del detalle de compra" }
+        }
+      },
+      "DetallePedido": {
+        "type": "object",
+        "properties": {
+          "det_id": { "type": "string", "description": "ID del detalle de pedido" },
+          "det_ped_id_fk": { "type": "string", "description": "ID del pedido asociado" },
+          "det_pro_id_fk": { "type": "string", "description": "ID del producto del pedido" },
+          "det_cantidad": { "type": "integer", "description": "Cantidad solicitada" },
+          "det_precio_unitario": { "type": "number", "format": "float", "description": "Precio unitario del producto en el pedido" },
+          "det_subtotal": { "type": "number", "format": "float", "description": "Subtotal del detalle de pedido" }
+        }
+      },
+      "Factura": {
+        "type": "object",
+        "properties": {
+          "fac_id": { "type": "string", "description": "ID de la factura" },
+          "fac_fecha_emision": { "type": "string", "format": "date-time", "description": "Fecha de emisión de la factura" },
+          "fac_email_enviado": { "type": "boolean", "description": "Indica si la factura fue enviada por email" },
+          "fac_forma_pago": { "type": "string", "description": "Forma de pago de la factura" },
+          "fac_total": { "type": "number", "format": "float", "description": "Total de la factura" },
+          "fac_usu_id_fk": { "type": "string", "description": "ID del usuario que emitió la factura" },
+          "fac_estado": { "type": "string", "description": "Estado de la factura (Vigente, Anulada)", "default": "Vigente" }
+        }
+      },
+      "InventarioMovimiento": {
+        "type": "object",
+        "properties": {
+          "inm_id": { "type": "string", "description": "ID del movimiento de inventario" },
+          "inm_tipo_movimiento": { "type": "string", "description": "Tipo de movimiento (Entrada, Salida, Ajuste)" },
+          "inm_pro_id_fk": { "type": "string", "description": "ID del producto involucrado en el movimiento" },
+          "inm_cantidad": { "type": "number", "format": "float", "description": "Cantidad del movimiento" },
+          "inm_fecha": { "type": "string", "format": "date-time", "description": "Fecha del movimiento" },
+          "inm_motivo": { "type": "string", "description": "Motivo del movimiento de inventario" },
+          "inm_usu_id_fk": { "type": "string", "description": "ID del usuario que registró el movimiento" },
+          "inm_lot_id_fk": { "type": "string", "description": "ID del lote asociado al movimiento (opcional)" }
+        }
+      },
+      "Lote": {
+        "type": "object",
+        "properties": {
+          "lot_id": { "type": "string", "description": "ID del lote" },
+          "lot_numero": { "type": "string", "description": "Número de lote" },
+          "lot_fecha_fabricacion": { "type": "string", "format": "date", "description": "Fecha de fabricación del lote" },
+          "lot_fecha_vencimiento": { "type": "string", "format": "date", "description": "Fecha de vencimiento del lote" },
+          "lot_cantidad_inicial": { "type": "number", "format": "float", "description": "Cantidad inicial del lote" },
+          "lot_cantidad_actual": { "type": "number", "format": "float", "description": "Cantidad actual disponible del lote" },
+          "lot_pro_id_fk": { "type": "string", "description": "ID del producto al que pertenece el lote" },
+          "lot_prov_id_fk": { "type": "string", "description": "ID del proveedor del lote" },
+          "lot_estado": { "type": "string", "description": "Estado del lote (Activo, Vencido, Agotado)" }
+        }
+      },
+      "MasVendido": {
+        "type": "object",
+        "description": "Vista de productos más vendidos (solo lectura)",
+        "properties": {
+          "pro_id": { "type": "string", "description": "ID del producto" },
+          "pro_nombre": { "type": "string", "description": "Nombre del producto" },
+          "total_vendido": { "type": "number", "format": "float", "description": "Total de unidades vendidas" }
+        }
+      },
+      "Producto": {
+        "type": "object",
+        "properties": {
+          "pro_id": { "type": "string", "description": "ID del producto" },
+          "pro_nombre": { "type": "string", "description": "Nombre del producto" },
+          "pro_categoria": { "type": "string", "description": "Categoría del producto" },
+          "pro_descripcion": { "type": "string", "description": "Descripción del producto" },
+          "pro_precio": { "type": "number", "format": "float", "description": "Precio del producto" },
+          "pro_cantidad_disponible": { "type": "number", "format": "float", "description": "Cantidad disponible en inventario" },
+          "pro_stock_minimo": { "type": "integer", "description": "Stock mínimo permitido", "default": 10 },
+          "pro_fecha_caducidad": { "type": "string", "format": "date", "description": "Fecha de caducidad del producto" },
+          "pro_estado": { "type": "string", "description": "Estado del producto (Activo, Inactivo)", "default": "Activo" },
+          "pro_prov_id_fk": { "type": "string", "description": "ID del proveedor principal del producto" }
+        }
+      },
+      "Proveedor": {
+        "type": "object",
+        "properties": {
+          "prov_id": { "type": "string", "description": "ID del proveedor" },
+          "prov_nit": { "type": "string", "description": "NIT del proveedor" },
+          "prov_nombre": { "type": "string", "description": "Nombre del proveedor" },
+          "prov_tipo": { "type": "string", "description": "Tipo de proveedor" },
+          "prov_contacto": { "type": "string", "description": "Nombre de contacto del proveedor" },
+          "prov_direccion": { "type": "string", "description": "Dirección del proveedor" },
+          "prov_email": { "type": "string", "format": "email", "description": "Correo electrónico del proveedor" }
+        }
+      },
+      "ProveedorProducto": {
+        "type": "object",
+        "description": "Tabla de relación muchos a muchos entre proveedores y productos",
+        "properties": {
+          "ppp_prov_id_fk": { "type": "string", "description": "ID del proveedor" },
+          "ppp_pro_id_fk": { "type": "string", "description": "ID del producto" }
         },
-        "Cliente":{
-          "type": "object",
-          "properties": {
-            "cli_id": { "type": "string", "description": "id del cliente" },
-            "cli_nombre": { "type": "string", "description": "nombre del cliente" },
-            "cli_correo": { "type": "string", "format": "email", "description": "correo del cliente" },
-            "cli_telefono": { "type": "string", "description": "teléfono del cliente" },
-            "cli_direccion": { "type": "string", "description": "dirección del cliente" },
-            "cli_tipo_documento": { "type": "string", "description": "tipo de documento del cliente" }
-        }
-        },
-        "Kardex":{
-          "type": "object",
-          "properties": {
-            "kar_id": { "type": "string", "description": "id del kardex" },
-            "kar_fecha": { "type": "string", "format": "date-time", "description": "fecha del kardex" },
-            "kar_cantidad": { "type": "number", "format": "float", "description": "cantidad del kardex" },
-            "kar_pro_id_fk": { "type": "string", "description": "id del producto del kardex" },
-            "kar_lot_id_fk": { "type": "string", "description": "id del lote del kardex" },
-            "kar_inm_id_fk": { "type": "string", "description": "id del inventario del kardex" },
-            "kar_tipo": { "type": "string", "description": "tipo del kardex (entrada o salida)" },
-            "kar_saldo_anterior": { "type": "number", "format": "float", "description": "saldo anterior del kardex" },
-            "kar_saldo_actual": { "type": "number", "format": "float", "description": "saldo actual del kardex" },
-            "kar_costo_unitario": { "type": "number", "format": "float", "description": "costo unitario del kardex" },
-            "kar_costo_total": { "type": "number", "format": "float", "description": "costo total del kardex" }
-        }
-        }
+        "required": ["ppp_prov_id_fk", "ppp_pro_id_fk"]
+      }
     }
   }
 }
