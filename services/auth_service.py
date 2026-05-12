@@ -7,7 +7,7 @@ import jwt
 def buscarPorCorreo(USU_CORREO):
     c = current_app.mysql.connection.cursor()
     sql = """
-        SELECT usu_id, usu_nombre, usu_rol, usu_correo, usu_contrasena, usu_estado
+        SELECT usu_id, usu_nombre, usu_rol_id_fk, usu_correo, usu_contrasena, usu_estado
         FROM t_usuario
         WHERE usu_correo = %s
     """
@@ -18,7 +18,7 @@ def buscarPorCorreo(USU_CORREO):
         return {
             "usu_id":         p[0],
             "usu_nombre":     p[1],
-            "usu_rol":        p[2],
+            "usu_rol_id_fk":  p[2],
             "usu_correo":     p[3],
             "usu_contrasena": p[4],
             "usu_estado":     p[5]
@@ -49,12 +49,12 @@ def login(USU_CORREO, USU_CONTRASENA):
         return None
     if usuario['usu_estado'] != 1:
         return None
-    token = crearToken(usuario['usu_id'], usuario['usu_correo'], usuario['usu_rol'])
+    token = crearToken(usuario['usu_id'], usuario['usu_correo'], usuario['usu_rol_id_fk'])
     return {
         "access_token": token,
         "token_type":   "bearer",
         "usu_nombre":   usuario['usu_nombre'],
-        "usu_rol":      usuario['usu_rol']
+        "usu_rol_id_fk": usuario['usu_rol_id_fk']
     }
 
 # ─── Decorador de autenticación ────────────────────────────────────────────────

@@ -39,4 +39,4 @@ def cargarruta(app):
     app.register_blueprint(proveedores_productos_bp, url_prefix='/proveedores_productos')
     app.register_blueprint(mas_vendidos_bp, url_prefix='/mas_vendidos')
     app.register_blueprint(documentacion_bp, url_prefix='/documentacion')
-    app.register_blueprint(autenticacion_bp, url_prefix='/auth')
+    app.register_blueprint(autenticacion_bp, url_prefix='')

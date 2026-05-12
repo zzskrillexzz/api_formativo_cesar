@@ -1,6 +1,5 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_mysqldb import MySQL
-from flask_cors import CORS
 from routers import cargarruta
 from config import config
 
@@ -8,13 +7,28 @@ app = Flask(__name__)
 app.config.from_object(config)
 
 # ── CORS: permitir peticiones desde cualquier origen ──
-CORS(app, resources={
-    r"/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
+# Nota: se usa @app.after_request en lugar de CORS(app) porque
+# es más robusto con blueprints y rutas registradas dinámicamente.
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    return response
+
+# ── Manejador global de errores: siempre devuelve JSON con CORS ──
+@app.errorhandler(Exception)
+def handle_exception(error):
+    response = jsonify({
+        "error": "Error interno del servidor",
+        "detalle": str(error)
+    })
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.status_code = 500
+    return response
 
 mysql = MySQL(app)
 app.mysql = mysql
