@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Layers, AlertTriangle, Search, Plus, Loader2, RefreshCw } from 'lucide-react';
+import { Package, Layers, AlertTriangle, Search, Plus, X, Loader2, RefreshCw } from 'lucide-react';
 import { productosService } from '../api/services/productosService';
 import { lotesService } from '../api/services/lotesService';
 import { monitoriasService } from '../api/services/monitoriasService';
+import { inventariosMovimientosService } from '../api/services/inventariosMovimientosService';
+import { useAuth } from '../context/AuthContext';
 
 const Inventario = () => {
   const [tab, setTab] = useState('productos');
@@ -11,6 +13,110 @@ const Inventario = () => {
   const [monitorias, setMonitorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // ── Modal para crear ──
+  const [showModal, setShowModal] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const { user } = useAuth();
+  const [formData, setFormData] = useState({});
+
+  const openModal = () => {
+    setFormData({});
+    setFormError('');
+    setShowModal(true);
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmitProducto = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    if (!formData.id || !formData.nombre) {
+      setFormError('ID y Nombre son obligatorios');
+      return;
+    }
+    setFormSubmitting(true);
+    try {
+      await productosService.registrar({
+        id: formData.id,
+        nombre: formData.nombre,
+        categoria: formData.categoria || '',
+        descripcion: formData.descripcion || '',
+        precio: parseFloat(formData.precio) || 0,
+        cantidad_disponible: parseInt(formData.cantidad_disponible) || 0,
+        stock_minimo: parseInt(formData.stock_minimo) || 10,
+        fecha_caducidad: formData.fecha_caducidad || null,
+        estado: formData.estado || 'Activo',
+        proveedor_id: formData.proveedor_id || null
+      });
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      setFormError(err.response?.data?.mensaje || 'Error al crear producto');
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const handleSubmitLote = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    if (!formData.lot_id || !formData.lot_fecha_vencimiento) {
+      setFormError('ID y Fecha de Vencimiento son obligatorios');
+      return;
+    }
+    setFormSubmitting(true);
+    try {
+      await lotesService.registrar({
+        lot_id: formData.lot_id,
+        lot_numero: formData.lot_numero || '',
+        lot_fecha_fabricacion: formData.lot_fecha_fabricacion || null,
+        lot_fecha_vencimiento: formData.lot_fecha_vencimiento,
+        lot_cantidad_inicial: parseInt(formData.lot_cantidad_inicial) || 0,
+        lot_cantidad_actual: parseInt(formData.lot_cantidad_inicial) || 0,
+        lot_pro_id_fk: formData.lot_pro_id_fk || '',
+        lot_prov_id_fk: formData.lot_prov_id_fk || null,
+        lot_estado: formData.lot_estado || 'Activo'
+      });
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      setFormError(err.response?.data?.mensaje || 'Error al crear lote');
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const handleSubmitMovimiento = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    if (!formData.inm_id || !formData.inm_tipo_movimiento || !formData.inm_pro_id_fk || !formData.inm_cantidad || !formData.inm_fecha || !formData.inm_motivo) {
+      setFormError('Todos los campos marcados con * son obligatorios');
+      return;
+    }
+    setFormSubmitting(true);
+    try {
+      await inventariosMovimientosService.registrar({
+        inm_id: formData.inm_id,
+        inm_tipo_movimiento: formData.inm_tipo_movimiento,
+        inm_pro_id_fk: formData.inm_pro_id_fk,
+        inm_lot_id_fk: formData.inm_lot_id_fk || null,
+        inm_cantidad: parseInt(formData.inm_cantidad),
+        inm_fecha: formData.inm_fecha,
+        inm_motivo: formData.inm_motivo,
+        inm_usu_id_fk: user?.id || ''
+      });
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      setFormError(err.response?.data?.mensaje || 'Error al crear movimiento');
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -98,7 +204,10 @@ const Inventario = () => {
           <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all shadow-sm">
             <RefreshCw size={18} className="text-slate-500" />
           </button>
-          <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md">
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md"
+          >
             <Plus size={16} /> Nuevo {tab === 'productos' ? 'Producto' : tab === 'lotes' ? 'Lote' : 'Movimiento'}
           </button>
         </div>
@@ -244,6 +353,192 @@ const Inventario = () => {
           </div>
           <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-[10px] text-slate-400 font-bold">
             {monitorias.length} movimientos
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Nuevo ── */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
+              <h2 className="text-lg font-black text-slate-800">
+                Nuevo {tab === 'productos' ? 'Producto' : tab === 'lotes' ? 'Lote' : 'Movimiento'}
+              </h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                <X size={20} className="text-slate-400" />
+              </button>
+            </div>
+
+            <form onSubmit={
+              tab === 'productos' ? handleSubmitProducto :
+              tab === 'lotes' ? handleSubmitLote : handleSubmitMovimiento
+            } className="px-8 py-6 space-y-4">
+              {formError && (
+                <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100">{formError}</div>
+              )}
+
+              {/* ─── PRODUCTO ─── */}
+              {tab === 'productos' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
+                      <input name="id" value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre *</label>
+                      <input name="nombre" value={formData.nombre || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoría</label>
+                      <input name="categoria" value={formData.categoria || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Precio</label>
+                      <input name="precio" type="number" step="0.01" value={formData.precio || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción</label>
+                    <input name="descripcion" value={formData.descripcion || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Stock</label>
+                      <input name="cantidad_disponible" type="number" value={formData.cantidad_disponible || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Stock Mín.</label>
+                      <input name="stock_minimo" type="number" value={formData.stock_minimo || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</label>
+                      <select name="estado" value={formData.estado || 'Activo'} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="Activo">Activo</option>
+                        <option value="Descontinuado">Descontinuado</option>
+                        <option value="Suspendido">Suspendido</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Proveedor ID</label>
+                    <input name="proveedor_id" value={formData.proveedor_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                  </div>
+                </>
+              )}
+
+              {/* ─── LOTE ─── */}
+              {tab === 'lotes' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
+                      <input name="lot_id" value={formData.lot_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">N° Lote</label>
+                      <input name="lot_numero" value={formData.lot_numero || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Producto ID</label>
+                      <input name="lot_pro_id_fk" value={formData.lot_pro_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Proveedor ID</label>
+                      <input name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Fabricación</label>
+                      <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Vencimiento *</label>
+                      <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cantidad Inicial</label>
+                      <input name="lot_cantidad_inicial" type="number" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</label>
+                      <select name="lot_estado" value={formData.lot_estado || 'Activo'} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="Activo">Activo</option>
+                        <option value="Agotado">Agotado</option>
+                        <option value="Vencido">Vencido</option>
+                        <option value="Cuarentena">Cuarentena</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ─── MOVIMIENTO ─── */}
+              {tab === 'movimientos' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
+                      <input name="inm_id" value={formData.inm_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo *</label>
+                      <select name="inm_tipo_movimiento" value={formData.inm_tipo_movimiento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="">Seleccionar...</option>
+                        <option value="Entrada">Entrada</option>
+                        <option value="Salida">Salida</option>
+                        <option value="Ajuste">Ajuste</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Producto ID *</label>
+                      <input name="inm_pro_id_fk" value={formData.inm_pro_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lote ID</label>
+                      <input name="inm_lot_id_fk" value={formData.inm_lot_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cantidad *</label>
+                      <input name="inm_cantidad" type="number" value={formData.inm_cantidad || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha *</label>
+                      <input name="inm_fecha" type="date" value={formData.inm_fecha || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario</label>
+                      <input value={user?.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl outline-none text-sm font-medium text-slate-400 mt-1" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Motivo *</label>
+                    <input name="inm_motivo" value={formData.inm_motivo || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                  </div>
+                </>
+              )}
+
+              <button
+                type="submit"
+                disabled={formSubmitting}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-blue-100 transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+              >
+                {formSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
+                Guardar
+              </button>
+            </form>
           </div>
         </div>
       )}

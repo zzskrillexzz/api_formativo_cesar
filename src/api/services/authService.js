@@ -11,5 +11,12 @@ export const authService = {
     } catch (error) {
       throw error.response?.data?.message || 'Error al iniciar sesión';
     }
+  },
+  logout: async () => {
+    try {
+      await api.post('/logout');
+    } catch {
+      // Si falla la petición, igual cerramos sesión localmente
+    }
   }
 };
