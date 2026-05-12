@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar } from './components/layout/Sidebar';
 import DashboardPage from './pages/Dashboard';
+import InventarioPage from './pages/Inventario';
+import VentasPage from './pages/Ventas';
+import ComprasPage from './pages/Compras';
+import ReportesPage from './pages/Reportes';
 import LoginPage from './pages/Login';
 import { Search, Bell, Activity } from 'lucide-react';
 
@@ -45,7 +49,11 @@ const Layout = () => {
               </div>
             </header>
 
-            {activeTab === 'Dashboard' ? <DashboardPage /> : <div className="p-20 bg-white rounded-[40px] text-center font-bold italic text-slate-300 uppercase">Módulo {activeTab} listo para conexión</div>}
+            {activeTab === 'Dashboard' && <DashboardPage />}
+            {activeTab === 'Inventario' && <InventarioPage />}
+            {activeTab === 'Ventas' && <VentasPage />}
+            {activeTab === 'Compras' && <ComprasPage />}
+            {activeTab === 'Reportes' && <ReportesPage />}
           </div>
         </section>
       </main>

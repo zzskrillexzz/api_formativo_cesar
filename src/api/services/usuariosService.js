@@ -1,12 +1,12 @@
 import api from '../axios';
 
-export const lotesService = {
+export const usuariosService = {
   listar: async () => {
-    const res = await api.get('/lotes/');
+    const res = await api.get('/usuarios/');
     return res.data;
   },
   registrar: async (data) => {
-    const res = await api.post('/lotes/', data);
+    const res = await api.post('/usuarios/', data);
     return res.data;
   }
 };

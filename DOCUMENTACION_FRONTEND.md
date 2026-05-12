@@ -1,7 +1,7 @@
 #  Documentación del Frontend — San Diego Distribuidora
 
 **Última actualización:** Mayo 2026  
-**Versión:** 0.1.0  
+**Versión:** 0.1.1  
 **Producto:** `distribuidora` — Sistema de Gestión para Droguería / Distribuidora Farmacéutica
 
 ---
