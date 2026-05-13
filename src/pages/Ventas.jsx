@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, FileText, Users, Search, Plus, Loader2, RefreshCw, Eye } from 'lucide-react';
+import { ShoppingCart, FileText, Users, Search, Plus, X, Loader2, RefreshCw, Eye } from 'lucide-react';
 import { pedidosService } from '../api/services/pedidosService';
 import { facturasService } from '../api/services/facturasService';
 import { clientesService } from '../api/services/clientesService';
+import { useAuth } from '../context/AuthContext';
 
 const Ventas = () => {
   const [tab, setTab] = useState('pedidos');
@@ -11,6 +12,23 @@ const Ventas = () => {
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // ── Modal para crear ──
+  const [showModal, setShowModal] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const { user } = useAuth();
+  const [formData, setFormData] = useState({});
+
+  const openModal = () => {
+    setFormData({});
+    setFormError('');
+    setShowModal(true);
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -66,6 +84,87 @@ const Ventas = () => {
     return map[estado] || 'text-slate-500 bg-slate-100';
   };
 
+  const handleSubmitPedido = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    if (!formData.ped_id || !formData.ped_fecha || !formData.ped_metodo_pago || !formData.ped_estado_entrega || !formData.ped_total || !formData.ped_cli_id_fk) {
+      setFormError('Todos los campos con * son obligatorios');
+      return;
+    }
+    setFormSubmitting(true);
+    try {
+      await pedidosService.registrar({
+        ped_id: formData.ped_id,
+        ped_fecha: formData.ped_fecha,
+        ped_metodo_pago: formData.ped_metodo_pago,
+        ped_estado_entrega: formData.ped_estado_entrega,
+        ped_total: parseFloat(formData.ped_total),
+        ped_cli_id_fk: formData.ped_cli_id_fk,
+        ped_usu_id_fk: user?.id || null
+      });
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      setFormError(err.response?.data?.mensaje || 'Error al crear pedido');
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const handleSubmitFactura = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    if (!formData.id || !formData.fecha_emision || formData.email_enviado === undefined || !formData.forma_pago || !formData.total) {
+      setFormError('Todos los campos con * son obligatorios');
+      return;
+    }
+    setFormSubmitting(true);
+    try {
+      await facturasService.registrar({
+        id: formData.id,
+        fecha_emision: formData.fecha_emision,
+        email_enviado: parseInt(formData.email_enviado),
+        forma_pago: formData.forma_pago,
+        total: parseFloat(formData.total),
+        usuario_id: user?.id || '',
+        estado: formData.estado || 'Vigente'
+      });
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      setFormError(err.response?.data?.mensaje || 'Error al crear factura');
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const handleSubmitCliente = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    if (!formData.cli_id || !formData.cli_tipo_documento || !formData.cli_nombre || !formData.cli_apellido || !formData.cli_correo) {
+      setFormError('Los campos ID, Tipo Doc., Nombre, Apellido y Correo son obligatorios');
+      return;
+    }
+    setFormSubmitting(true);
+    try {
+      await clientesService.registrar({
+        cli_id: formData.cli_id,
+        cli_tipo_documento: formData.cli_tipo_documento,
+        cli_nombre: formData.cli_nombre,
+        cli_apellido: formData.cli_apellido,
+        cli_correo: formData.cli_correo,
+        cli_telefono: formData.cli_telefono || null,
+        cli_direccion: formData.cli_direccion || null
+      });
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      setFormError(err.response?.data?.mensaje || 'Error al crear cliente');
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -110,7 +209,10 @@ const Ventas = () => {
           <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all shadow-sm">
             <RefreshCw size={18} className="text-slate-500" />
           </button>
-          <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md">
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md"
+          >
             <Plus size={16} /> Nuevo {tab === 'pedidos' ? 'Pedido' : tab === 'facturas' ? 'Factura' : 'Cliente'}
           </button>
         </div>
@@ -263,6 +365,186 @@ const Ventas = () => {
           </div>
           <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-[10px] text-slate-400 font-bold">
             {filteredClientes.length} de {clientes.length} clientes
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Nuevo ── */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
+              <h2 className="text-lg font-black text-slate-800">
+                Nuevo {tab === 'pedidos' ? 'Pedido' : tab === 'facturas' ? 'Factura' : 'Cliente'}
+              </h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                <X size={20} className="text-slate-400" />
+              </button>
+            </div>
+
+            <form onSubmit={
+              tab === 'pedidos' ? handleSubmitPedido :
+              tab === 'facturas' ? handleSubmitFactura : handleSubmitCliente
+            } className="px-8 py-6 space-y-4">
+              {formError && (
+                <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100">{formError}</div>
+              )}
+
+              {/* ─── PEDIDO ─── */}
+              {tab === 'pedidos' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
+                      <input name="ped_id" value={formData.ped_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha *</label>
+                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliente ID *</label>
+                      <input name="ped_cli_id_fk" value={formData.ped_cli_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total *</label>
+                      <input name="ped_total" type="number" step="0.01" value={formData.ped_total || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Método Pago *</label>
+                      <select name="ped_metodo_pago" value={formData.ped_metodo_pago || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="">Seleccionar...</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Nequi">Nequi</option>
+                        <option value="Daviplata">Daviplata</option>
+                        <option value="Transferencia">Transferencia</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado *</label>
+                      <select name="ped_estado_entrega" value={formData.ped_estado_entrega || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="">Seleccionar...</option>
+                        <option value="Entregado">Entregado</option>
+                        <option value="En camino">En camino</option>
+                        <option value="No entregado">No entregado</option>
+                        <option value="Anulado">Anulado</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario (vendedor)</label>
+                    <input value={user?.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl outline-none text-sm font-medium text-slate-400 mt-1" />
+                  </div>
+                </>
+              )}
+
+              {/* ─── FACTURA ─── */}
+              {tab === 'facturas' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Factura *</label>
+                      <input name="id" value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Emisión *</label>
+                      <input name="fecha_emision" type="date" value={formData.fecha_emision || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Forma Pago *</label>
+                      <input name="forma_pago" value={formData.forma_pago || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total *</label>
+                      <input name="total" type="number" step="0.01" value={formData.total || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Enviado *</label>
+                      <select name="email_enviado" value={formData.email_enviado !== undefined ? formData.email_enviado : ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="">Seleccionar...</option>
+                        <option value="1">Sí (Enviado)</option>
+                        <option value="0">No (Pendiente)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</label>
+                      <select name="estado" value={formData.estado || 'Vigente'} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="Vigente">Vigente</option>
+                        <option value="Anulada">Anulada</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario</label>
+                    <input value={user?.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl outline-none text-sm font-medium text-slate-400 mt-1" />
+                  </div>
+                </>
+              )}
+
+              {/* ─── CLIENTE ─── */}
+              {tab === 'clientes' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
+                      <input name="cli_id" value={formData.cli_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo Documento *</label>
+                      <select name="cli_tipo_documento" value={formData.cli_tipo_documento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="">Seleccionar...</option>
+                        <option value="CC">CC</option>
+                        <option value="NIT">NIT</option>
+                        <option value="CE">CE</option>
+                        <option value="TI">TI</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre *</label>
+                      <input name="cli_nombre" value={formData.cli_nombre || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Apellido *</label>
+                      <input name="cli_apellido" value={formData.cli_apellido || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Correo *</label>
+                    <input name="cli_correo" type="email" value={formData.cli_correo || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono</label>
+                      <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dirección</label>
+                      <input name="cli_direccion" value={formData.cli_direccion || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <button
+                type="submit"
+                disabled={formSubmitting}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-blue-100 transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+              >
+                {formSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
+                Guardar
+              </button>
+            </form>
           </div>
         </div>
       )}
