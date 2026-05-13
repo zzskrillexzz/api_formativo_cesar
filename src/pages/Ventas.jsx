@@ -3,6 +3,8 @@ import { ShoppingCart, FileText, Users, Search, Plus, X, Loader2, RefreshCw, Eye
 import { pedidosService } from '../api/services/pedidosService';
 import { facturasService } from '../api/services/facturasService';
 import { clientesService } from '../api/services/clientesService';
+import { productosService } from '../api/services/productosService';
+import { detallesPedidosService } from '../api/services/detallesPedidosService';
 import { useAuth } from '../context/AuthContext';
 
 const Ventas = () => {
@@ -19,16 +21,51 @@ const Ventas = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
+  const [productosDisponibles, setProductosDisponibles] = useState([]);
+  const [productosSeleccionados, setProductosSeleccionados] = useState([]);
 
-  const openModal = () => {
+  const openModal = async () => {
     setFormData({});
     setFormError('');
+    setProductosSeleccionados([]);
+    // Cargar productos para el selector (pedidos)
+    if (tab === 'pedidos') {
+      try {
+        const prods = await productosService.listar();
+        setProductosDisponibles(prods.filter(p => p.estado === 'Activo'));
+      } catch {
+        setProductosDisponibles([]);
+      }
+    }
     setShowModal(true);
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  // ── Helpers para productos del pedido ──
+  const [nuevoProducto, setNuevoProducto] = useState({ pro_id: '', cantidad: 1 });
+
+  const agregarProducto = () => {
+    const prod = productosDisponibles.find(p => p.id === nuevoProducto.pro_id);
+    if (!prod) return;
+    const yaExiste = productosSeleccionados.find(p => p.pro_id === prod.id);
+    if (yaExiste) return;
+    const cantidad = parseInt(nuevoProducto.cantidad, 10) || 1;
+    const precio = parseFloat(prod.precio) || 0;
+    setProductosSeleccionados([
+      ...productosSeleccionados,
+      { pro_id: prod.id, pro_nombre: prod.nombre, cantidad, precio_unitario: precio, subtotal: cantidad * precio }
+    ]);
+    setNuevoProducto({ pro_id: '', cantidad: 1 });
+  };
+
+  const quitarProducto = (pro_id) => {
+    setProductosSeleccionados(productosSeleccionados.filter(p => p.pro_id !== pro_id));
+  };
+
+  const totalPedidoCalculado = productosSeleccionados.reduce((sum, p) => sum + p.subtotal, 0);
 
   const fetchData = async () => {
     setLoading(true);
@@ -63,7 +100,7 @@ const Ventas = () => {
     (f.id || '').toString().toLowerCase().includes(searchTerm.toLowerCase())
   );
   const filteredClientes = clientes.filter(c =>
-    (c.cli_nombre || c.cli_apellido || c.cli_id || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (c.cli_nombre || c.cli_apellido || (c.cli_id ? String(c.cli_id) : '')).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getEstadoEntregaBadge = (estado) => {
@@ -87,21 +124,44 @@ const Ventas = () => {
   const handleSubmitPedido = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (!formData.ped_id || !formData.ped_fecha || !formData.ped_metodo_pago || !formData.ped_estado_entrega || !formData.ped_total || !formData.ped_cli_id_fk) {
+    if (!formData.ped_id || !formData.ped_fecha || !formData.ped_metodo_pago || !formData.ped_estado_entrega || !formData.ped_cli_id_fk) {
       setFormError('Todos los campos con * son obligatorios');
       return;
     }
+    if (productosSeleccionados.length === 0) {
+      setFormError('Agrega al menos un producto al pedido');
+      return;
+    }
+    const clienteId = parseInt(formData.ped_cli_id_fk, 10);
+    if (isNaN(clienteId) || clienteId <= 0) {
+      setFormError('El ID del cliente debe ser un número entero positivo');
+      return;
+    }
+    const totalPed = totalPedidoCalculado;
     setFormSubmitting(true);
     try {
+      // 1. Crear pedido
       await pedidosService.registrar({
         ped_id: formData.ped_id,
         ped_fecha: formData.ped_fecha,
         ped_metodo_pago: formData.ped_metodo_pago,
         ped_estado_entrega: formData.ped_estado_entrega,
-        ped_total: parseFloat(formData.ped_total),
-        ped_cli_id_fk: formData.ped_cli_id_fk,
+        ped_total: totalPed,
+        ped_cli_id_fk: clienteId,
         ped_usu_id_fk: user?.id || null
       });
+      // 2. Crear detalles del pedido
+      for (let i = 0; i < productosSeleccionados.length; i++) {
+        const p = productosSeleccionados[i];
+        await detallesPedidosService.registrar({
+          det_id: `${formData.ped_id}-DET${String(i + 1).padStart(3, '0')}`,
+          det_ped_id_fk: formData.ped_id,
+          det_pro_id_fk: p.pro_id,
+          det_cantidad: p.cantidad,
+          det_precio_unitario: p.precio_unitario,
+          det_subtotal: p.subtotal
+        });
+      }
       setShowModal(false);
       fetchData();
     } catch (err) {
@@ -114,8 +174,18 @@ const Ventas = () => {
   const handleSubmitFactura = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (!formData.id || !formData.fecha_emision || formData.email_enviado === undefined || !formData.forma_pago || !formData.total) {
+    if (!formData.id || !formData.fecha_emision || formData.email_enviado === undefined || !formData.forma_pago) {
       setFormError('Todos los campos con * son obligatorios');
+      return;
+    }
+    const emailEnviado = parseInt(formData.email_enviado, 10);
+    if (isNaN(emailEnviado) || ![0, 1].includes(emailEnviado)) {
+      setFormError('Selecciona si el email fue enviado o no');
+      return;
+    }
+    const totalFac = parseFloat(formData.total);
+    if (isNaN(totalFac) || totalFac <= 0) {
+      setFormError('El total debe ser un número mayor a 0');
       return;
     }
     setFormSubmitting(true);
@@ -123,9 +193,9 @@ const Ventas = () => {
       await facturasService.registrar({
         id: formData.id,
         fecha_emision: formData.fecha_emision,
-        email_enviado: parseInt(formData.email_enviado),
+        email_enviado: emailEnviado,
         forma_pago: formData.forma_pago,
-        total: parseFloat(formData.total),
+        total: totalFac,
         usuario_id: user?.id || '',
         estado: formData.estado || 'Vigente'
       });
@@ -145,10 +215,15 @@ const Ventas = () => {
       setFormError('Los campos ID, Tipo Doc., Nombre, Apellido y Correo son obligatorios');
       return;
     }
+    const cliId = parseInt(formData.cli_id, 10);
+    if (isNaN(cliId) || cliId <= 0) {
+      setFormError('El ID del cliente debe ser un número entero positivo');
+      return;
+    }
     setFormSubmitting(true);
     try {
       await clientesService.registrar({
-        cli_id: formData.cli_id,
+        cli_id: cliId,
         cli_tipo_documento: formData.cli_tipo_documento,
         cli_nombre: formData.cli_nombre,
         cli_apellido: formData.cli_apellido,
@@ -372,7 +447,7 @@ const Ventas = () => {
       {/* ── Modal: Nuevo ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-black text-slate-800">
                 Nuevo {tab === 'pedidos' ? 'Pedido' : tab === 'facturas' ? 'Factura' : 'Cliente'}
@@ -396,22 +471,16 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
-                      <input name="ped_id" value={formData.ped_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="ped_id" autoFocus value={formData.ped_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha *</label>
                       <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliente ID *</label>
-                      <input name="ped_cli_id_fk" value={formData.ped_cli_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total *</label>
-                      <input name="ped_total" type="number" step="0.01" value={formData.ped_total || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
-                    </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliente ID *</label>
+                    <input name="ped_cli_id_fk" type="number" value={formData.ped_cli_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -440,6 +509,69 @@ const Ventas = () => {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario (vendedor)</label>
                     <input value={user?.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl outline-none text-sm font-medium text-slate-400 mt-1" />
                   </div>
+
+                  {/* ── Productos del pedido ── */}
+                  <div className="border-t border-slate-100 pt-4">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Productos del pedido</label>
+                    <div className="flex gap-2 mt-2">
+                      <select
+                        value={nuevoProducto.pro_id}
+                        onChange={(e) => setNuevoProducto({ ...nuevoProducto, pro_id: e.target.value })}
+                        className="flex-1 p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-medium"
+                      >
+                        <option value="">Seleccionar producto...</option>
+                        {productosDisponibles.map(prod => (
+                          <option key={prod.id} value={prod.id}>
+                            {prod.id} — {prod.nombre} (${parseFloat(prod.precio || 0).toLocaleString()})
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number" min="1" placeholder="Cant."
+                        value={nuevoProducto.cantidad}
+                        onChange={(e) => setNuevoProducto({ ...nuevoProducto, cantidad: e.target.value })}
+                        className="w-20 p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-medium text-center"
+                      />
+                      <button type="button" onClick={agregarProducto}
+                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase hover:bg-emerald-700 transition-all">
+                        + Agregar
+                      </button>
+                    </div>
+
+                    {productosSeleccionados.length > 0 && (
+                      <div className="mt-3 bg-slate-50 rounded-xl overflow-hidden border border-slate-100">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-100 text-slate-400 uppercase font-black">
+                            <tr>
+                              <th className="px-3 py-2">Producto</th>
+                              <th className="px-3 py-2 text-right">Cant.</th>
+                              <th className="px-3 py-2 text-right">P. Unit.</th>
+                              <th className="px-3 py-2 text-right">Subtotal</th>
+                              <th className="px-3 py-2"></th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200 font-bold text-slate-600">
+                            {productosSeleccionados.map(p => (
+                              <tr key={p.pro_id}>
+                                <td className="px-3 py-2 text-slate-400">{p.pro_id} — {p.pro_nombre}</td>
+                                <td className="px-3 py-2 text-right">{p.cantidad}</td>
+                                <td className="px-3 py-2 text-right">${p.precio_unitario.toLocaleString()}</td>
+                                <td className="px-3 py-2 text-right">${p.subtotal.toLocaleString()}</td>
+                                <td className="px-3 py-2 text-right">
+                                  <button type="button" onClick={() => quitarProducto(p.pro_id)} className="text-red-400 hover:text-red-600 text-lg leading-none">&times;</button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total del pedido</span>
+                      <span className="text-lg font-black text-blue-600">${totalPedidoCalculado.toLocaleString()}</span>
+                    </div>
+                  </div>
                 </>
               )}
 
@@ -449,7 +581,7 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Factura *</label>
-                      <input name="id" value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="id" autoFocus value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Emisión *</label>
@@ -496,7 +628,7 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
-                      <input name="cli_id" value={formData.cli_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="cli_id" type="number" autoFocus value={formData.cli_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo Documento *</label>

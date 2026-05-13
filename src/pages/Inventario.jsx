@@ -38,6 +38,21 @@ const Inventario = () => {
       setFormError('ID y Nombre son obligatorios');
       return;
     }
+    const precio = parseFloat(formData.precio);
+    const cantidad = parseInt(formData.cantidad_disponible, 10);
+    const stockMin = parseInt(formData.stock_minimo, 10);
+    if (isNaN(precio) || precio <= 0) {
+      setFormError('El precio debe ser un número mayor a 0');
+      return;
+    }
+    if (isNaN(cantidad) || cantidad < 0) {
+      setFormError('La cantidad disponible debe ser un número entero válido');
+      return;
+    }
+    if (isNaN(stockMin) || stockMin < 0) {
+      setFormError('El stock mínimo debe ser un número entero válido');
+      return;
+    }
     setFormSubmitting(true);
     try {
       await productosService.registrar({
@@ -45,9 +60,9 @@ const Inventario = () => {
         nombre: formData.nombre,
         categoria: formData.categoria || '',
         descripcion: formData.descripcion || '',
-        precio: parseFloat(formData.precio) || 0,
-        cantidad_disponible: parseInt(formData.cantidad_disponible) || 0,
-        stock_minimo: parseInt(formData.stock_minimo) || 10,
+        precio: precio,
+        cantidad_disponible: cantidad,
+        stock_minimo: stockMin,
         fecha_caducidad: formData.fecha_caducidad || null,
         estado: formData.estado || 'Activo',
         proveedor_id: formData.proveedor_id || null
@@ -68,6 +83,11 @@ const Inventario = () => {
       setFormError('ID y Fecha de Vencimiento son obligatorios');
       return;
     }
+    const cantInicial = parseInt(formData.lot_cantidad_inicial, 10);
+    if (isNaN(cantInicial) || cantInicial <= 0) {
+      setFormError('La cantidad inicial debe ser un número entero mayor a 0');
+      return;
+    }
     setFormSubmitting(true);
     try {
       await lotesService.registrar({
@@ -75,8 +95,8 @@ const Inventario = () => {
         lot_numero: formData.lot_numero || '',
         lot_fecha_fabricacion: formData.lot_fecha_fabricacion || null,
         lot_fecha_vencimiento: formData.lot_fecha_vencimiento,
-        lot_cantidad_inicial: parseInt(formData.lot_cantidad_inicial) || 0,
-        lot_cantidad_actual: parseInt(formData.lot_cantidad_inicial) || 0,
+        lot_cantidad_inicial: cantInicial,
+        lot_cantidad_actual: cantInicial,
         lot_pro_id_fk: formData.lot_pro_id_fk || '',
         lot_prov_id_fk: formData.lot_prov_id_fk || null,
         lot_estado: formData.lot_estado || 'Activo'
@@ -93,8 +113,13 @@ const Inventario = () => {
   const handleSubmitMovimiento = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (!formData.inm_id || !formData.inm_tipo_movimiento || !formData.inm_pro_id_fk || !formData.inm_cantidad || !formData.inm_fecha || !formData.inm_motivo) {
+    if (!formData.inm_id || !formData.inm_tipo_movimiento || !formData.inm_pro_id_fk || !formData.inm_fecha || !formData.inm_motivo) {
       setFormError('Todos los campos marcados con * son obligatorios');
+      return;
+    }
+    const cantidad = parseInt(formData.inm_cantidad, 10);
+    if (isNaN(cantidad) || cantidad <= 0) {
+      setFormError('La cantidad debe ser un número entero mayor a 0');
       return;
     }
     setFormSubmitting(true);
@@ -104,7 +129,7 @@ const Inventario = () => {
         inm_tipo_movimiento: formData.inm_tipo_movimiento,
         inm_pro_id_fk: formData.inm_pro_id_fk,
         inm_lot_id_fk: formData.inm_lot_id_fk || null,
-        inm_cantidad: parseInt(formData.inm_cantidad),
+        inm_cantidad: cantidad,
         inm_fecha: formData.inm_fecha,
         inm_motivo: formData.inm_motivo,
         inm_usu_id_fk: user?.id || ''
@@ -384,7 +409,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
-                      <input name="id" value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="id" autoFocus value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre *</label>
@@ -436,7 +461,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
-                      <input name="lot_id" value={formData.lot_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="lot_id" autoFocus value={formData.lot_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">N° Lote</label>
@@ -487,7 +512,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
-                      <input name="inm_id" value={formData.inm_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="inm_id" autoFocus value={formData.inm_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo *</label>
