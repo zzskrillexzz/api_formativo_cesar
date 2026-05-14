@@ -4,6 +4,7 @@ import { ThemeLoader } from '../components/ThemeLoader';
 import { comprasService } from '../api/services/comprasService';
 import { proveedoresService } from '../api/services/proveedoresService';
 import { useAuth } from '../context/AuthContext';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const Compras = () => {
   const [tab, setTab] = useState('compras');
@@ -112,6 +113,8 @@ const Compras = () => {
   const filteredCompras = compras.filter(c =>
     (c.comp_id || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const focusTrapRef = useFocusTrap(showModal);
+
   const filteredProveedores = proveedores.filter(p =>
     (p.prov_nombre || p.prov_id || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -232,7 +235,7 @@ const Compras = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div ref={focusTrapRef} className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">{tab === 'compras' ? 'Registrar Compra' : 'Registrar Proveedor'}</h3>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-md transition-colors"><X size={18} className="text-slate-400" /></button>

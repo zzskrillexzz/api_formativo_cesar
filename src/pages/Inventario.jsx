@@ -6,6 +6,7 @@ import { lotesService } from '../api/services/lotesService';
 import { monitoriasService } from '../api/services/monitoriasService';
 import { inventariosMovimientosService } from '../api/services/inventariosMovimientosService';
 import { useAuth } from '../context/AuthContext';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const Inventario = () => {
   const [tab, setTab] = useState('productos');
@@ -176,6 +177,8 @@ const Inventario = () => {
   const filteredLotes = lotes.filter(l =>
     (l.lot_id || l.lot_numero || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const focusTrapRef = useFocusTrap(showModal);
 
   const getEstadoBadge = (estado) => {
     const map = {
@@ -380,7 +383,7 @@ const Inventario = () => {
       {/* ── Modal: Nuevo ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
-          <div className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div ref={focusTrapRef} className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">
                 Nuevo {tab === 'productos' ? 'Producto' : tab === 'lotes' ? 'Lote' : 'Movimiento'}

@@ -7,6 +7,7 @@ import { clientesService } from '../api/services/clientesService';
 import { productosService } from '../api/services/productosService';
 import { detallesPedidosService } from '../api/services/detallesPedidosService';
 import { useAuth } from '../context/AuthContext';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const Ventas = () => {
   const [tab, setTab] = useState('pedidos');
@@ -23,6 +24,7 @@ const Ventas = () => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
   const [productosDisponibles, setProductosDisponibles] = useState([]);
+  const focusTrapRef = useFocusTrap(showModal);
   const [productosSeleccionados, setProductosSeleccionados] = useState([]);
 
   const openModal = async () => {
@@ -452,7 +454,7 @@ const Ventas = () => {
       {/* ── Modal: Nuevo ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
-          <div className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto">
+          <div ref={focusTrapRef} className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">
                 Nuevo {tab === 'pedidos' ? 'Pedido' : tab === 'facturas' ? 'Factura' : 'Cliente'}
