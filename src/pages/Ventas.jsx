@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, FileText, Users, Search, Plus, X, Loader2, RefreshCw, Eye } from 'lucide-react';
+import { ShoppingCart, FileText, Users, Search, Plus, X, RefreshCw, Eye } from 'lucide-react';
+import { ThemeLoader } from '../components/ThemeLoader';
 import { pedidosService } from '../api/services/pedidosService';
 import { facturasService } from '../api/services/facturasService';
 import { clientesService } from '../api/services/clientesService';
@@ -145,6 +146,7 @@ const Ventas = () => {
         ped_id: formData.ped_id,
         ped_fecha: formData.ped_fecha,
         ped_metodo_pago: formData.ped_metodo_pago,
+        ped_cuenta_bancaria: formData.ped_cuenta_bancaria || null,
         ped_estado_entrega: formData.ped_estado_entrega,
         ped_total: totalPed,
         ped_cli_id_fk: clienteId,
@@ -195,6 +197,7 @@ const Ventas = () => {
         fecha_emision: formData.fecha_emision,
         email_enviado: emailEnviado,
         forma_pago: formData.forma_pago,
+        cuenta_bancaria: formData.forma_pago === 'Transferencia' ? formData.cuenta_bancaria || '' : null,
         total: totalFac,
         usuario_id: user?.id || '',
         estado: formData.estado || 'Vigente'
@@ -240,23 +243,17 @@ const Ventas = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="animate-spin text-blue-600" size={40} />
-      </div>
-    );
-  }
+  if (loading) return <ThemeLoader module="Ventas" />;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
       {/* Tabs */}
-      <div className="flex items-center gap-2 bg-white rounded-2xl p-1.5 shadow-sm border border-slate-200 w-fit">
+      <div className="flex items-center gap-2 bg-white rounded-lg p-1.5 shadow-sm border border-slate-200 w-fit">
         {tabs.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
               tab === t.id ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
             }`}
           >
@@ -267,7 +264,7 @@ const Ventas = () => {
 
       {/* Barra de acciones */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 bg-white border border-slate-200 px-5 py-3 rounded-2xl w-96 shadow-sm">
+        <div className="flex items-center gap-3 bg-white border border-slate-200 px-5 py-3 rounded-lg w-96 shadow-sm">
           <Search size={18} className="text-slate-400" />
           <input
             type="text"
@@ -281,12 +278,12 @@ const Ventas = () => {
           />
         </div>
         <div className="flex gap-2">
-          <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all shadow-sm">
+          <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
             <RefreshCw size={18} className="text-slate-500" />
           </button>
           <button
             onClick={openModal}
-            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md"
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md btn-pulse"
           >
             <Plus size={16} /> Nuevo {tab === 'pedidos' ? 'Pedido' : tab === 'facturas' ? 'Factura' : 'Cliente'}
           </button>
@@ -295,10 +292,10 @@ const Ventas = () => {
 
       {/* TAB: Pedidos */}
       {tab === 'pedidos' && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50/50 text-slate-400 text-[10px] uppercase font-black tracking-widest border-b border-slate-100">
+            <table className="w-full text-left table-animate">
+              <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-4">ID</th>
                   <th className="px-6 py-4">Cliente</th>
@@ -322,12 +319,16 @@ const Ventas = () => {
                       <td className="px-6 py-4 text-slate-400 text-xs">{p.ped_id}</td>
                       <td className="px-6 py-4">{p.ped_cli_id_fk || '-'}</td>
                       <td className="px-6 py-4 text-slate-400">{p.ped_fecha || '-'}</td>
-                      <td className="px-6 py-4">{p.ped_metodo_pago || '-'}</td>
+                      <td className="px-6 py-4">
+                        {p.ped_metodo_pago === 'Transferencia' && p.ped_cuenta_bancaria
+                          ? `Transferencia (${p.ped_cuenta_bancaria})`
+                          : p.ped_metodo_pago || '-'}
+                      </td>
                       <td className="px-6 py-4 text-right">
                         ${parseFloat(p.ped_total || 0).toLocaleString()}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${getEstadoEntregaBadge(p.ped_estado_entrega)}`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoEntregaBadge(p.ped_estado_entrega)}`}>
                           {p.ped_estado_entrega}
                         </span>
                       </td>
@@ -342,7 +343,7 @@ const Ventas = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-[10px] text-slate-400 font-bold">
+          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
             {filteredPedidos.length} de {pedidos.length} pedidos
           </div>
         </div>
@@ -350,10 +351,10 @@ const Ventas = () => {
 
       {/* TAB: Facturas */}
       {tab === 'facturas' && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50/50 text-slate-400 text-[10px] uppercase font-black tracking-widest border-b border-slate-100">
+            <table className="w-full text-left table-animate">
+              <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-4">ID Factura</th>
                   <th className="px-6 py-4">Fecha Emisión</th>
@@ -376,11 +377,15 @@ const Ventas = () => {
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-6 py-4 text-slate-400 text-xs">{f.id}</td>
                       <td className="px-6 py-4">{f.fecha_emision || '-'}</td>
-                      <td className="px-6 py-4">{f.forma_pago || '-'}</td>
+                      <td className="px-6 py-4">
+                        {f.forma_pago === 'Transferencia' && f.cuenta_bancaria
+                          ? `Transferencia (${f.cuenta_bancaria})`
+                          : f.forma_pago || '-'}
+                      </td>
                       <td className="px-6 py-4">{f.email_enviado === 1 ? '✅' : '❌'}</td>
                       <td className="px-6 py-4 text-right">${parseFloat(f.total || 0).toLocaleString()}</td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${getEstadoFacturaBadge(f.estado)}`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoFacturaBadge(f.estado)}`}>
                           {f.estado || 'Vigente'}
                         </span>
                       </td>
@@ -395,7 +400,7 @@ const Ventas = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-[10px] text-slate-400 font-bold">
+          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
             {filteredFacturas.length} de {facturas.length} facturas
           </div>
         </div>
@@ -403,10 +408,10 @@ const Ventas = () => {
 
       {/* TAB: Clientes */}
       {tab === 'clientes' && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50/50 text-slate-400 text-[10px] uppercase font-black tracking-widest border-b border-slate-100">
+            <table className="w-full text-left table-animate">
+              <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-4">ID</th>
                   <th className="px-6 py-4">Nombre</th>
@@ -438,7 +443,7 @@ const Ventas = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-[10px] text-slate-400 font-bold">
+          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
             {filteredClientes.length} de {clientes.length} clientes
           </div>
         </div>
@@ -447,12 +452,12 @@ const Ventas = () => {
       {/* ── Modal: Nuevo ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
-              <h2 className="text-lg font-black text-slate-800">
+              <h2 className="text-lg font-bold text-slate-800">
                 Nuevo {tab === 'pedidos' ? 'Pedido' : tab === 'facturas' ? 'Factura' : 'Cliente'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-md transition-colors">
                 <X size={20} className="text-slate-400" />
               </button>
             </div>
@@ -462,7 +467,7 @@ const Ventas = () => {
               tab === 'facturas' ? handleSubmitFactura : handleSubmitCliente
             } className="px-8 py-6 space-y-4">
               {formError && (
-                <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100">{formError}</div>
+                <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-md border border-red-100">{formError}</div>
               )}
 
               {/* ─── PEDIDO ─── */}
@@ -470,33 +475,43 @@ const Ventas = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
-                      <input name="ped_id" autoFocus value={formData.ped_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID *</label>
+                      <input name="ped_id" autoFocus value={formData.ped_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha *</label>
-                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha *</label>
+                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliente ID *</label>
-                    <input name="ped_cli_id_fk" type="number" value={formData.ped_cli_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cliente ID *</label>
+                    <input name="ped_cli_id_fk" type="number" value={formData.ped_cli_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Método Pago *</label>
-                      <select name="ped_metodo_pago" value={formData.ped_metodo_pago || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Metodo Pago *</label>
+                      <select name="ped_metodo_pago" value={formData.ped_metodo_pago || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="Efectivo">Efectivo</option>
                         <option value="Tarjeta">Tarjeta</option>
-                        <option value="Nequi">Nequi</option>
-                        <option value="Daviplata">Daviplata</option>
                         <option value="Transferencia">Transferencia</option>
                       </select>
                     </div>
+                    {formData.ped_metodo_pago === 'Transferencia' && (
+                      <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuenta Bancaria</label>
+                        <input
+                          name="ped_cuenta_bancaria"
+                          placeholder="Ej: Nequi, Bancolombia, Davivienda..."
+                          value={formData.ped_cuenta_bancaria || ''}
+                          onChange={handleChange}
+                          className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
+                        />
+                      </div>
+                    )}
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado *</label>
-                      <select name="ped_estado_entrega" value={formData.ped_estado_entrega || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado *</label>
+                      <select name="ped_estado_entrega" value={formData.ped_estado_entrega || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="Entregado">Entregado</option>
                         <option value="En camino">En camino</option>
@@ -506,18 +521,18 @@ const Ventas = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario (vendedor)</label>
-                    <input value={user?.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl outline-none text-sm font-medium text-slate-400 mt-1" />
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Usuario (vendedor)</label>
+                    <input value={user?.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" />
                   </div>
 
                   {/* ── Productos del pedido ── */}
                   <div className="border-t border-slate-100 pt-4">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Productos del pedido</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Productos del pedido</label>
                     <div className="flex gap-2 mt-2">
                       <select
                         value={nuevoProducto.pro_id}
                         onChange={(e) => setNuevoProducto({ ...nuevoProducto, pro_id: e.target.value })}
-                        className="flex-1 p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-medium"
+                        className="flex-1 p-2.5 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium"
                       >
                         <option value="">Seleccionar producto...</option>
                         {productosDisponibles.map(prod => (
@@ -530,18 +545,18 @@ const Ventas = () => {
                         type="number" min="1" placeholder="Cant."
                         value={nuevoProducto.cantidad}
                         onChange={(e) => setNuevoProducto({ ...nuevoProducto, cantidad: e.target.value })}
-                        className="w-20 p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm font-medium text-center"
+                        className="w-20 p-2.5 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium text-center"
                       />
                       <button type="button" onClick={agregarProducto}
-                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase hover:bg-emerald-700 transition-all">
+                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-md text-xs font-bold uppercase hover:bg-emerald-700 transition-all">
                         + Agregar
                       </button>
                     </div>
 
                     {productosSeleccionados.length > 0 && (
-                      <div className="mt-3 bg-slate-50 rounded-xl overflow-hidden border border-slate-100">
+                      <div className="mt-3 bg-slate-50 rounded-md overflow-hidden border border-slate-100">
                         <table className="w-full text-left text-xs">
-                          <thead className="bg-slate-100 text-slate-400 uppercase font-black">
+                          <thead className="bg-slate-100 text-slate-400 uppercase font-bold">
                             <tr>
                               <th className="px-3 py-2">Producto</th>
                               <th className="px-3 py-2 text-right">Cant.</th>
@@ -568,8 +583,8 @@ const Ventas = () => {
                     )}
 
                     <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total del pedido</span>
-                      <span className="text-lg font-black text-blue-600">${totalPedidoCalculado.toLocaleString()}</span>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total del pedido</span>
+                      <span className="text-lg font-bold text-blue-600">${totalPedidoCalculado.toLocaleString()}</span>
                     </div>
                   </div>
                 </>
@@ -580,44 +595,55 @@ const Ventas = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Factura *</label>
-                      <input name="id" autoFocus value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID Factura *</label>
+                      <input name="id" autoFocus value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Emisión *</label>
-                      <input name="fecha_emision" type="date" value={formData.fecha_emision || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Forma Pago *</label>
-                      <input name="forma_pago" value={formData.forma_pago || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total *</label>
-                      <input name="total" type="number" step="0.01" value={formData.total || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Emisión *</label>
+                      <input name="fecha_emision" type="date" value={formData.fecha_emision || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Enviado *</label>
-                      <select name="email_enviado" value={formData.email_enviado !== undefined ? formData.email_enviado : ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Forma Pago *</label>
+                      <select name="forma_pago" value={formData.forma_pago || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="">Seleccionar...</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Transferencia">Transferencia</option>
+                      </select>
+                    </div>
+                    {formData.forma_pago === 'Transferencia' && (
+                      <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuenta Bancaria</label>
+                        <input name="cuenta_bancaria" placeholder="Ej: Nequi, Bancolombia, Davivienda..." value={formData.cuenta_bancaria || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total *</label>
+                      <input name="total" type="number" step="0.01" value={formData.total || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email Enviado *</label>
+                      <select name="email_enviado" value={formData.email_enviado !== undefined ? formData.email_enviado : ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="1">Sí (Enviado)</option>
                         <option value="0">No (Pendiente)</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</label>
-                      <select name="estado" value={formData.estado || 'Vigente'} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
+                      <select name="estado" value={formData.estado || 'Vigente'} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="Vigente">Vigente</option>
                         <option value="Anulada">Anulada</option>
                       </select>
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario</label>
-                    <input value={user?.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl outline-none text-sm font-medium text-slate-400 mt-1" />
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Usuario</label>
+                    <input value={user?.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" />
                   </div>
                 </>
               )}
@@ -627,12 +653,12 @@ const Ventas = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID *</label>
-                      <input name="cli_id" type="number" autoFocus value={formData.cli_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID *</label>
+                      <input name="cli_id" type="number" autoFocus value={formData.cli_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo Documento *</label>
-                      <select name="cli_tipo_documento" value={formData.cli_tipo_documento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo Documento *</label>
+                      <select name="cli_tipo_documento" value={formData.cli_tipo_documento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="CC">CC</option>
                         <option value="NIT">NIT</option>
@@ -643,26 +669,26 @@ const Ventas = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre *</label>
-                      <input name="cli_nombre" value={formData.cli_nombre || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre *</label>
+                      <input name="cli_nombre" value={formData.cli_nombre || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Apellido *</label>
-                      <input name="cli_apellido" value={formData.cli_apellido || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Apellido *</label>
+                      <input name="cli_apellido" value={formData.cli_apellido || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Correo *</label>
-                    <input name="cli_correo" type="email" value={formData.cli_correo || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Correo *</label>
+                    <input name="cli_correo" type="email" value={formData.cli_correo || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono</label>
-                      <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Teléfono</label>
+                      <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dirección</label>
-                      <input name="cli_direccion" value={formData.cli_direccion || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección</label>
+                      <input name="cli_direccion" value={formData.cli_direccion || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                 </>
@@ -671,7 +697,7 @@ const Ventas = () => {
               <button
                 type="submit"
                 disabled={formSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-blue-100 transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-3.5 rounded-lg shadow-sm shadow-blue-100 transition-all active:scale-95 uppercase tracking-wider text-xs flex items-center justify-center gap-2"
               >
                 {formSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
                 Guardar
@@ -685,3 +711,7 @@ const Ventas = () => {
 };
 
 export default Ventas;
+
+
+
+

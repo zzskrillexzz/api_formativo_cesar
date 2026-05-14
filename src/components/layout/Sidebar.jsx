@@ -14,44 +14,51 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <aside className="w-72 bg-slate-900 flex flex-col m-4 mr-0 rounded-[32px] overflow-hidden shadow-2xl">
-      <div className="p-8">
+    <aside className="w-64 bg-gradient-to-b from-blue-600 to-blue-800 flex flex-col m-3 mr-0 rounded-lg overflow-hidden shadow-xl relative">
+      {/* Decorative crosses */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <span className="absolute top-16 left-6 text-white/10 text-base">+</span>
+        <span className="absolute top-20 right-8 text-white/10 text-base">+</span>
+        <span className="absolute bottom-32 left-8 text-white/8 text-base">+</span>
+      </div>
+
+      <div className="p-6 relative z-10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-            <ShieldCheck size={24} />
+          <div className="w-9 h-9 bg-white/15 backdrop-blur-sm rounded-lg flex items-center justify-center">
+            <ShieldCheck size={20} className="text-white" />
           </div>
           <div>
-            <span className="text-white font-black text-lg tracking-tighter leading-none block">SAN DIEGO</span>
-            <span className="text-emerald-400 text-[9px] font-black uppercase tracking-widest">Distribuidora</span>
+            <span className="text-white font-black text-sm tracking-tight leading-none block">EZ LOGISTICS</span>
+            <span className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">Gestion</span>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1">
+      <nav className="flex-1 px-3 space-y-0.5 relative z-10">
         {menuItems.map((item) => (
           item.roles.includes(role) && (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all font-medium text-sm ${
                 activeTab === item.id 
-                ? 'bg-blue-600 text-white shadow-lg' 
-                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                ? 'bg-white/15 text-white shadow-sm' 
+                : 'text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >
-              <item.icon size={20} strokeWidth={2.5} />
+              <item.icon size={16} strokeWidth={2} />
               {item.label}
             </button>
           )
         ))}
       </nav>
 
-      <div className="p-6 mt-auto">
+      <div className="p-4 relative z-10">
         <button 
           onClick={logout}
-          className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 text-slate-400 hover:text-red-400 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
+          className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/10 text-white/50 hover:text-red-300 hover:bg-white/15 rounded-lg font-bold text-[9px] uppercase tracking-widest transition-all"
         >
-          <LogOut size={16} /> Salir
+          <LogOut size={14} /> Salir
         </button>
       </div>
     </aside>
