@@ -126,7 +126,7 @@ const Compras = () => {
       <div className="flex items-center gap-2 bg-white rounded-lg p-1.5 shadow-sm border border-slate-200 w-fit">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
+            className={`select-none cursor-pointer flex items-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
               tab === t.id ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
             }`}>
             <t.icon size={16} /> {t.label}
@@ -247,18 +247,18 @@ const Compras = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
                       <input name="com_id" autoFocus value={formData.com_id || ''} onChange={handleChange}
                         className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
                       <input name="com_fecha" type="date" value={formData.com_fecha || ''} onChange={handleChange}
                         className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor *</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor <span className="required-star">*</span></label>
                     <select name="com_prov_id_fk" value={formData.com_prov_id_fk || ''} onChange={handleChange}
                       className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                       <option value="">Seleccionar proveedor...</option>
@@ -267,7 +267,7 @@ const Compras = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total <span className="required-star">*</span></label>
                       <input name="com_total" type="number" step="0.01" value={formData.com_total || ''} onChange={handleChange}
                         className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
@@ -294,23 +294,23 @@ const Compras = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
                       <input name="id" autoFocus value={formData.id || ''} onChange={handleChange}
                         className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">NIT *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">NIT <span className="required-star">*</span></label>
                       <input name="nit" value={formData.nit || ''} onChange={handleChange}
                         className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre *</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
                     <input name="nombre" value={formData.nombre || ''} onChange={handleChange}
                       className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo *</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo <span className="required-star">*</span></label>
                     <select name="tipo" value={formData.tipo || ''} onChange={handleChange}
                       className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                       <option value="">Seleccionar...</option>
@@ -320,17 +320,17 @@ const Compras = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Contacto *</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Contacto <span className="required-star">*</span></label>
                     <input name="contacto" value={formData.contacto || ''} onChange={handleChange}
                       className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Direccion *</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Direccion <span className="required-star">*</span></label>
                     <input name="direccion" value={formData.direccion || ''} onChange={handleChange}
                       className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email *</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email <span className="required-star">*</span></label>
                     <input name="email" type="email" value={formData.email || ''} onChange={handleChange}
                       className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>

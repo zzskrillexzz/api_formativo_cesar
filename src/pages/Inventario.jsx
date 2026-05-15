@@ -202,7 +202,7 @@ const Inventario = () => {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
+            className={`select-none cursor-pointer flex items-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
               tab === t.id ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
             }`}
           >
@@ -406,11 +406,11 @@ const Inventario = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
                       <input name="id" autoFocus value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
                       <input name="nombre" value={formData.nombre || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
@@ -458,7 +458,7 @@ const Inventario = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
                       <input name="lot_id" autoFocus value={formData.lot_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
@@ -482,7 +482,7 @@ const Inventario = () => {
                       <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Vencimiento *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Vencimiento <span className="required-star">*</span></label>
                       <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
@@ -509,11 +509,11 @@ const Inventario = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
                       <input name="inm_id" autoFocus value={formData.inm_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo <span className="required-star">*</span></label>
                       <select name="inm_tipo_movimiento" value={formData.inm_tipo_movimiento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="Entrada">Entrada</option>
@@ -524,7 +524,7 @@ const Inventario = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto ID *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto ID <span className="required-star">*</span></label>
                       <input name="inm_pro_id_fk" value={formData.inm_pro_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
@@ -534,11 +534,11 @@ const Inventario = () => {
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad <span className="required-star">*</span></label>
                       <input name="inm_cantidad" type="number" value={formData.inm_cantidad || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
                       <input name="inm_fecha" type="date" value={formData.inm_fecha || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
@@ -547,7 +547,7 @@ const Inventario = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Motivo *</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Motivo <span className="required-star">*</span></label>
                     <input name="inm_motivo" value={formData.inm_motivo || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                 </>

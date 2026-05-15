@@ -46,7 +46,7 @@ const Layout = () => {
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-20 flex items-center justify-between px-8">
           <div className="flex items-center gap-3 text-white/70 text-sm font-medium">
-            <span className="text-white/50">
+            <span className="text-white/50 select-none">
               {new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </span>
           </div>

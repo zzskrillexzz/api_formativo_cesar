@@ -75,6 +75,9 @@
   box-shadow: 0 8px 25px rgba(0,0,0,0.08);
 }
 
+/* ── Asterisco de campos obligatorios en rojo ── */
+.required-star { color: #ef4444; }
+
 /* ── Boton con latido ── */
 @keyframes heartbeat {
   0%, 100% { transform: scale(1); }
@@ -82,4 +85,9 @@
 }
 .btn-pulse {
   animation: heartbeat 2s ease-in-out infinite;
+}
+
+/* ── Evitar cursor de texto solo en celdas de tablas (no formularios) ── */
+td, th {
+  cursor: default;
 }

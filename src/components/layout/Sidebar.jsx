@@ -28,7 +28,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
             <ShieldCheck size={20} className="text-white" />
           </div>
           <div>
-            <span className="text-white font-black text-sm tracking-tight leading-none block">EZ LOGISTICS</span>
+            <span className="text-white font-black text-sm tracking-tight leading-none block select-none">EZ LOGISTICS</span>
             <span className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">Gestion</span>
           </div>
         </div>

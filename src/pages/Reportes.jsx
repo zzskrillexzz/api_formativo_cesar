@@ -99,7 +99,7 @@ const Reportes = () => {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
+              className={`select-none cursor-pointer flex items-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
                 tab === t.id ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
               }`}
             >

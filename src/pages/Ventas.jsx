@@ -27,6 +27,61 @@ const Ventas = () => {
   const focusTrapRef = useFocusTrap(showModal);
   const [productosSeleccionados, setProductosSeleccionados] = useState([]);
 
+  // ── Modal de detalle (Pedido / Factura) ──
+  const [showDetalle, setShowDetalle] = useState(false);
+  const [detalleTipo, setDetalleTipo] = useState(''); // 'pedido' | 'factura'
+  const [detalleData, setDetalleData] = useState(null);
+
+  const abrirDetallePedido = async (pedido) => {
+    try {
+      const [detalles, prods] = await Promise.all([
+        detallesPedidosService.listar().catch(() => []),
+        productosService.listar().catch(() => [])
+      ]);
+      const misDetalles = detalles.filter(d => d.det_ped_id_fk === pedido.ped_id);
+      const productosMap = {};
+      prods.forEach(p => { productosMap[p.id] = p.nombre; });
+      const lineas = misDetalles.map(d => ({
+        ...d,
+        producto_nombre: productosMap[d.det_pro_id_fk] || d.det_pro_id_fk
+      }));
+      setDetalleData({ ...pedido, lineas });
+      setDetalleTipo('pedido');
+      setShowDetalle(true);
+    } catch {
+      setDetalleData(pedido);
+      setDetalleTipo('pedido');
+      setShowDetalle(true);
+    }
+  };
+
+  const abrirDetalleFactura = async (factura) => {
+    try {
+      const pedidoRelacionado = pedidos.find(p => p.ped_id === factura.id);
+      const clienteId = pedidoRelacionado?.ped_cli_id_fk;
+      const [detalles, prods, clientesList] = await Promise.all([
+        detallesPedidosService.listar().catch(() => []),
+        productosService.listar().catch(() => []),
+        clientesService.listar().catch(() => [])
+      ]);
+      const misDetalles = detalles.filter(d => d.det_ped_id_fk === factura.id);
+      const productosMap = {};
+      prods.forEach(p => { productosMap[p.id] = p.nombre; });
+      const cliente = clientesList.find(c => c.cli_id === clienteId) || {};
+      const lineas = misDetalles.map(d => ({
+        ...d,
+        producto_nombre: productosMap[d.det_pro_id_fk] || d.det_pro_id_fk
+      }));
+      setDetalleData({ ...factura, lineas, cliente, pedidoRelacionado });
+      setDetalleTipo('factura');
+      setShowDetalle(true);
+    } catch {
+      setDetalleData(factura);
+      setDetalleTipo('factura');
+      setShowDetalle(true);
+    }
+  };
+
   const openModal = async () => {
     setFormData({});
     setFormError('');
@@ -49,13 +104,21 @@ const Ventas = () => {
 
   // ── Helpers para productos del pedido ──
   const [nuevoProducto, setNuevoProducto] = useState({ pro_id: '', cantidad: 1 });
+  const [errorProducto, setErrorProducto] = useState('');
 
   const agregarProducto = () => {
+    setErrorProducto('');
     const prod = productosDisponibles.find(p => p.id === nuevoProducto.pro_id);
-    if (!prod) return;
+    if (!prod) { setErrorProducto('Selecciona un producto'); return; }
     const yaExiste = productosSeleccionados.find(p => p.pro_id === prod.id);
-    if (yaExiste) return;
+    if (yaExiste) { setErrorProducto('Ese producto ya esta agregado'); return; }
     const cantidad = parseInt(nuevoProducto.cantidad, 10) || 1;
+    if (cantidad <= 0) { setErrorProducto('La cantidad debe ser mayor a 0'); return; }
+    const stock = parseInt(prod.cantidad_disponible, 10) || 0;
+    if (cantidad > stock) {
+      setErrorProducto('Stock insuficiente: hay ' + stock + ' unidades de ' + prod.nombre);
+      return;
+    }
     const precio = parseFloat(prod.precio) || 0;
     setProductosSeleccionados([
       ...productosSeleccionados,
@@ -255,7 +318,7 @@ const Ventas = () => {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
+            className={`select-none cursor-pointer flex items-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
               tab === t.id ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
             }`}
           >
@@ -322,9 +385,11 @@ const Ventas = () => {
                       <td className="px-6 py-4">{p.ped_cli_id_fk || '-'}</td>
                       <td className="px-6 py-4 text-slate-400">{p.ped_fecha || '-'}</td>
                       <td className="px-6 py-4">
-                        {p.ped_metodo_pago === 'Transferencia' && p.ped_cuenta_bancaria
+                        {p.ped_cuenta_bancaria
                           ? `Transferencia (${p.ped_cuenta_bancaria})`
-                          : p.ped_metodo_pago || '-'}
+                          : ['Nequi', 'Daviplata', 'Transferencia'].includes(p.ped_metodo_pago)
+                            ? `Transferencia${p.ped_metodo_pago !== 'Transferencia' ? ` (${p.ped_metodo_pago})` : ''}`
+                            : p.ped_metodo_pago || '-'}
                       </td>
                       <td className="px-6 py-4 text-right">
                         ${parseFloat(p.ped_total || 0).toLocaleString()}
@@ -335,7 +400,7 @@ const Ventas = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                        <button onClick={() => abrirDetallePedido(p)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Ver detalle">
                           <Eye size={16} />
                         </button>
                       </td>
@@ -380,9 +445,11 @@ const Ventas = () => {
                       <td className="px-6 py-4 text-slate-400 text-xs">{f.id}</td>
                       <td className="px-6 py-4">{f.fecha_emision || '-'}</td>
                       <td className="px-6 py-4">
-                        {f.forma_pago === 'Transferencia' && f.cuenta_bancaria
+                        {f.cuenta_bancaria
                           ? `Transferencia (${f.cuenta_bancaria})`
-                          : f.forma_pago || '-'}
+                          : ['Nequi', 'Daviplata', 'Transferencia'].includes(f.forma_pago)
+                            ? `Transferencia${f.forma_pago !== 'Transferencia' ? ` (${f.forma_pago})` : ''}`
+                            : f.forma_pago || '-'}
                       </td>
                       <td className="px-6 py-4">{f.email_enviado === 1 ? '✅' : '❌'}</td>
                       <td className="px-6 py-4 text-right">${parseFloat(f.total || 0).toLocaleString()}</td>
@@ -392,7 +459,7 @@ const Ventas = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                        <button onClick={() => abrirDetalleFactura(f)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Ver factura">
                           <Eye size={16} />
                         </button>
                       </td>
@@ -477,21 +544,21 @@ const Ventas = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
                       <input name="ped_id" autoFocus value={formData.ped_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
                       <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cliente ID *</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cliente ID <span className="required-star">*</span></label>
                     <input name="ped_cli_id_fk" type="number" value={formData.ped_cli_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Metodo Pago *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Metodo Pago <span className="required-star">*</span></label>
                       <select name="ped_metodo_pago" value={formData.ped_metodo_pago || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="Efectivo">Efectivo</option>
@@ -512,7 +579,7 @@ const Ventas = () => {
                       </div>
                     )}
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado <span className="required-star">*</span></label>
                       <select name="ped_estado_entrega" value={formData.ped_estado_entrega || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="Entregado">Entregado</option>
@@ -529,32 +596,42 @@ const Ventas = () => {
 
                   {/* ── Productos del pedido ── */}
                   <div className="border-t border-slate-100 pt-4">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Productos del pedido</label>
-                    <div className="flex gap-2 mt-2">
-                      <select
-                        value={nuevoProducto.pro_id}
-                        onChange={(e) => setNuevoProducto({ ...nuevoProducto, pro_id: e.target.value })}
-                        className="flex-1 p-2.5 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium"
-                      >
-                        <option value="">Seleccionar producto...</option>
-                        {productosDisponibles.map(prod => (
-                          <option key={prod.id} value={prod.id}>
-                            {prod.id} — {prod.nombre} (${parseFloat(prod.precio || 0).toLocaleString()})
-                          </option>
-                        ))}
-                      </select>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Productos del pedido</label>
+                      {productosSeleccionados.length > 0 && (
+                        <span className="text-[10px] text-emerald-600 font-bold">{productosSeleccionados.length} producto{productosSeleccionados.length !== 1 ? 's' : ''} agregado{productosSeleccionados.length !== 1 ? 's' : ''}</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <div className="flex-1">
+                        <select
+                          value={nuevoProducto.pro_id}
+                          onChange={(e) => { setErrorProducto(''); setNuevoProducto({ ...nuevoProducto, pro_id: e.target.value }); }}
+                          className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium"
+                        >
+                          <option value="">Seleccionar producto...</option>
+                          {productosDisponibles.map(prod => (
+                            <option key={prod.id} value={prod.id}>
+                              {prod.id} — {prod.nombre} ({prod.cantidad_disponible || 0} uds.)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <input
                         type="number" min="1" placeholder="Cant."
                         value={nuevoProducto.cantidad}
                         onChange={(e) => setNuevoProducto({ ...nuevoProducto, cantidad: e.target.value })}
-                        className="w-20 p-2.5 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium text-center"
+                        className="w-20 p-2.5 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium text-center shrink-0"
                       />
                       <button type="button" onClick={agregarProducto}
-                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-md text-xs font-bold uppercase hover:bg-emerald-700 transition-all">
+                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-md text-xs font-bold uppercase hover:bg-emerald-700 transition-all shrink-0 whitespace-nowrap">
                         + Agregar
                       </button>
                     </div>
 
+                    {errorProducto && (
+                      <div className="mt-2 p-2 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg border border-red-100">{errorProducto}</div>
+                    )}
                     {productosSeleccionados.length > 0 && (
                       <div className="mt-3 bg-slate-50 rounded-md overflow-hidden border border-slate-100">
                         <table className="w-full text-left text-xs">
@@ -597,17 +674,17 @@ const Ventas = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID Factura *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID Factura <span className="required-star">*</span></label>
                       <input name="id" autoFocus value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Emisión *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Emisión <span className="required-star">*</span></label>
                       <input name="fecha_emision" type="date" value={formData.fecha_emision || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Forma Pago *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Forma Pago <span className="required-star">*</span></label>
                       <select name="forma_pago" value={formData.forma_pago || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="Efectivo">Efectivo</option>
@@ -622,13 +699,13 @@ const Ventas = () => {
                       </div>
                     )}
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total <span className="required-star">*</span></label>
                       <input name="total" type="number" step="0.01" value={formData.total || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email Enviado *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email Enviado <span className="required-star">*</span></label>
                       <select name="email_enviado" value={formData.email_enviado !== undefined ? formData.email_enviado : ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="1">Sí (Enviado)</option>
@@ -655,11 +732,11 @@ const Ventas = () => {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
                       <input name="cli_id" type="number" autoFocus value={formData.cli_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo Documento *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo Documento <span className="required-star">*</span></label>
                       <select name="cli_tipo_documento" value={formData.cli_tipo_documento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="CC">CC</option>
@@ -671,16 +748,16 @@ const Ventas = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
                       <input name="cli_nombre" value={formData.cli_nombre || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Apellido *</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Apellido <span className="required-star">*</span></label>
                       <input name="cli_apellido" value={formData.cli_apellido || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Correo *</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Correo <span className="required-star">*</span></label>
                     <input name="cli_correo" type="email" value={formData.cli_correo || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -707,6 +784,200 @@ const Ventas = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ── Modal: Detalle de Pedido ── */}
+      {showDetalle && detalleTipo === 'pedido' && detalleData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowDetalle(false)}>
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
+              <h2 className="text-lg font-black text-slate-800">Pedido {detalleData.ped_id}</h2>
+              <button onClick={() => setShowDetalle(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <X size={20} className="text-slate-400" />
+              </button>
+            </div>
+            <div className="px-8 py-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha</span>
+                  <p className="font-bold text-slate-700 mt-1">{detalleData.ped_fecha || '-'}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cliente ID</span>
+                  <p className="font-bold text-slate-700 mt-1">{detalleData.ped_cli_id_fk || '-'}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Metodo Pago</span>
+                  <p className="font-bold text-slate-700 mt-1">
+                    {detalleData.ped_cuenta_bancaria
+                      ? `Transferencia (${detalleData.ped_cuenta_bancaria})`
+                      : ['Nequi', 'Daviplata', 'Transferencia'].includes(detalleData.ped_metodo_pago)
+                        ? `Transferencia${detalleData.ped_metodo_pago !== 'Transferencia' ? ` (${detalleData.ped_metodo_pago})` : ''}`
+                        : detalleData.ped_metodo_pago || '-'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</span>
+                  <p>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoEntregaBadge(detalleData.ped_estado_entrega)}`}>
+                      {detalleData.ped_estado_entrega}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="border-t border-slate-100 pt-4">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Productos del pedido</h3>
+                {detalleData.lineas && detalleData.lineas.length > 0 ? (
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-xs text-slate-400 uppercase font-bold">
+                      <tr>
+                        <th className="px-3 py-2">Producto</th>
+                        <th className="px-3 py-2 text-right">Cant.</th>
+                        <th className="px-3 py-2 text-right">P. Unit.</th>
+                        <th className="px-3 py-2 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-bold text-slate-600">
+                      {detalleData.lineas.map((l, i) => (
+                        <tr key={i}>
+                          <td className="px-3 py-2 text-xs">{l.producto_nombre || l.det_pro_id_fk}</td>
+                          <td className="px-3 py-2 text-right">{l.det_cantidad}</td>
+                          <td className="px-3 py-2 text-right">${parseFloat(l.det_precio_unitario || 0).toLocaleString()}</td>
+                          <td className="px-3 py-2 text-right">${parseFloat(l.det_subtotal || 0).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-slate-300">
+                        <td colSpan="3" className="px-3 py-3 text-right text-xs font-black text-slate-400 uppercase">Total</td>
+                        <td className="px-3 py-3 text-right font-black text-blue-600 text-lg">
+                          ${parseFloat(detalleData.ped_total || 0).toLocaleString()}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                ) : (
+                  <p className="text-sm text-slate-400 italic">Sin productos registrados</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Factura ── */}
+      {showDetalle && detalleTipo === 'factura' && detalleData && (
+        <>
+          <style>{`
+            @media print {
+              body * { visibility: hidden; }
+              #factura-print, #factura-print * { visibility: visible; }
+              #factura-print { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            }
+          `}</style>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowDetalle(false)}>
+            <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
+                <h2 className="text-lg font-black text-slate-800">Factura</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => window.print()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold uppercase hover:bg-blue-700 transition-all"
+                  >
+                    Descargar PDF
+                  </button>
+                  <button onClick={() => setShowDetalle(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                    <X size={20} className="text-slate-400" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Contenido imprimible */}
+              <div id="factura-print" className="px-8 py-6 space-y-4 text-slate-800">
+                <div className="text-center border-b border-slate-200 pb-4">
+                  <h3 className="text-xl font-black uppercase tracking-widest text-blue-700">San Diego Distribuidora</h3>
+                  <p className="text-xs text-slate-400 mt-1">NIT: 900.123.456-7 · Cali, Colombia</p>
+                </div>
+
+                <div className="flex justify-between text-sm">
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Factura N°</p>
+                    <p className="font-black text-lg">{detalleData.id}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha</p>
+                    <p className="font-bold">{detalleData.fecha_emision || '-'}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 rounded-lg p-4">
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cliente</p>
+                    <p className="font-bold">
+                      {detalleData.cliente?.cli_nombre
+                        ? `${detalleData.cliente.cli_nombre} ${detalleData.cliente.cli_apellido || ''}`
+                        : detalleData.pedidoRelacionado?.ped_cli_id_fk || '-'}
+                    </p>
+                    {detalleData.cliente?.cli_id && (
+                      <p className="text-xs text-slate-400">{detalleData.cliente.cli_tipo_documento}: {detalleData.cliente.cli_id}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Forma de Pago</p>
+                    <p className="font-bold">
+                      {detalleData.cuenta_bancaria
+                        ? `Transferencia (${detalleData.cuenta_bancaria})`
+                        : ['Nequi', 'Daviplata', 'Transferencia'].includes(detalleData.forma_pago)
+                          ? `Transferencia${detalleData.forma_pago !== 'Transferencia' ? ` (${detalleData.forma_pago})` : ''}`
+                          : detalleData.forma_pago || '-'}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Email: {detalleData.email_enviado === 1 ? 'Enviado ✅' : 'Pendiente ❌'}
+                    </p>
+                  </div>
+                </div>
+
+                <table className="w-full text-left text-sm border-t border-b border-slate-200">
+                  <thead className="text-xs text-slate-400 uppercase font-bold border-b border-slate-100">
+                    <tr>
+                      <th className="px-3 py-2">Producto</th>
+                      <th className="px-3 py-2 text-right">Cant.</th>
+                      <th className="px-3 py-2 text-right">P. Unit.</th>
+                      <th className="px-3 py-2 text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-bold text-slate-600">
+                    {detalleData.lineas && detalleData.lineas.length > 0 ? (
+                      detalleData.lineas.map((l, i) => (
+                        <tr key={i}>
+                          <td className="px-3 py-2 text-xs">{l.producto_nombre || l.det_pro_id_fk}</td>
+                          <td className="px-3 py-2 text-right">{l.det_cantidad}</td>
+                          <td className="px-3 py-2 text-right">${parseFloat(l.det_precio_unitario || 0).toLocaleString()}</td>
+                          <td className="px-3 py-2 text-right">${parseFloat(l.det_subtotal || 0).toLocaleString()}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr><td colSpan="4" className="px-3 py-4 text-center text-slate-400 italic text-xs">Sin productos registrados</td></tr>
+                    )}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-slate-300 bg-slate-50">
+                      <td colSpan="3" className="px-3 py-3 text-right text-xs font-black text-slate-400 uppercase">Total</td>
+                      <td className="px-3 py-3 text-right font-black text-blue-700 text-lg">
+                        ${parseFloat(detalleData.total || 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+
+                <div className="text-center text-[10px] text-slate-400 mt-4">
+                  <p>Gracias por su compra · San Diego Distribuidora</p>
+                  <p>Este documento es una representación digital de la factura</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
