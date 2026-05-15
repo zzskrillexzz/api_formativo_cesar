@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Layers, AlertTriangle, Search, Plus, X, RefreshCw } from 'lucide-react';
+import { Package, Layers, AlertTriangle, Search, Plus, X, RefreshCw, Edit, Loader2 } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { productosService } from '../api/services/productosService';
 import { lotesService } from '../api/services/lotesService';
@@ -22,10 +22,43 @@ const Inventario = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
+  const [editingId, setEditingId] = useState(null);
+  const isEditing = !!editingId;
 
   const openModal = () => {
     setFormData({});
     setFormError('');
+    setEditingId(null);
+    setShowModal(true);
+  };
+
+  const abrirEditarProducto = (prod) => {
+    try {
+      if (!prod) return;
+      setFormData({
+        id: prod.id, nombre: prod.nombre, categoria: prod.categoria || '',
+        descripcion: prod.descripcion || '', precio: prod.precio || '',
+        cantidad_disponible: prod.cantidad_disponible != null ? prod.cantidad_disponible : '',
+        stock_minimo: prod.stock_minimo != null ? prod.stock_minimo : '',
+        estado: prod.estado || 'Activo', proveedor_id: prod.proveedor_id || ''
+      });
+      setFormError('');
+      setEditingId(prod.id);
+      setShowModal(true);
+    } catch (e) { console.error('Error al editar:', e); }
+  };
+
+  const abrirEditarLote = (lote) => {
+    setFormData({
+      lot_id: lote.lot_id, lot_numero: lote.lot_numero || '',
+      lot_fecha_fabricacion: lote.lot_fecha_fabricacion || '',
+      lot_fecha_vencimiento: lote.lot_fecha_vencimiento || '',
+      lot_cantidad_inicial: lote.lot_cantidad_inicial || '',
+      lot_pro_id_fk: lote.lot_pro_id_fk || '', lot_prov_id_fk: lote.lot_prov_id_fk || '',
+      lot_estado: lote.lot_estado || 'Activo'
+    });
+    setFormError('');
+    setEditingId(lote.lot_id);
     setShowModal(true);
   };
 
@@ -57,7 +90,7 @@ const Inventario = () => {
     }
     setFormSubmitting(true);
     try {
-      await productosService.registrar({
+      const payload = {
         id: formData.id,
         nombre: formData.nombre,
         categoria: formData.categoria || '',
@@ -68,11 +101,16 @@ const Inventario = () => {
         fecha_caducidad: formData.fecha_caducidad || null,
         estado: formData.estado || 'Activo',
         proveedor_id: formData.proveedor_id || null
-      });
+      };
+      if (isEditing) {
+        await productosService.editar(payload);
+      } else {
+        await productosService.registrar(payload);
+      }
       setShowModal(false);
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al crear producto');
+      setFormError(err.response?.data?.mensaje || 'Error al guardar producto');
     } finally {
       setFormSubmitting(false);
     }
@@ -92,7 +130,7 @@ const Inventario = () => {
     }
     setFormSubmitting(true);
     try {
-      await lotesService.registrar({
+      const payload = {
         lot_id: formData.lot_id,
         lot_numero: formData.lot_numero || '',
         lot_fecha_fabricacion: formData.lot_fecha_fabricacion || null,
@@ -102,11 +140,16 @@ const Inventario = () => {
         lot_pro_id_fk: formData.lot_pro_id_fk || '',
         lot_prov_id_fk: formData.lot_prov_id_fk || null,
         lot_estado: formData.lot_estado || 'Activo'
-      });
+      };
+      if (isEditing) {
+        await lotesService.editar(payload);
+      } else {
+        await lotesService.registrar(payload);
+      }
       setShowModal(false);
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al crear lote');
+      setFormError(err.response?.data?.mensaje || 'Error al guardar lote');
     } finally {
       setFormSubmitting(false);
     }
@@ -249,12 +292,13 @@ const Inventario = () => {
                   <th className="px-6 py-4 text-right">Precio</th>
                   <th className="px-6 py-4 text-right">Stock</th>
                   <th className="px-6 py-4">Estado</th>
+                  <th className="px-6 py-4 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 text-sm font-bold text-slate-600">
                 {filteredProductos.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-slate-400 italic">
+                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400 italic">
                       {searchTerm ? 'Sin resultados para esta búsqueda' : 'No hay productos registrados'}
                     </td>
                   </tr>
@@ -272,6 +316,11 @@ const Inventario = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoBadge(p.estado)}`}>{p.estado}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button onClick={() => abrirEditarProducto(p)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                          <Edit size={14} />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -299,12 +348,13 @@ const Inventario = () => {
                   <th className="px-6 py-4 text-right">Cant. Actual</th>
                   <th className="px-6 py-4 text-right">Vencimiento</th>
                   <th className="px-6 py-4">Estado</th>
+                  <th className="px-6 py-4 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 text-sm font-bold text-slate-600">
                 {filteredLotes.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400 italic">
+                    <td colSpan="8" className="px-6 py-12 text-center text-slate-400 italic">
                       {searchTerm ? 'Sin resultados' : 'No hay lotes registrados'}
                     </td>
                   </tr>
@@ -319,6 +369,11 @@ const Inventario = () => {
                       <td className="px-6 py-4 text-right text-slate-400">{l.lot_fecha_vencimiento || '-'}</td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoBadge(l.lot_estado)}`}>{l.lot_estado}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button onClick={() => abrirEditarLote(l)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                          <Edit size={14} />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -386,7 +441,7 @@ const Inventario = () => {
           <div ref={focusTrapRef} className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">
-                Nuevo {tab === 'productos' ? 'Producto' : tab === 'lotes' ? 'Lote' : 'Movimiento'}
+                {isEditing ? 'Editar' : 'Nuevo'} {tab === 'productos' ? 'Producto' : tab === 'lotes' ? 'Lote' : 'Movimiento'}
               </h2>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-md transition-colors">
                 <X size={20} className="text-slate-400" />
@@ -407,7 +462,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="id" autoFocus value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="id" value={formData.id || ''} onChange={isEditing ? undefined : handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" style={isEditing ? {backgroundColor:'#f1f5f9', color:'#64748b', cursor:'default'} : {}} autoFocus />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
@@ -459,7 +514,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="lot_id" autoFocus value={formData.lot_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="lot_id" value={formData.lot_id || ''} onChange={isEditing ? undefined : handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" style={isEditing ? {backgroundColor:'#f1f5f9', color:'#64748b', cursor:'default'} : {}} autoFocus />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">N° Lote</label>
@@ -559,7 +614,7 @@ const Inventario = () => {
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-3.5 rounded-lg shadow-sm shadow-blue-100 transition-all active:scale-95 uppercase tracking-wider text-xs flex items-center justify-center gap-2"
               >
                 {formSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
-                Guardar
+                {isEditing ? 'Actualizar' : 'Guardar'}
               </button>
             </form>
           </div>

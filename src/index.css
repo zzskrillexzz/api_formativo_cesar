@@ -85,3 +85,24 @@
 .btn-pulse {
   animation: heartbeat 2s ease-in-out infinite;
 }
+
+/* ── Texto estático: ni cursor I-beam ni selección ── */
+*:not(input):not(textarea):not([contenteditable="true"]) {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  cursor: default;
+}
+
+/* Restaurar selección y cursor en elementos editables */
+input, textarea, [contenteditable="true"] {
+  user-select: text;
+  cursor: text;
+}
+button, a, [role="button"], select, label, th, td {
+  cursor: pointer;
+}
+th, td {
+  user-select: text;
+}

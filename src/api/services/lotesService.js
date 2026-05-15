@@ -8,5 +8,9 @@ export const lotesService = {
   registrar: async (data) => {
     const res = await api.post('/lotes/', data);
     return res.data;
+  },
+  editar: async (data) => {
+    const res = await api.put('/lotes/', data);
+    return res.data;
   }
 };

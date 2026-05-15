@@ -8,5 +8,9 @@ export const productosService = {
   registrar: async (data) => {
     const res = await api.post('/productos/', data);
     return res.data;
+  },
+  editar: async (data) => {
+    const res = await api.put('/productos/', data);
+    return res.data;
   }
 };
