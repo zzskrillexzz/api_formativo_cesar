@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, FileText, Users, Search, Plus, X, RefreshCw, Eye } from 'lucide-react';
+import { ShoppingCart, FileText, Users, Search, Plus, X, RefreshCw, Eye, Trash2 } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { pedidosService } from '../api/services/pedidosService';
 import { facturasService } from '../api/services/facturasService';
@@ -81,6 +81,10 @@ const Ventas = () => {
       setShowDetalle(true);
     }
   };
+
+  const eliminarPedido = async (id) => { if (!window.confirm('Eliminar pedido ' + id + '?')) return; try { await pedidosService.eliminar(id); fetchData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
+  const eliminarFactura = async (id) => { if (!window.confirm('Eliminar factura ' + id + '?')) return; try { await facturasService.eliminar(id); fetchData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
+  const eliminarCliente = async (id) => { if (!window.confirm('Eliminar cliente ' + id + '?')) return; try { await clientesService.eliminar(id); fetchData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
 
   const openModal = async () => {
     setFormData({});
@@ -505,7 +509,7 @@ const Ventas = () => {
                       <td className="px-6 py-4">{c.cli_apellido || '-'}</td>
                       <td className="px-6 py-4">{c.cli_tipo_documento || '-'}</td>
                       <td className="px-6 py-4 text-slate-400">{c.cli_correo || '-'}</td>
-                      <td className="px-6 py-4">{c.cli_telefono || '-'}</td>
+                      <td className="px-6 py-4">{c.cli_telefono || '-'}</td><td className="px-6 py-4 text-right"><button onClick={() => eliminarCliente(c.cli_id)} className="p-2 text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={14} /></button></td>
                     </tr>
                   ))
                 )}

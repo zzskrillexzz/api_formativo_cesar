@@ -48,6 +48,9 @@ const Inventario = () => {
     } catch (e) { console.error('Error al editar:', e); }
   };
 
+  const eliminarProducto = async (id) => { if (!window.confirm('Eliminar este producto? Esta accion no se puede deshacer.')) return; try { await productosService.eliminar(id); fetchData(); } catch(e) { alert('No se pudo eliminar: ' + (e.response?.data?.mensaje || e.message)); } };
+  const eliminarLote = async (id) => { if (!window.confirm('Eliminar este lote? Esta accion no se puede deshacer.')) return; try { await lotesService.eliminar(id); fetchData(); } catch(e) { alert('No se pudo eliminar: ' + (e.response?.data?.mensaje || e.message)); } };
+
   const abrirEditarLote = (lote) => {
     setFormData({
       lot_id: lote.lot_id, lot_numero: lote.lot_numero || '',

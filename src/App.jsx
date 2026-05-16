@@ -6,6 +6,7 @@ import InventarioPage from './pages/Inventario';
 import VentasPage from './pages/Ventas';
 import ComprasPage from './pages/Compras';
 import ReportesPage from './pages/Reportes';
+import DevolucionesPage from './pages/Devoluciones';
 import LoginPage from './pages/Login';
 import { Wifi, WifiOff } from 'lucide-react';
 import { Notificaciones } from './components/Notificaciones';
@@ -80,6 +81,7 @@ const Layout = () => {
             {currentTab === 'Ventas' && <VentasPage />}
             {currentTab === 'Compras' && <ComprasPage />}
             {currentTab === 'Reportes' && <ReportesPage />}
+            {currentTab === 'Devoluciones' && <DevolucionesPage />}
           </div>
         </section>
       </main>

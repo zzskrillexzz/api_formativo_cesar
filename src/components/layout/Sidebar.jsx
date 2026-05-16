@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Package, ShoppingCart, Truck, BarChart3, LogOut, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, BarChart3, RotateCcw, LogOut, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const Sidebar = ({ activeTab, setActiveTab }) => {
@@ -11,6 +11,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
     { id: 'Ventas', label: 'Módulo Ventas', icon: ShoppingCart, roles: ['ROL001', 'ROL002'] },
     { id: 'Compras', label: 'Gestión Compras', icon: Truck, roles: ['ROL001', 'ROL003'] },
     { id: 'Reportes', label: 'Analítica', icon: BarChart3, roles: ['ROL001', 'ROL004'] },
+    { id: 'Devoluciones', label: 'Devoluciones', icon: RotateCcw, roles: ['ROL001', 'ROL002', 'ROL003'] },
   ];
 
   return (

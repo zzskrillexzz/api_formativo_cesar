@@ -21,7 +21,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // No recargar si es el endpoint de login (las credenciales incorrectas dan 401)
+    if (error.response?.status === 401 && !error.config.url?.includes('/login')) {
       sessionStorage.removeItem('access_token');
       sessionStorage.removeItem('user_data');
       window.location.reload();
