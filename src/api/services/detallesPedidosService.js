@@ -8,5 +8,9 @@ export const detallesPedidosService = {
   registrar: async (data) => {
     const res = await api.post('/detalles_pedidos/', data);
     return res.data;
+  },
+  eliminar: async (id) => {
+    const res = await api.delete(`/detalles_pedidos/${id}`);
+    return res.data;
   }
 };

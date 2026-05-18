@@ -1,8 +1,8 @@
 import api from '../axios';
 
 export const monitoriasService = {
-  listar: async () => {
-    const res = await api.get('/monitorias/');
+  listar: async (params = {}) => {
+    const res = await api.get('/monitorias/', { params });
     return res.data;
   },
   registrar: async (data) => {

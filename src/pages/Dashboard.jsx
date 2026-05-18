@@ -24,13 +24,13 @@ const Dashboard = () => {
           proveedoresService.listar().catch(() => []),
           alertasService.listar().catch(() => []),
           masVendidosService.listar().catch(() => []),
-          monitoriasService.listar().catch(() => [])
+          monitoriasService.listar().catch(() => ({ data: [], total: 0 }))
         ]);
         setProductos(prods);
         setProveedores(provs);
         setAlertas(alts);
         setMasVendidos(top);
-        setMonitorias(mons);
+        setMonitorias(Array.isArray(mons) ? mons : (mons.data || []));
       } catch (_) {
       } finally {
         setLoading(false);
@@ -89,7 +89,12 @@ const Dashboard = () => {
                     else if (esAlerta) { c = 'text-orange-600 bg-orange-50'; l = 'Alerta'; }
                     return (
                       <tr key={i} className="hover:bg-slate-50">
-                        <td className="px-5 py-3">{row.producto_id || row.id}</td>
+                        <td className="px-5 py-3">
+                          {(() => {
+                            const prod = productos.find(p => p.id === (row.producto_id || row.alv_pro_id_fk));
+                            return prod ? prod.nombre : (row.producto_id || row.alv_pro_id_fk);
+                          })()}
+                        </td>
                         <td className="px-5 py-3">{row.dias_restantes} dias</td>
                         <td className="px-5 py-3"><span className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase ${c}`}>{l}</span></td>
                         <td className="px-5 py-3 text-right text-slate-400">{row.fecha_vencimiento || '-'}</td>

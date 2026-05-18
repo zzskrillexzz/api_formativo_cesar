@@ -11,9 +11,12 @@
   "app": {
     "windows": [
       {
-        "title": "distribuidora",
-        "width": 800,
-        "height": 600
+        "title": "Ez Logistics",
+        "maximized": true,
+        "width": 1366,
+        "height": 768,
+        "minWidth": 1024,
+        "minHeight": 700
       }
     ],
     "security": {

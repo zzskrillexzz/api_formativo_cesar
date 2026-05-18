@@ -23,6 +23,14 @@ const Inventario = () => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
+  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroProveedor, setFiltroProveedor] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('');
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [totalMovimientos, setTotalMovimientos] = useState(0);
+  const POR_PAGINA = 15;
   const isEditing = !!editingId;
 
   const openModal = () => {
@@ -191,17 +199,24 @@ const Inventario = () => {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (movParams = {}) => {
     setLoading(true);
     try {
-      const [prods, lots, mons] = await Promise.all([
+      const [prods, lots, monsRes] = await Promise.all([
         productosService.listar().catch(() => []),
         lotesService.listar().catch(() => []),
-        monitoriasService.listar().catch(() => [])
+        monitoriasService.listar(movParams).catch(() => ({ data: [], total: 0 }))
       ]);
       setProductos(prods);
       setLotes(lots);
-      setMonitorias(mons);
+      // monsRes puede venir como {data, total} (nuevo) o array (viejo)
+      if (Array.isArray(monsRes)) {
+        setMonitorias(monsRes);
+        setTotalMovimientos(monsRes.length);
+      } else {
+        setMonitorias(monsRes.data || []);
+        setTotalMovimientos(monsRes.total ?? 0);
+      }
     } catch (err) {
       console.error('Error cargando inventario:', err);
     } finally {
@@ -210,6 +225,20 @@ const Inventario = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // Refetch movimientos cuando cambian filtros/página
+  useEffect(() => {
+    if (tab !== 'movimientos') return;
+    const params = {
+      limit: POR_PAGINA,
+      offset: (pagina - 1) * POR_PAGINA
+    };
+    if (filtroTipo) params.tipo = filtroTipo;
+    if (filtroFechaDesde) params.fecha_desde = filtroFechaDesde;
+    if (filtroFechaHasta) params.fecha_hasta = filtroFechaHasta;
+    if (searchTerm) params.q = searchTerm;
+    fetchData(params);
+  }, [tab, pagina, filtroTipo, filtroFechaDesde, filtroFechaHasta, searchTerm]);
 
   const tabs = [
     { id: 'productos', label: 'Productos', icon: Package },
@@ -220,9 +249,12 @@ const Inventario = () => {
   const filteredProductos = productos.filter(p =>
     (p.nombre || p.id || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const filteredLotes = lotes.filter(l =>
-    (l.lot_id || l.lot_numero || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredLotes = lotes.filter(l => {
+    const busca = (l.lot_id || l.lot_numero || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const porEstado = !filtroEstado || l.lot_estado === filtroEstado;
+    const porProveedor = !filtroProveedor || (l.lot_prov_id_fk || '').toLowerCase().includes(filtroProveedor.toLowerCase());
+    return busca && porEstado && porProveedor;
+  });
 
   const focusTrapRef = useFocusTrap(showModal);
 
@@ -340,6 +372,34 @@ const Inventario = () => {
       {/* TAB: Lotes */}
       {tab === 'lotes' && (
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="flex items-center gap-3 px-6 py-3 border-b border-slate-100 bg-slate-50/30">
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="text-xs font-medium border border-slate-200 rounded-md px-2.5 py-1.5 bg-white outline-none cursor-pointer"
+            >
+              <option value="">Todos los estados</option>
+              <option value="Activo">Activo</option>
+              <option value="Agotado">Agotado</option>
+              <option value="Vencido">Vencido</option>
+              <option value="Cuarentena">Cuarentena</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Filtrar por proveedor..."
+              value={filtroProveedor}
+              onChange={(e) => setFiltroProveedor(e.target.value)}
+              className="text-xs border border-slate-200 rounded-md px-2.5 py-1.5 bg-white outline-none w-48"
+            />
+            {(filtroEstado || filtroProveedor) && (
+              <button
+                onClick={() => { setFiltroEstado(''); setFiltroProveedor(''); }}
+                className="text-xs text-red-500 font-medium hover:text-red-700 ml-auto"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
@@ -366,7 +426,14 @@ const Inventario = () => {
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-6 py-4 text-slate-400 text-xs">{l.lot_id}</td>
                       <td className="px-6 py-4">{l.lot_numero}</td>
-                      <td className="px-6 py-4 text-slate-400">{l.lot_pro_id_fk || '-'}</td>
+                      <td className="px-6 py-4">
+                        {(() => {
+                          const prod = productos.find(p => p.id === l.lot_pro_id_fk);
+                          return prod ? (
+                            <span title={prod.id}>{prod.nombre}</span>
+                          ) : (l.lot_pro_id_fk || '-');
+                        })()}
+                      </td>
                       <td className="px-6 py-4 text-right">{l.lot_cantidad_inicial}</td>
                       <td className="px-6 py-4 text-right">{l.lot_cantidad_actual}</td>
                       <td className="px-6 py-4 text-right text-slate-400">{l.lot_fecha_vencimiento || '-'}</td>
@@ -393,6 +460,48 @@ const Inventario = () => {
       {/* TAB: Movimientos */}
       {tab === 'movimientos' && (
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          {/* ── Filtros ── */}
+          <div className="flex items-center gap-3 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
+            <select
+              value={filtroTipo}
+              onChange={(e) => { setFiltroTipo(e.target.value); setPagina(1); }}
+              className="text-xs font-medium border border-slate-200 rounded-md px-2.5 py-1.5 bg-white outline-none cursor-pointer"
+            >
+              <option value="">Todos los tipos</option>
+              <option value="Entrada">Entrada</option>
+              <option value="Salida">Salida</option>
+              <option value="Ajuste">Ajuste</option>
+            </select>
+            <input
+              type="date"
+              value={filtroFechaDesde}
+              onChange={(e) => { setFiltroFechaDesde(e.target.value); setPagina(1); }}
+              className="text-xs border border-slate-200 rounded-md px-2.5 py-1.5 bg-white outline-none"
+              title="Desde"
+            />
+            <span className="text-slate-300 text-xs">→</span>
+            <input
+              type="date"
+              value={filtroFechaHasta}
+              onChange={(e) => { setFiltroFechaHasta(e.target.value); setPagina(1); }}
+              className="text-xs border border-slate-200 rounded-md px-2.5 py-1.5 bg-white outline-none"
+              title="Hasta"
+            />
+            {(filtroTipo || filtroFechaDesde || filtroFechaHasta) && (
+              <button
+                onClick={() => {
+                  setFiltroTipo('');
+                  setFiltroFechaDesde('');
+                  setFiltroFechaHasta('');
+                  setPagina(1);
+                }}
+                className="text-xs text-red-500 font-medium hover:text-red-700 ml-auto"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
@@ -415,7 +524,14 @@ const Inventario = () => {
                   monitorias.map((m, i) => (
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-6 py-4 text-slate-400 text-xs">{m.mon_id}</td>
-                      <td className="px-6 py-4">{m.mon_pro_id_fk}</td>
+                      <td className="px-6 py-4">
+                        {(() => {
+                          const prod = productos.find(p => p.id === m.mon_pro_id_fk);
+                          return prod ? (
+                            <span title={prod.id}>{prod.nombre}</span>
+                          ) : (m.mon_pro_id_fk || '-');
+                        })()}
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
                           m.mon_tipo === 'Entrada' ? 'text-emerald-600 bg-emerald-50' : 
@@ -432,8 +548,34 @@ const Inventario = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
-            {monitorias.length} movimientos
+
+          {/* ── Paginación ── */}
+          <div className="flex items-center justify-between px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
+            <span>
+              {monitorias.length > 0
+                ? `${(pagina - 1) * POR_PAGINA + 1}–${Math.min(pagina * POR_PAGINA, totalMovimientos)} de ${totalMovimientos} movimientos`
+                : `${totalMovimientos} movimientos`
+              }
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPagina(p => Math.max(1, p - 1))}
+                disabled={pagina <= 1}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider"
+              >
+                Anterior
+              </button>
+              <span className="text-slate-500">
+                {pagina} / {Math.max(1, Math.ceil(totalMovimientos / POR_PAGINA))}
+              </span>
+              <button
+                onClick={() => setPagina(p => p + 1)}
+                disabled={pagina >= Math.ceil(totalMovimientos / POR_PAGINA)}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider"
+              >
+                Siguiente
+              </button>
+            </div>
           </div>
         </div>
       )}
