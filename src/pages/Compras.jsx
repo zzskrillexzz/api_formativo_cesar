@@ -6,6 +6,7 @@ import { comprasService } from '../api/services/comprasService';
 import { proveedoresService } from '../api/services/proveedoresService';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { FIELD_LIMITS } from '../utils/fieldLimits';
 
 const ESTADOS = ['Pendiente', 'Recibida', 'Cancelada'];
 
@@ -64,11 +65,17 @@ const Compras = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const max = FIELD_LIMITS[name];
+    if (max && value.length > max) return;
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleEditChange = (e) => {
-    setEditData({ ...editData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const max = FIELD_LIMITS[name];
+    if (max && value.length > max) return;
+    setEditData({ ...editData, [name]: value });
   };
 
   const handleFileChange = (e, isEdit = false) => {
