@@ -72,17 +72,37 @@ const Ventas = () => {
     localStorage.setItem('qrBaseUrl', url);
   };
 
-  const abrirQR = (pedido) => {
+  const abrirQR = async (pedido) => {
     setPedidoQR(pedido);
-    // Si hay una URL guardada, usarla (no sobrescribir)
+    // Intentar detectar URL de ngrok automáticamente
+    try {
+      const resp = await fetch('http://localhost:4040/api/tunnels');
+      if (resp.ok) {
+        const data = await resp.json();
+        const tunel = data.tunnels?.find(t => t.config?.addr === 'http://localhost:5000');
+        if (tunel?.public_url) {
+          const url = tunel.public_url.replace(/\/$/, '');
+          setQrBaseUrl(url);
+          localStorage.setItem('qrBaseUrl', url);
+          setShowQRModal(true);
+          return;
+        }
+      }
+    } catch (_) {
+      // ngrok no está corriendo o no se pudo detectar
+    }
+    // Si no se detectó ngrok, usar URL guardada o localhost
     const guardada = localStorage.getItem('qrBaseUrl');
-    if (!guardada) {
-      // Si no hay URL guardada, auto-detectar IP
+    if (guardada) {
+      setQrBaseUrl(guardada);
+    } else {
       const host = window.location.hostname;
       if (host !== 'localhost' && host !== '127.0.0.1') {
         const url = `http://${host}:5000`;
         setQrBaseUrl(url);
         localStorage.setItem('qrBaseUrl', url);
+      } else {
+        setQrBaseUrl('http://localhost:5000');
       }
     }
     setShowQRModal(true);
