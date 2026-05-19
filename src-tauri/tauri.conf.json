@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.ez.logistics.app",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "pnpm run dev",
     "devUrl": "http://localhost:5173",
     "frontendDist": "../dist"
   },
