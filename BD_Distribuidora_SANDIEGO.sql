@@ -77,7 +77,7 @@ insert  into `t_anulacion_venta`(`anu_id`,`anu_fac_id_fk`,`anu_usu_id_fk`,`anu_f
 DROP TABLE IF EXISTS `t_cliente`;
 
 CREATE TABLE `t_cliente` (
-  `cli_id` varchar(20) NOT NULL COMMENT 'Número de documento del cliente',
+  `cli_id` bigint(20) NOT NULL COMMENT 'Número de documento del cliente',
   `cli_tipo_documento` varchar(10) DEFAULT 'CC' COMMENT 'Tipo: CC / NIT / CE / TI',
   `cli_nombre` varchar(50) DEFAULT NULL COMMENT 'Nombre del cliente',
   `cli_apellido` varchar(50) DEFAULT NULL COMMENT 'Apellido del cliente',
@@ -90,13 +90,13 @@ CREATE TABLE `t_cliente` (
 /*Data for the table `t_cliente` */
 
 insert  into `t_cliente`(`cli_id`,`cli_tipo_documento`,`cli_nombre`,`cli_apellido`,`cli_telefono`,`cli_direccion`,`cli_correo`) values 
-('1023456789','CC','Carlos','Gomez','3157894561','Cl 80 #20-35','cgomez@hotmail.com'),
-('1065432198','CC','Maria','Salcedo','3143216547','Cl 45 #8-15','msalcedo@gmail.com'),
-('1076543219','CC','Jhon','Rios','3209876543','Cra 7 #12-50','jhonrios@gmail.com'),
-('1087654321','CC','Ana','Torres','3012345678','Av 68 #55-20','ana.torres@yahoo.com'),
-('1098765432','CC','Laura','Martinez','3104567890','Cra 15 #42-10','l.martinez@gmail.com'),
-('900123456','NIT','Farmacia','El Descuento SAS','6014567890','Av 68 #23-45 Cali','farmacia.descuento@empresa.co'),
-('9999999999','CC','Test','Usuario','3001234567','Calle 1 #2-3','test@test.com');
+(1023456789,'CC','Carlos','Gomez','3157894561','Cl 80 #20-35','cgomez@hotmail.com'),
+(1065432198,'CC','Maria','Salcedo','3143216547','Cl 45 #8-15','msalcedo@gmail.com'),
+(1076543219,'CC','Jhon','Rios','3209876543','Cra 7 #12-50','jhonrios@gmail.com'),
+(1087654321,'CC','Ana','Torres','3012345678','Av 68 #55-20','ana.torres@yahoo.com'),
+(1098765432,'CC','Laura','Martinez','3104567890','Cra 15 #42-10','l.martinez@gmail.com'),
+(900123456,'NIT','Farmacia','El Descuento SAS','6014567890','Av 68 #23-45 Cali','farmacia.descuento@empresa.co'),
+(9999999999,'CC','Test','Usuario','3001234567','Calle 1 #2-3','test@test.com');
 
 /*Table structure for table `t_compra` */
 
@@ -195,6 +195,7 @@ CREATE TABLE `t_factura` (
   `fac_fecha_emision` date DEFAULT NULL COMMENT 'Fecha de emisión',
   `fac_email_enviado` tinyint(1) DEFAULT NULL COMMENT '1=Enviado / 0=No enviado',
   `fac_forma_pago` varchar(50) DEFAULT NULL COMMENT 'Forma de pago',
+  `fac_cuenta_bancaria` varchar(50) DEFAULT NULL COMMENT 'Cuenta bancaria para transferencia',
   `fac_total` decimal(12,2) DEFAULT NULL COMMENT 'Total de la factura',
   `fac_estado` varchar(20) DEFAULT 'Vigente' COMMENT 'Estado: Vigente / Anulada',
   `fac_usu_id_fk` varchar(20) DEFAULT NULL COMMENT 'ID del usuario que generó la factura',
@@ -330,9 +331,11 @@ CREATE TABLE `t_pedido` (
   `ped_id` varchar(20) NOT NULL COMMENT 'ID del pedido',
   `ped_fecha` date DEFAULT NULL COMMENT 'Fecha del pedido',
   `ped_metodo_pago` varchar(50) DEFAULT NULL COMMENT 'Método de pago',
+  `ped_cuenta_bancaria` varchar(50) DEFAULT NULL COMMENT 'Cuenta bancaria para transferencia',
   `ped_estado_entrega` varchar(50) DEFAULT NULL COMMENT 'Estado: Entregado / En camino / No entregado / Anulado',
+  `ped_estado_pago` varchar(20) DEFAULT 'Pendiente' COMMENT 'Estado del pago: Pendiente / Verificado / Rechazado',
   `ped_total` decimal(12,2) DEFAULT NULL COMMENT 'Total del pedido',
-  `ped_cli_id_fk` varchar(20) DEFAULT NULL COMMENT 'ID del cliente',
+  `ped_cli_id_fk` bigint(20) DEFAULT NULL COMMENT 'ID del cliente',
   `ped_usu_id_fk` varchar(20) DEFAULT NULL COMMENT 'ID del vendedor que registró el pedido',
   PRIMARY KEY (`ped_id`),
   KEY `ped_cli_id_fk` (`ped_cli_id_fk`),
@@ -344,14 +347,14 @@ CREATE TABLE `t_pedido` (
 /*Data for the table `t_pedido` */
 
 insert  into `t_pedido`(`ped_id`,`ped_fecha`,`ped_metodo_pago`,`ped_estado_entrega`,`ped_total`,`ped_cli_id_fk`,`ped_usu_id_fk`) values 
-('PED001','2025-03-15','Efectivo','Entregado',8450.00,'1098765432','USU002'),
-('PED002','2025-03-16','Tarjeta','En camino',12700.00,'1023456789','USU003'),
-('PED003','2025-03-17','Nequi','Entregado',5880.00,'1087654321','USU002'),
-('PED004','2025-03-18','Efectivo','No entregado',4200.00,'1076543219','USU003'),
-('PED005','2025-03-19','Daviplata','En camino',9800.00,'1065432198','USU002'),
-('PED050','2026-04-09','Efectivo','Entregado',17000.00,'1098765432','USU050'),
-('PED051','2026-04-09','Tarjeta','En camino',30000.00,'1087654321','USU051'),
-('PED052','2026-04-09','Transferencia','En camino',5200.00,'900123456','USU052');
+('PED001','2025-03-15','Efectivo','Entregado',8450.00,1098765432,'USU002'),
+('PED002','2025-03-16','Tarjeta','En camino',12700.00,1023456789,'USU003'),
+('PED003','2025-03-17','Nequi','Entregado',5880.00,1087654321,'USU002'),
+('PED004','2025-03-18','Efectivo','No entregado',4200.00,1076543219,'USU003'),
+('PED005','2025-03-19','Daviplata','En camino',9800.00,1065432198,'USU002'),
+('PED050','2026-04-09','Efectivo','Entregado',17000.00,1098765432,'USU050'),
+('PED051','2026-04-09','Tarjeta','En camino',30000.00,1087654321,'USU051'),
+('PED052','2026-04-09','Transferencia','En camino',5200.00,900123456,'USU052');
 
 /*Table structure for table `t_producto` */
 
@@ -734,3 +737,44 @@ DROP TABLE IF EXISTS `v_stock_minimo`;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+/* Nuevas columnas y tablas agregadas durante el desarrollo */
+
+-- Columnas para comprobante de pago en pedidos
+ALTER TABLE t_pedido ADD COLUMN IF NOT EXISTS ped_comprobante LONGBLOB DEFAULT NULL AFTER ped_cuenta_bancaria;
+ALTER TABLE t_pedido ADD COLUMN IF NOT EXISTS ped_comprobante_tipo VARCHAR(50) DEFAULT NULL AFTER ped_comprobante;
+
+-- Columnas para comprobante de pago en compras
+ALTER TABLE t_compra ADD COLUMN IF NOT EXISTS com_comprobante LONGBLOB DEFAULT NULL AFTER com_observacion;
+ALTER TABLE t_compra ADD COLUMN IF NOT EXISTS com_comprobante_tipo VARCHAR(50) DEFAULT NULL AFTER com_comprobante;
+
+-- Columna para trazabilidad por lote en detalle de pedido
+ALTER TABLE t_detalle_pedido ADD COLUMN IF NOT EXISTS det_lot_id_fk VARCHAR(20) DEFAULT NULL AFTER det_pro_id_fk;
+
+-- Columnas para control sanitario (INVIMA y control especial) en productos
+ALTER TABLE t_producto ADD COLUMN IF NOT EXISTS pro_registro_invima VARCHAR(50) DEFAULT NULL AFTER pro_fecha_caducidad;
+ALTER TABLE t_producto ADD COLUMN IF NOT EXISTS pro_fecha_vencimiento_registro DATE DEFAULT NULL AFTER pro_registro_invima;
+ALTER TABLE t_producto ADD COLUMN IF NOT EXISTS pro_control_especial TINYINT(1) DEFAULT 0 AFTER pro_fecha_vencimiento_registro;
+ALTER TABLE t_producto ADD COLUMN IF NOT EXISTS pro_tipo_control VARCHAR(50) DEFAULT NULL AFTER pro_control_especial;
+
+-- Columna para cuenta bancaria en facturas
+ALTER TABLE t_factura ADD COLUMN IF NOT EXISTS fac_cuenta_bancaria VARCHAR(100) DEFAULT NULL AFTER fac_forma_pago;
+
+-- Tabla de devoluciones
+CREATE TABLE IF NOT EXISTS t_devolucion (
+  dev_id VARCHAR(20) NOT NULL PRIMARY KEY,
+  dev_ped_id_fk VARCHAR(20) DEFAULT NULL,
+  dev_pro_id_fk VARCHAR(20) DEFAULT NULL,
+  dev_lot_id_fk VARCHAR(20) DEFAULT NULL,
+  dev_cantidad INT DEFAULT NULL,
+  dev_motivo TEXT DEFAULT NULL,
+  dev_fecha DATE DEFAULT NULL,
+  dev_usu_id_fk VARCHAR(20) DEFAULT NULL,
+  KEY dev_ped_id_fk (dev_ped_id_fk),
+  KEY dev_pro_id_fk (dev_pro_id_fk),
+  KEY dev_lot_id_fk (dev_lot_id_fk),
+  KEY dev_usu_id_fk (dev_usu_id_fk)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Columna para estado de pago en pedidos
+ALTER TABLE t_pedido ADD COLUMN IF NOT EXISTS ped_estado_pago VARCHAR(20) DEFAULT 'Pendiente' COMMENT 'Estado del pago: Pendiente / Verificado / Rechazado' AFTER ped_estado_entrega;
