@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.sesiones_service import listarSesiones, registrarSesiones, editarSesiones, eliminarSesiones, buscarSesiones
+from utils.validators import validar_campos_texto
 
 def cnlistadosesiones():
     try:
@@ -22,6 +23,11 @@ def cnregistrarsesiones():
         if not c.fetchone():
             c.close()
             return jsonify({"mensaje": "El usuario especificado no existe"}), 400
+
+        # Validar longitud de la IP
+        msg = validar_campos_texto(data, "ses_ip")
+        if msg:
+            return jsonify({"mensaje": " | ".join(msg)}), 400
 
         # Validar ID duplicado
         c.execute("SELECT ses_id FROM t_sesion WHERE ses_id = %s", (data["ses_id"],))

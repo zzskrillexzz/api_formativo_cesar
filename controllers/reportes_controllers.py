@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.reportes_service import listarReportes, registrarReportes, editarReportes, eliminarReportes, buscarReportes
+from utils.validators import validar_campos_texto
 
 def cnlistadoreportes():
     try:
@@ -43,6 +44,11 @@ def cnregistrarreportes():
             c.close()
             return jsonify({"mensaje": f"El ID '{id_sucio}' es equivalente a uno ya existente (evite duplicados por guiones o espacios)"}), 409
 
+        # Validar longitud de campos de texto
+        errores = validar_campos_texto(data, "rep_tipo", "rep_parametros", "rep_resultado")
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
+
         # Validar que el usuario exista
         c.execute("SELECT usu_id FROM t_usuario WHERE usu_id = %s", (data["rep_usu_id_fk"],))
         if not c.fetchone():
@@ -65,6 +71,11 @@ def cneditarreportes():
         data = request.get_json()
         if not data or "rep_id" not in data:
             return jsonify({"mensaje": "ID de reporte requerido"}), 400
+
+        # Validar longitud de campos de texto
+        errores = validar_campos_texto(data, "rep_tipo", "rep_parametros", "rep_resultado")
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
 
         # Validar si el reporte existe
         if not buscarReportes(data["rep_id"]):

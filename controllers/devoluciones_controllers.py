@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.devoluciones_service import listarDevoluciones, registrarDevolucion
+from utils.validators import validar_campos_texto
 
 def cnListarDevoluciones():
     try:
@@ -39,6 +40,12 @@ def cnRegistrarDevolucion():
                 return jsonify({"mensaje": "La cantidad debe ser mayor a 0"}), 400
         except (ValueError, TypeError):
             return jsonify({"mensaje": "Cantidad invalida"}), 400
+
+        # Validar longitud del motivo
+        msg = validar_campos_texto(data, "motivo")
+        if msg:
+            return jsonify({"mensaje": " | ".join(msg)}), 400
+
         c = current_app.mysql.connection.cursor()
         c.execute("SELECT pro_id FROM t_producto WHERE pro_id=%s", (data["producto_id"],))
         if not c.fetchone():

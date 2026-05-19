@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.clientes_service import listarClientes, registrarClientes, editarClientes, eliminarClientes, buscarClientes
+from utils.validators import validar_campos_texto
 
 def cnlistadoclientes():
     try:
@@ -26,6 +27,14 @@ def cnregistrarclientes():
         # Validar ID duplicado
         if buscarClientes(data["cli_id"]):
             return jsonify({"mensaje": f"El cliente con ID {data['cli_id']} ya existe"}), 409
+
+        # Validar longitud de campos de texto
+        errores = validar_campos_texto(
+            data, "cli_tipo_documento", "cli_nombre", "cli_apellido",
+            "cli_correo", "cli_telefono", "cli_direccion"
+        )
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
 
         # Validar Correo duplicado
         c = current_app.mysql.connection.cursor()
@@ -56,6 +65,14 @@ def cneditarclientes():
                 return jsonify({"mensaje": "El ID del cliente debe ser un número positivo"}), 400
         except (ValueError, TypeError):
             return jsonify({"mensaje": "El ID del cliente debe ser un número entero"}), 400
+
+        # Validar longitud de campos de texto
+        errores = validar_campos_texto(
+            data, "cli_tipo_documento", "cli_nombre", "cli_apellido",
+            "cli_correo", "cli_telefono", "cli_direccion"
+        )
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
 
         # Validar que el correo no lo tenga otro cliente
         c = current_app.mysql.connection.cursor()

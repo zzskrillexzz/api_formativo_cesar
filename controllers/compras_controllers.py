@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.compras_service import listarCompras, registrarCompras, buscarCompras, editarCompras, eliminarCompras
+from utils.validators import validar_campos_texto
 
 def cnlistadocompras():
     try:
@@ -24,6 +25,11 @@ def cnregistrarcompras():
         for campo in ["com_id", "com_fecha", "com_prov_id_fk", "com_usu_id_fk"]:
             if str(data[campo]).strip() == "":
                 return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
+
+        # Validar longitud de campos de texto
+        errores = validar_campos_texto(data, "com_observacion", "com_comprobante_tipo")
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
 
         estados_validos = ["Pendiente", "Recibida", "Cancelada"]
         if data["com_estado"] not in estados_validos:

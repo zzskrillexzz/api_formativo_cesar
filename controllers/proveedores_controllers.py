@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.proveedores_service import listarProveedores, registrarProveedores
+from utils.validators import validar_campos_texto
 
 def cnlistadoproveedores():
     try:
@@ -20,6 +21,11 @@ def cnregistrarproveedores():
         faltantes = [x for x in requerido if x not in data or str(data[x]).strip() == ""]
         if faltantes:
             return jsonify({"mensaje": f"Faltan los siguientes campos o están vacíos: {faltantes}"}), 400
+
+        # Validar longitud de campos de texto
+        errores = validar_campos_texto(data, "nit", "nombre", "tipo", "contacto", "direccion", "email")
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
 
         # Validar tipo
         tipos_validos = ["Laboratorio", "Distribuidor", "Importador"]

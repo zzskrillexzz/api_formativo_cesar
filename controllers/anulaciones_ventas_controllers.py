@@ -3,6 +3,7 @@ from services.anulaciones_ventas_service import (
     listarAnulacionesVentas, registrarAnulacionesVentas,
     editarAnulacionesVentas, eliminarAnulacionesVentas, buscarAnulacionVenta
 )
+from utils.validators import validar_campos_texto
 
 def cnlistadoanulacionesventas():
     try:
@@ -28,6 +29,11 @@ def cnregistraranulacionesventas():
         for campo in requerido:
             if str(data[campo]).strip() == "":
                 return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
+
+        # Validar longitud del motivo
+        msg = validar_campos_texto(data, "anu_motivo")
+        if msg:
+            return jsonify({"mensaje": " | ".join(msg)}), 400
 
         # Validar duplicado
         c = current_app.mysql.connection.cursor()
@@ -84,6 +90,11 @@ def cneditaranulacionesventas(id):
         for campo in requerido:
             if str(data[campo]).strip() == "":
                 return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
+
+        # Validar longitud del motivo
+        msg = validar_campos_texto(data, "anu_motivo")
+        if msg:
+            return jsonify({"mensaje": " | ".join(msg)}), 400
 
         c = current_app.mysql.connection.cursor()
         c.execute("SELECT fac_id FROM t_factura WHERE fac_id=%s", (data["anu_fac_id_fk"],))

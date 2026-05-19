@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.roles_services import listarRoles, registrarRoles, editarRoles, eliminarRoles, buscarRoles
+from utils.validators import validar_campos_texto
 
 def cnListarRoles():
     try:
@@ -25,6 +26,11 @@ def cnRegistrarRoles():
         for campo in ["id", "nombre"]:
             if str(data[campo]).strip() == "":
                 return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
+
+        # Validar longitud del nombre
+        msg = validar_campos_texto(data, "nombre")
+        if msg:
+            return jsonify({"mensaje": " | ".join(msg)}), 400
 
         # Validar estado
         if data.get("estado") not in [0, 1, None]:
@@ -58,6 +64,11 @@ def cnEditarRoles():
         # Validar campos no vacíos
         if str(data.get("nombre", "")).strip() == "":
             return jsonify({"mensaje": "El campo nombre no puede estar vacío"}), 400
+
+        # Validar longitud del nombre
+        msg = validar_campos_texto(data, "nombre")
+        if msg:
+            return jsonify({"mensaje": " | ".join(msg)}), 400
 
         # Validar que el rol exista
         c = current_app.mysql.connection.cursor()

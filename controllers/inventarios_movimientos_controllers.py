@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.inventarios_movimientos_service import listarInventariosMovimientos, registrarInventariosMovimientos
+from utils.validators import validar_campos_texto
 
 def cnlistadoinventariosmovimientos():
     try:
@@ -20,6 +21,11 @@ def cnregistrarinventariosmovimientos():
         faltantes = [x for x in requerido if x not in data]
         if faltantes:
             return jsonify({"mensaje": f"Faltan los siguientes campos: {faltantes}"}), 400
+
+        # Validar longitud del motivo
+        msg = validar_campos_texto(data, "inm_motivo")
+        if msg:
+            return jsonify({"mensaje": " | ".join(msg)}), 400
 
         # Validar tipo movimiento
         tipos_validos = ["Entrada", "Salida", "Ajuste"]

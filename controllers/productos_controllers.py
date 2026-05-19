@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.productos_service import listarProductos, registrarProductos, editarProductos
+from utils.validators import validar_campos_texto
 
 def cnListarProductos():
     try:
@@ -42,6 +43,11 @@ def cnRegistrarProductos():
         except (ValueError, TypeError):
             return jsonify({"mensaje": "La cantidad disponible debe ser un número entero"}), 400
 
+        # Validar longitud de campos de texto
+        errores = validar_campos_texto(data, "nombre", "categoria", "descripcion")
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
+
         # Validar estado
         estados_validos = ["Activo", "Descontinuado", "Suspendido"]
         if data.get("estado") and data["estado"] not in estados_validos:
@@ -74,6 +80,11 @@ def cnEditarProductos():
         data = request.get_json()
         if not data or "id" not in data:
             return jsonify({"mensaje": "ID del producto requerido"}), 400
+
+        # Validar longitud de campos de texto editables
+        errores = validar_campos_texto(data, "nombre", "categoria", "descripcion")
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
 
         if "precio" in data and data["precio"] is not None:
             try:

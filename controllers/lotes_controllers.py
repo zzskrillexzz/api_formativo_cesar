@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.lotes_service import listarLotes, registrarLotes, editarLotes
+from utils.validators import validar_campos_texto
 
 def cnlistadolotes():
     try:
@@ -20,6 +21,11 @@ def cnregistrarlotes():
         faltantes = [x for x in requerido if x not in data]
         if faltantes:
             return jsonify({"mensaje": f"Faltan los siguientes campos: {faltantes}"}), 400
+
+        # Validar longitud del número de lote
+        msg = validar_campos_texto(data, "lot_numero")
+        if msg:
+            return jsonify({"mensaje": " | ".join(msg)}), 400
 
         # Validar estado
         estados_validos = ["Activo", "Agotado", "Vencido", "Cuarentena"]

@@ -1,5 +1,6 @@
 from flask import jsonify, request, current_app
 from services.usuarios_service import listarUsuarios, registrarUsuarios, editarUsuarios, eliminarUsuarios, buscarUsuarios
+from utils.validators import validar_campos_texto
 
 def cnlistadousuarios():
     try:
@@ -25,6 +26,11 @@ def cnregistrarusuarios():
         for campo in ["usu_id", "usu_nombre", "usu_rol", "usu_correo", "usu_contrasena"]:
             if str(data[campo]).strip() == "":
                 return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
+
+        # Validar longitud de campos de texto
+        errores = validar_campos_texto(data, "usu_nombre", "usu_rol", "usu_correo", "usu_contrasena")
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
 
         # Validar rol
         roles_validos = ["Administrador", "Vendedor", "Bodeguero", "Contador"]
@@ -79,6 +85,11 @@ def cneditarusuarios():
         for campo in requerido:
             if str(data[campo]).strip() == "":
                 return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
+
+        # Validar longitud de campos de texto
+        errores = validar_campos_texto(data, "usu_nombre", "usu_rol", "usu_correo", "usu_contrasena")
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
 
         # Validar rol y estado
         roles_validos = ["Administrador", "Vendedor", "Bodeguero", "Contador"]

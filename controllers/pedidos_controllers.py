@@ -6,6 +6,7 @@ from services.pedidos_service import (
     confirmarEntregaPorToken, marcarNotificado, marcarFacturaEnviada
 )
 from utils.id_generator import generarIdSiguiente
+from utils.validators import validar_campos_texto
 from services.clientes_service import buscarClientes
 from services.notificaciones_service import enviar_email, enviar_whatsapp, generar_mensaje_pedido_listo
 
@@ -36,6 +37,27 @@ def cnregistrarpedidos():
         for campo in ["ped_fecha", "ped_metodo_pago", "ped_estado_entrega"]:
             if str(data[campo]).strip() == "":
                 return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
+
+        # Validar que la fecha no sea anterior a hoy
+        from datetime import date
+        try:
+            fecha_pedido = data["ped_fecha"]
+            # Intentar parsear la fecha en formato YYYY-MM-DD
+            if isinstance(fecha_pedido, str):
+                año, mes, dia = map(int, fecha_pedido.split("-"))
+                fecha_pedido_obj = date(año, mes, dia)
+            else:
+                return jsonify({"mensaje": "El formato de ped_fecha no es válido (use YYYY-MM-DD)"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"mensaje": "El formato de ped_fecha no es válido (use YYYY-MM-DD)"}), 400
+
+        if fecha_pedido_obj < date.today():
+            return jsonify({"mensaje": "No se pueden crear pedidos en fechas pasadas. La fecha debe ser hoy o posterior."}), 400
+
+        # Validar longitud de campos de texto opcionales
+        errores = validar_campos_texto(data, "ped_cuenta_bancaria", "ped_comprobante_tipo")
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
 
         # Validar método de pago
         metodos_validos = ["Efectivo", "Tarjeta", "Transferencia", "Nequi", "Daviplata"]
@@ -182,6 +204,26 @@ def cneditarpedidos(id):
         faltantes = [x for x in requerido if x not in data]
         if faltantes:
             return jsonify({"mensaje": f"Faltan los siguientes campos: {faltantes}"}), 400
+
+        # Validar que la fecha no sea anterior a hoy
+        from datetime import date
+        try:
+            fecha_pedido = data["ped_fecha"]
+            if isinstance(fecha_pedido, str):
+                año, mes, dia = map(int, fecha_pedido.split("-"))
+                fecha_pedido_obj = date(año, mes, dia)
+            else:
+                return jsonify({"mensaje": "El formato de ped_fecha no es válido (use YYYY-MM-DD)"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"mensaje": "El formato de ped_fecha no es válido (use YYYY-MM-DD)"}), 400
+
+        if fecha_pedido_obj < date.today():
+            return jsonify({"mensaje": "No se pueden crear pedidos en fechas pasadas. La fecha debe ser hoy o posterior."}), 400
+
+        # Validar longitud de campos de texto opcionales
+        errores = validar_campos_texto(data, "ped_cuenta_bancaria", "ped_comprobante_tipo")
+        if errores:
+            return jsonify({"mensaje": " | ".join(errores)}), 400
 
         metodos_validos = ["Efectivo", "Tarjeta", "Transferencia", "Nequi", "Daviplata"]
         if data["ped_metodo_pago"] not in metodos_validos:
