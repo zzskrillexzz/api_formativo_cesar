@@ -3,7 +3,7 @@ from services.pedidos_service import (
     listarPedidos, registrarPedidos,
     editarPedidos, eliminarPedidos, buscarPedido, verificarPago,
     subirComprobante, avanzarEstado, enviarFacturaEmail,
-    confirmarEntregaPorToken
+    confirmarEntregaPorToken, marcarNotificado, marcarFacturaEnviada
 )
 from utils.id_generator import generarIdSiguiente
 from services.clientes_service import buscarClientes
@@ -159,6 +159,7 @@ def cnenviarfactura(id):
 
         resultado = enviarFacturaEmail(id)
         if resultado.get('ok'):
+            marcarFacturaEnviada(id)
             return jsonify(resultado), 200
         return jsonify(resultado), 400
 
@@ -266,7 +267,8 @@ def cneverificarpago(id):
                             'cuenta_bancaria': pedido.get('ped_cuenta_bancaria', ''),
                             'total': pedido.get('ped_total', 0),
                             'usuario_id': pedido.get('ped_usu_id_fk', ''),
-                            'estado': 'Vigente'
+                            'estado': 'Vigente',
+                            'cli_id_fk': pedido.get('ped_cli_id_fk')
                         }
                         registrarFacturas(factura_data)
                         factura_creada = True
@@ -314,6 +316,8 @@ def cnnotificarpedido(id):
             email_dest = cliente.get('cli_correo')
             if email_dest:
                 resultados['email'] = enviar_email(email_dest, asunto, html)
+                if resultados['email'].get('ok'):
+                    marcarNotificado(id)
             else:
                 resultados['email'] = {'ok': False, 'error': 'El cliente no tiene correo registrado'}
 

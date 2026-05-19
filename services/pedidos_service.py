@@ -6,7 +6,7 @@ import base64
 
 def listarPedidos():
     c = current_app.mysql.connection.cursor()
-    sql = "SELECT ped_id, ped_fecha, ped_metodo_pago, ped_cuenta_bancaria, ped_comprobante_tipo, ped_estado_entrega, ped_estado_pago, ped_total, ped_cli_id_fk, ped_usu_id_fk, ped_token_entrega FROM t_pedido"
+    sql = "SELECT ped_id, ped_fecha, ped_metodo_pago, ped_cuenta_bancaria, ped_comprobante_tipo, ped_estado_entrega, ped_estado_pago, ped_total, ped_cli_id_fk, ped_usu_id_fk, ped_token_entrega, ped_notificado, ped_factura_enviada FROM t_pedido"
     c.execute(sql)
     reg = c.fetchall()
     listav = []
@@ -20,6 +20,8 @@ def listarPedidos():
         ped['ped_estado_pago'] = p[6] or 'Pendiente de pago'
         ped['ped_tiene_comprobante'] = tiene
         ped['ped_token_entrega'] = p[10]
+        ped['ped_notificado'] = bool(p[11]) if len(p) > 11 else False
+        ped['ped_factura_enviada'] = bool(p[12]) if len(p) > 12 else False
         listav.append(ped)
     return listav
 
@@ -166,6 +168,32 @@ def enviarFacturaEmail(id):
     return {'ok': False, 'error': resultado.get('error', 'Error al enviar email')}
 
 
+def marcarNotificado(id):
+    """Marca que la notificación fue enviada al cliente."""
+    c = current_app.mysql.connection.cursor()
+    c.execute("UPDATE t_pedido SET ped_notificado = 1 WHERE ped_id = %s", (id,))
+    current_app.mysql.connection.commit()
+    c.close()
+
+
+def marcarFacturaEnviada(id):
+    """Marca que la factura fue enviada al correo del cliente."""
+    c = current_app.mysql.connection.cursor()
+    c.execute("UPDATE t_pedido SET ped_factura_enviada = 1 WHERE ped_id = %s", (id,))
+    # Intentar actualizar email_enviado y fac_cli_id_fk; si la columna no existe, solo email_enviado
+    try:
+        c.execute("""
+            UPDATE t_factura f
+            JOIN t_pedido p ON f.fac_id = p.ped_id
+            SET f.fac_email_enviado = 1, f.fac_cli_id_fk = p.ped_cli_id_fk
+            WHERE f.fac_id = %s
+        """, (id,))
+    except Exception:
+        c.execute("UPDATE t_factura SET fac_email_enviado = 1 WHERE fac_id = %s", (id,))
+    current_app.mysql.connection.commit()
+    c.close()
+
+
 def eliminarPedidos(ID):
     c = current_app.mysql.connection.cursor()
     c.execute("DELETE FROM t_pedido WHERE ped_id=%s", (ID,))
@@ -176,7 +204,7 @@ def eliminarPedidos(ID):
 
 def buscarPedido(ID):
     c = current_app.mysql.connection.cursor()
-    sql = """SELECT ped_id, ped_fecha, ped_metodo_pago, ped_cuenta_bancaria, ped_comprobante, ped_comprobante_tipo, ped_estado_entrega, ped_estado_pago, ped_total, ped_cli_id_fk, ped_usu_id_fk, ped_token_entrega FROM t_pedido WHERE ped_id=%s"""
+    sql = """SELECT ped_id, ped_fecha, ped_metodo_pago, ped_cuenta_bancaria, ped_comprobante, ped_comprobante_tipo, ped_estado_entrega, ped_estado_pago, ped_total, ped_cli_id_fk, ped_usu_id_fk, ped_token_entrega, ped_notificado, ped_factura_enviada FROM t_pedido WHERE ped_id=%s"""
     c.execute(sql, (ID,))
     r = c.fetchone()
     c.close()
@@ -186,5 +214,7 @@ def buscarPedido(ID):
         ped['ped_estado_pago'] = r[7] or 'Pendiente de pago'
         ped['ped_tiene_comprobante'] = tiene
         ped['ped_token_entrega'] = r[11]
+        ped['ped_notificado'] = bool(r[12]) if len(r) > 12 else False
+        ped['ped_factura_enviada'] = bool(r[13]) if len(r) > 13 else False
         return ped
     return None

@@ -56,8 +56,22 @@ def cnRegistrarFacturas():
         if not c.fetchone():
             c.close()
             return jsonify({"mensaje": f"No existe un usuario con el ID {data['usuario_id']}"}), 404
+
+        # Obtener el cliente asociado al pedido si no se envía cli_id_fk
+        cli_id_fk = data.get('cli_id_fk')
+        if not cli_id_fk:
+            c.execute("SELECT ped_cli_id_fk FROM t_pedido WHERE ped_id = %s", (data["id"],))
+            row = c.fetchone()
+            if row:
+                cli_id_fk = row[0]
+        if cli_id_fk:
+            c.execute("SELECT cli_id FROM t_cliente WHERE cli_id = %s", (cli_id_fk,))
+            if not c.fetchone():
+                c.close()
+                return jsonify({"mensaje": f"No existe un cliente con el ID {cli_id_fk}"}), 404
         c.close()
 
+        data['cli_id_fk'] = cli_id_fk
         resultado = registrarFacturas(data)
         return jsonify(resultado), 201
 
@@ -69,6 +83,27 @@ def cnRegistrarFacturas():
 def cnEditarFacturas(fac_id):
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({"mensaje": "No se enviaron datos JSON"}), 400
+
+        # Obtener el cliente asociado al pedido si no se envía cli_id_fk
+        cli_id_fk = data.get('cli_id_fk')
+        if not cli_id_fk:
+            c = current_app.mysql.connection.cursor()
+            c.execute("SELECT ped_cli_id_fk FROM t_pedido WHERE ped_id = %s", (fac_id,))
+            row = c.fetchone()
+            if row:
+                cli_id_fk = row[0]
+            c.close()
+        if cli_id_fk:
+            c = current_app.mysql.connection.cursor()
+            c.execute("SELECT cli_id FROM t_cliente WHERE cli_id = %s", (cli_id_fk,))
+            if not c.fetchone():
+                c.close()
+                return jsonify({"mensaje": f"No existe un cliente con el ID {cli_id_fk}"}), 404
+            c.close()
+
+        data['cli_id_fk'] = cli_id_fk
         resultado = editarFacturas(fac_id, data)
         return jsonify(resultado), 200
     except Exception as e:
