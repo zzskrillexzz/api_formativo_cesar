@@ -63,9 +63,6 @@ const Ventas = () => {
   });
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
 
-  // Ref para saber si hay algún modal abierto (evitar auto-refresh durante edición)
-  const algunModalAbierto = React.useRef(false);
-
   // Guardar la URL en localStorage cada vez que cambie
   const actualizarQrUrl = (url) => {
     setQrBaseUrl(url);
@@ -112,9 +109,6 @@ const Ventas = () => {
   const [showDetalle, setShowDetalle] = useState(false);
   const [detalleTipo, setDetalleTipo] = useState(''); // 'pedido' | 'factura'
   const [detalleData, setDetalleData] = useState(null);
-  // Actualizar ref de modales abiertos (después de todas las declaraciones)
-  algunModalAbierto.current = showModal || showDetalle || showVerificarModal || showNotificarModal || showSubirComprobanteModal || showPreviewModal || showQRModal;
-
   const abrirDetallePedido = async (pedido) => {
     try {
       const [detalles, prods] = await Promise.all([
@@ -165,25 +159,28 @@ const Ventas = () => {
     }
   };
 
-  const eliminarPedido = async (id) => { if (!window.confirm('Eliminar pedido ' + id + '?')) return; try { await pedidosService.eliminar(id); fetchData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
-  const eliminarFactura = async (id) => { if (!window.confirm('Eliminar factura ' + id + '?')) return; try { await facturasService.eliminar(id); fetchData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
-  const eliminarCliente = async (id) => { if (!window.confirm('Eliminar cliente ' + id + '?')) return; try { await clientesService.eliminar(id); fetchData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
+  const eliminarPedido = async (id) => { if (!window.confirm('Eliminar pedido ' + id + '?')) return; try { await pedidosService.eliminar(id); refreshData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
+  const eliminarFactura = async (id) => { if (!window.confirm('Eliminar factura ' + id + '?')) return; try { await facturasService.eliminar(id); refreshData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
+  const eliminarCliente = async (id) => { if (!window.confirm('Eliminar cliente ' + id + '?')) return; try { await clientesService.eliminar(id); refreshData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
 
   const openModal = async () => {
-    setFormData({ ped_id: nextPedidoId });
     setEditingClienteId(null);
     setFormError('');
     setProductosSeleccionados([]);
     setShowNewClientForm(false);
     setComprobanteFileName('');
-    // Cargar productos para el selector (pedidos)
     if (tab === 'pedidos') {
+      setFormData({ ped_id: nextPedidoId });
       try {
         const prods = await productosService.listar();
         setProductosDisponibles(prods.filter(p => p.estado === 'Activo'));
       } catch {
         setProductosDisponibles([]);
       }
+    } else if (tab === 'facturas') {
+      setFormData({ id: nextFacturaId, email_enviado: '0' });
+    } else {
+      setFormData({});
     }
     setShowModal(true);
   };
@@ -252,23 +249,25 @@ const Ventas = () => {
     }
   };
 
+  // Actualización silenciosa (sin loader) para refrescos tras mutaciones o intervalos
+  const refreshData = async () => {
+    try {
+      const [peds, facs, clis] = await Promise.all([
+        pedidosService.listar().catch(() => []),
+        facturasService.listar().catch(() => []),
+        clientesService.listar().catch(() => [])
+      ]);
+      setPedidos(peds);
+      setFacturas(facs);
+      setClientes(clis);
+      setUltimaActualizacion(new Date().toLocaleTimeString());
+    } catch (err) {
+      console.error('Error refrescando ventas:', err);
+    }
+  };
+
   useEffect(() => {
     fetchData();
-    // Refrescar automáticamente cada 15s (solo si no hay modales abiertos)
-    const intervalo = setInterval(() => {
-      if (algunModalAbierto.current) return;
-      fetchData();
-    }, 15000);
-    // Refrescar también al volver a la pestaña (por si el repartidor confirmó)
-    const onFocus = () => {
-      if (algunModalAbierto.current) return;
-      fetchData();
-    };
-    window.addEventListener('focus', onFocus);
-    return () => {
-      clearInterval(intervalo);
-      window.removeEventListener('focus', onFocus);
-    };
   }, []);
 
   const tabs = [
@@ -282,7 +281,10 @@ const Ventas = () => {
     (p.ped_id || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
   const filteredFacturas = facturas.filter(f =>
-    (f.id || '').toString().toLowerCase().includes(searchTerm.toLowerCase())
+    (f.id || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (f.cli_nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (f.cli_apellido || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (f.cli_correo || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
   const filteredClientes = clientes.filter(c =>
     (c.cli_nombre || c.cli_apellido || (c.cli_id ? String(c.cli_id) : '')).toLowerCase().includes(searchTerm.toLowerCase())
@@ -403,7 +405,7 @@ const Ventas = () => {
       }
       setShowModal(false);
       setEditingPedidoId(null);
-      fetchData();
+      refreshData();
     } catch (err) {
       setFormError(err.response?.data?.mensaje || 'Error al guardar pedido');
     } finally {
@@ -438,10 +440,11 @@ const Ventas = () => {
         cuenta_bancaria: formData.forma_pago === 'Transferencia' ? formData.cuenta_bancaria || '' : null,
         total: totalFac,
         usuario_id: user?.id || '',
-        estado: formData.estado || 'Vigente'
+        estado: formData.estado || 'Vigente',
+        cli_id_fk: formData.cli_id_fk || null
       });
       setShowModal(false);
-      fetchData();
+      refreshData();
     } catch (err) {
       setFormError(err.response?.data?.mensaje || 'Error al crear factura');
     } finally {
@@ -534,7 +537,7 @@ const Ventas = () => {
 
       setShowConfirmCancel(false);
       setPedidoACancelar(null);
-      fetchData();
+      refreshData();
     } catch (err) {
       alert('Error al cancelar pedido: ' + (err.response?.data?.mensaje || err.message));
     } finally {
@@ -569,7 +572,7 @@ const Ventas = () => {
       ));
       setShowVerificarModal(false);
       setPedidoAVerificar(null);
-      fetchData(); // refuerzo con datos frescos del backend
+      refreshData(); // refuerzo con datos frescos del backend
     } catch (err) {
       alert('Error: ' + (err.response?.data?.mensaje || err.message));
     } finally {
@@ -631,7 +634,7 @@ const Ventas = () => {
       }
       setShowModal(false);
       setEditingClienteId(null);
-      fetchData();
+      refreshData();
     } catch (err) {
       setFormError(err.response?.data?.mensaje || 'Error al guardar cliente');
     } finally {
@@ -674,7 +677,7 @@ const Ventas = () => {
           />
         </div>
         <div className="flex gap-2">
-          <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm" title="Actualizar datos">
+          <button onClick={refreshData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm" title="Actualizar datos">
             <RefreshCw size={18} className="text-slate-500" />
           </button>
           {ultimaActualizacion && (
@@ -867,18 +870,19 @@ const Ventas = () => {
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-4">ID Factura</th>
+                  <th className="px-6 py-4">Cliente</th>
                   <th className="px-6 py-4">Fecha Emisión</th>
                   <th className="px-6 py-4">Forma Pago</th>
-                  <th className="px-6 py-4">Email</th>
                   <th className="px-6 py-4 text-right">Total</th>
                   <th className="px-6 py-4">Estado</th>
+                  <th className="px-6 py-4">Email</th>
                   <th className="px-6 py-4 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 text-sm font-bold text-slate-600">
                 {filteredFacturas.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400 italic">
+                    <td colSpan="8" className="px-6 py-12 text-center text-slate-400 italic">
                       {searchTerm ? 'Sin resultados' : 'No hay facturas registradas'}
                     </td>
                   </tr>
@@ -886,6 +890,12 @@ const Ventas = () => {
                   filteredFacturas.map((f, i) => (
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-6 py-4 text-slate-400 text-xs">{f.id}</td>
+                      <td className="px-6 py-4">
+                        <div className="text-xs">
+                          <span className="text-slate-800">{f.cli_nombre ? `${f.cli_nombre} ${f.cli_apellido || ''}` : `Cliente #${f.cli_id_fk || '?'}`}</span>
+                          {f.cli_correo && <div className="text-slate-400 text-[10px] mt-0.5">{f.cli_correo}</div>}
+                        </div>
+                      </td>
                       <td className="px-6 py-4">{f.fecha_emision || '-'}</td>
                       <td className="px-6 py-4">
                         {f.cuenta_bancaria
@@ -894,13 +904,13 @@ const Ventas = () => {
                             ? `Transferencia${f.forma_pago !== 'Transferencia' ? ` (${f.forma_pago})` : ''}`
                             : f.forma_pago || '-'}
                       </td>
-                      <td className="px-6 py-4">{f.email_enviado === 1 ? '✅' : '❌'}</td>
                       <td className="px-6 py-4 text-right">${parseFloat(f.total || 0).toLocaleString()}</td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoFacturaBadge(f.estado)}`}>
                           {f.estado || 'Vigente'}
                         </span>
                       </td>
+                      <td className="px-6 py-4">{f.email_enviado === 1 ? '✅ Enviado' : '❌ Pendiente'}</td>
                       <td className="px-6 py-4 text-right">
                         <button onClick={() => abrirDetalleFactura(f)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Ver factura">
                           <Eye size={16} />
@@ -1209,6 +1219,56 @@ const Ventas = () => {
                       <input name="fecha_emision" type="date" value={formData.fecha_emision || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
+
+                  {/* ── Pedido / Cliente (como los pedidos) ── */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pedido / Cliente <span className="required-star">*</span></label>
+                    <select
+                      name="pedido_seleccionado"
+                      value={formData.pedido_seleccionado || ''}
+                      onChange={(e) => {
+                        const pedId = e.target.value;
+                        const ped = pedidos.find(p => p.ped_id === pedId);
+                        if (ped) {
+                          const cli = clientes.find(c => c.cli_id === ped.ped_cli_id_fk);
+                          setFormData({
+                            ...formData,
+                            id: pedId,
+                            pedido_seleccionado: pedId,
+                            cli_id_fk: ped.ped_cli_id_fk,
+                            total: ped.ped_total,
+                            forma_pago: ped.ped_metodo_pago,
+                            cuenta_bancaria: ped.ped_cuenta_bancaria || '',
+                            fecha_emision: formData.fecha_emision || ped.ped_fecha,
+                            cli_nombre_mostrar: cli ? `${cli.cli_nombre} ${cli.cli_apellido}` : `Cliente #${ped.ped_cli_id_fk}`,
+                            cli_correo_mostrar: cli?.cli_correo || ''
+                          });
+                        }
+                      }}
+                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
+                    >
+                      <option value="">Seleccionar pedido...</option>
+                      {pedidos
+                        .filter(p => p.ped_estado_entrega !== 'Anulado')
+                        .map(p => {
+                          const cli = clientes.find(c => c.cli_id === p.ped_cli_id_fk);
+                          return (
+                            <option key={p.ped_id} value={p.ped_id}>
+                              {p.ped_id} — {cli ? `${cli.cli_nombre} ${cli.cli_apellido}` : `Cliente #${p.ped_cli_id_fk}`}
+                            </option>
+                          );
+                        })}
+                    </select>
+                    {formData.cli_nombre_mostrar && (
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-md text-sm">
+                        <div className="font-bold text-blue-700">{formData.cli_nombre_mostrar}</div>
+                        <div className="text-blue-500 text-xs mt-1">
+                          <span className="font-medium">Email:</span> {formData.cli_correo_mostrar || 'Sin correo'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Forma Pago <span className="required-star">*</span></label>
@@ -1772,7 +1832,7 @@ const Ventas = () => {
                 onClick={() => {
                   setShowQRModal(false);
                   // Refrescar datos al cerrar el QR (por si el repartidor confirmó)
-                  setTimeout(() => fetchData(), 500);
+                  setTimeout(() => refreshData(), 500);
                 }}
                 className="w-full py-2.5 text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-all"
               >
@@ -1899,7 +1959,7 @@ const Ventas = () => {
                 onSuccess={() => {
                   setShowSubirComprobanteModal(false);
                   setPedidoSubirComprobante(null);
-                  fetchData();
+                  refreshData();
                 }}
                 onCancel={() => {
                   setShowSubirComprobanteModal(false);
