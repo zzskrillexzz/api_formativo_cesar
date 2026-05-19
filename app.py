@@ -1,3 +1,5 @@
+import os
+import socket
 from flask import Flask, jsonify
 from flask_mysqldb import MySQL
 from routers import cargarruta
@@ -31,9 +33,40 @@ def handle_exception(error):
     response.status_code = 500
     return response
 
+
+def find_free_port(preferred_port):
+    """
+    Intenta usar el puerto preferido; si está ocupado,
+    deja que el SO asigne uno libre automáticamente.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        sock.bind(('0.0.0.0', preferred_port))
+        return preferred_port
+    except OSError:
+        sock.bind(('0.0.0.0', 0))
+        return sock.getsockname()[1]
+    finally:
+        sock.close()
+
+
 mysql = MySQL(app)
 app.mysql = mysql
 cargarruta(app)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    # 1. Leer puerto de variable de entorno PORT (si existe)
+    # 2. Si no, usar 5000 como preferido
+    # 3. Si el puerto está ocupado, usar uno libre
+    preferred = int(os.getenv('PORT', 5000))
+    port = find_free_port(preferred)
+
+    print(f"\n{'='*50}")
+    print(f"  🚀 Backend corriendo en:  http://localhost:{port}")
+    print(f"  📡 Puerto original solicitado: {preferred}")
+    if port != preferred:
+        print(f"  ⚠️  El puerto {preferred} estaba ocupado — se asignó el {port}")
+    print(f"{'='*50}\n")
+
+    app.run(debug=True, port=port, host='0.0.0.0')
