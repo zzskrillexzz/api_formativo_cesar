@@ -6,10 +6,13 @@ __pycache__/
 build/
 *.spec
 
-
 # Ignorar el ejecutable final y sus dependencias internas
-dist/
+#dist/
 
 # Ignorar CUALQUIER archivo .env en cualquier carpeta
 .env
 dist/app/.env
+
+# Ignorar la carpeta pesada de dependencias internas
+dist/app/_internal/
+_internal/
