@@ -23,6 +23,7 @@ const Compras = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [formError, setFormError] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({});
   const [editData, setEditData] = useState({});
   const [comprobanteFile, setComprobanteFile] = useState(null);
@@ -46,7 +47,15 @@ const Compras = () => {
   useEffect(() => { fetchData(); }, []);
 
   const openModal = () => {
-    setFormData({});
+    if (tab === 'compras') {
+      const nums = compras.map(c => { const m = (c.comp_id || '').match(/COM(\d+)/); return m ? parseInt(m[1]) : 0; });
+      const max = nums.length > 0 ? Math.max(...nums) : 0;
+      setFormData({ com_id: 'COM' + String(max + 1).padStart(3, '0') });
+    } else {
+      const nums = proveedores.map(p => { const m = (p.id || '').match(/PROV(\d+)/); return m ? parseInt(m[1]) : 0; });
+      const max = nums.length > 0 ? Math.max(...nums) : 0;
+      setFormData({ id: 'PROV' + String(max + 1).padStart(3, '0') });
+    }
     setFormError('');
     setComprobanteFile(null);
     setShowModal(true);
@@ -69,6 +78,7 @@ const Compras = () => {
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setFormData({ ...formData, [name]: value });
+    validateField(name, value);
   };
 
   const handleEditChange = (e) => {
@@ -76,6 +86,36 @@ const Compras = () => {
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setEditData({ ...editData, [name]: value });
+    validateField(name, value);
+  };
+
+  const validateField = (name, value) => {
+    const newErrors = { ...errors };
+    if (tab === 'compras') {
+      if (name === 'com_id' && !value) newErrors.com_id = 'El ID es obligatorio';
+      else if (name === 'com_id') delete newErrors.com_id;
+      if (name === 'com_fecha' && !value) newErrors.com_fecha = 'La fecha es obligatoria';
+      else if (name === 'com_fecha') delete newErrors.com_fecha;
+      if (name === 'com_prov_id_fk' && !value) newErrors.com_prov_id_fk = 'Selecciona un proveedor';
+      else if (name === 'com_prov_id_fk') delete newErrors.com_prov_id_fk;
+      if (name === 'com_total' && (!value || parseFloat(value) <= 0)) newErrors.com_total = 'Debe ser mayor a 0';
+      else if (name === 'com_total') delete newErrors.com_total;
+    }
+    if (tab === 'proveedores') {
+      if (name === 'id' && !value) newErrors.id = 'El ID es obligatorio';
+      else if (name === 'id') delete newErrors.id;
+      if (name === 'nit' && !value) newErrors.nit = 'El NIT es obligatorio';
+      else if (name === 'nit') delete newErrors.nit;
+      if (name === 'nombre' && !value) newErrors.nombre = 'El nombre es obligatorio';
+      else if (name === 'nombre') delete newErrors.nombre;
+      if (name === 'tipo' && !value) newErrors.tipo = 'Selecciona un tipo';
+      else if (name === 'tipo') delete newErrors.tipo;
+      if (name === 'contacto' && !value) newErrors.contacto = 'El contacto es obligatorio';
+      else if (name === 'contacto') delete newErrors.contacto;
+      if (name === 'email' && !value) newErrors.email = 'El email es obligatorio';
+      else if (name === 'email') delete newErrors.email;
+    }
+    setErrors(newErrors);
   };
 
   const handleFileChange = (e, isEdit = false) => {
@@ -410,20 +450,21 @@ const Compras = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="com_id" autoFocus value={formData.com_id || ''} onChange={handleChange}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="com_id" value={formData.com_id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
                       <input name="com_fecha" type="date" value={formData.com_fecha || ''} onChange={handleChange}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                        className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_fecha ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.com_fecha && <p className="text-red-500 text-xs mt-1">{errors.com_fecha}</p>}
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor <span className="required-star">*</span></label>
                     <select name="com_prov_id_fk" value={formData.com_prov_id_fk || ''} onChange={handleChange}
-                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_prov_id_fk ? 'border-red-400' : 'border-slate-100'}`}>
                       <option value="">Seleccionar proveedor...</option>
+                      {errors.com_prov_id_fk && <p className="text-red-500 text-xs mt-1">{errors.com_prov_id_fk}</p>}
                       {proveedores.map(p => <option key={p.prov_id} value={p.prov_id}>{p.prov_nombre} ({p.prov_id})</option>)}
                     </select>
                   </div>
@@ -431,7 +472,8 @@ const Compras = () => {
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total <span className="required-star">*</span></label>
                       <input name="com_total" type="number" step="0.01" value={formData.com_total || ''} onChange={handleChange}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                        className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_total ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.com_total && <p className="text-red-500 text-xs mt-1">{errors.com_total}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
@@ -461,25 +503,27 @@ const Compras = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="id" autoFocus value={formData.id || ''} onChange={handleChange}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="id" value={formData.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">NIT <span className="required-star">*</span></label>
                       <input name="nit" value={formData.nit || ''} onChange={handleChange}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                        className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nit ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.nit && <p className="text-red-500 text-xs mt-1">{errors.nit}</p>}
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
                     <input name="nombre" value={formData.nombre || ''} onChange={handleChange}
-                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nombre ? 'border-red-400' : 'border-slate-100'}`} />
+                    {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo <span className="required-star">*</span></label>
                     <select name="tipo" value={formData.tipo || ''} onChange={handleChange}
-                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.tipo ? 'border-red-400' : 'border-slate-100'}`}>
                       <option value="">Seleccionar...</option>
+                      {errors.tipo && <p className="text-red-500 text-xs mt-1">{errors.tipo}</p>}
                       <option value="Laboratorio">Laboratorio</option>
                       <option value="Distribuidor">Distribuidor</option>
                       <option value="Importador">Importador</option>
@@ -488,7 +532,8 @@ const Compras = () => {
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Contacto <span className="required-star">*</span></label>
                     <input name="contacto" value={formData.contacto || ''} onChange={handleChange}
-                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.contacto ? 'border-red-400' : 'border-slate-100'}`} />
+                    {errors.contacto && <p className="text-red-500 text-xs mt-1">{errors.contacto}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección <span className="required-star">*</span></label>
@@ -498,12 +543,13 @@ const Compras = () => {
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email <span className="required-star">*</span></label>
                     <input name="email" type="email" value={formData.email || ''} onChange={handleChange}
-                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.email ? 'border-red-400' : 'border-slate-100'}`} />
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
                 </>
               )}
 
-              <button type="submit" disabled={formSubmitting}
+              <button type="submit" disabled={formSubmitting || Object.keys(errors).length > 0}
                 className="w-full bg-blue-600 text-white font-bold py-3 rounded-md text-sm uppercase tracking-wider hover:bg-blue-700 disabled:bg-slate-300 transition-all flex items-center justify-center gap-2">
                 {formSubmitting ? <Loader2 className="animate-spin" size={16} /> : null}
                 {tab === 'compras' ? 'Registrar Compra' : 'Registrar Proveedor'}
@@ -570,7 +616,7 @@ const Compras = () => {
                 )}
               </div>
 
-              <button type="submit" disabled={formSubmitting}
+              <button type="submit" disabled={formSubmitting || Object.keys(errors).length > 0}
                 className="w-full bg-blue-600 text-white font-bold py-3 rounded-md text-sm uppercase tracking-wider hover:bg-blue-700 disabled:bg-slate-300 transition-all flex items-center justify-center gap-2">
                 {formSubmitting ? <Loader2 className="animate-spin" size={16} /> : null}
                 Guardar Cambios

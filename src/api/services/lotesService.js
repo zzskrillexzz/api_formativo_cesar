@@ -13,8 +13,8 @@ export const lotesService = {
     const res = await api.put('/lotes/', { ...data, lot_id: id });
     return res.data;
   },
-  eliminar: async (id) => {
-    const res = await api.delete(`/lotes/${id}`);
+  eliminar: async (id, config) => {
+    const res = await api.delete(`/lotes/${id}`, config);
     return res.data;
   }
 };

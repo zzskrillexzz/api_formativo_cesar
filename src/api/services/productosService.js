@@ -13,8 +13,8 @@ export const productosService = {
     const res = await api.put('/productos/', { ...data, id });
     return res.data;
   },
-  eliminar: async (id) => {
-    const res = await api.delete(`/productos/${id}`);
+  eliminar: async (id, config) => {
+    const res = await api.delete(`/productos/${id}`, config);
     return res.data;
   }
 };

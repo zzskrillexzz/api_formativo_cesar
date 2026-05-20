@@ -1,6 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, Package, ShoppingCart, Truck, BarChart3, RotateCcw, LogOut, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, BarChart3, RotateCcw, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import logoSrc from '../../assets/image/mi-logo.png';
 
 export const Sidebar = ({ activeTab, setActiveTab }) => {
   const { role, logout } = useAuth();
@@ -23,16 +24,13 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
         <span className="absolute bottom-32 left-8 text-white/8 text-base">+</span>
       </div>
 
-      <div className="p-6 relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-white/15 backdrop-blur-sm rounded-lg flex items-center justify-center">
-            <ShieldCheck size={20} className="text-white" />
-          </div>
-          <div>
-            <span className="text-white font-black text-sm tracking-tight leading-none block select-none">EZ LOGISTICS</span>
-            <span className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">Gestion</span>
-          </div>
-        </div>
+      <div className="p-5 relative z-10 flex flex-col items-center">
+        <img
+          src={logoSrc}
+          alt="Logo"
+          className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 object-contain"
+        />
+        <span className="text-white/70 text-[10px] font-bold uppercase tracking-[0.2em] -mt-1 leading-none select-none">logistics</span>
       </div>
 
       <nav className="flex-1 px-3 space-y-0.5 relative z-10">

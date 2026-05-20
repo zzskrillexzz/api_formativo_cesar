@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Layers, AlertTriangle, Search, Plus, X, RefreshCw, Edit, Loader2 } from 'lucide-react';
+import { Package, Layers, AlertTriangle, Search, Plus, X, RefreshCw, Edit, Loader2, Trash2 } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { productosService } from '../api/services/productosService';
 import { lotesService } from '../api/services/lotesService';
@@ -21,6 +21,7 @@ const Inventario = () => {
   const [showModal, setShowModal] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -35,8 +36,26 @@ const Inventario = () => {
   const isEditing = !!editingId;
 
   const openModal = () => {
-    setFormData({});
+    let defaultData = {};
+    if (tab === 'productos') {
+      const nums = productos.map(p => { const m = (p.id || '').match(/PRO(\d+)/); return m ? parseInt(m[1]) : 0; });
+      const next = 'PRO' + String((nums.length > 0 ? Math.max(...nums) : 0) + 1).padStart(3, '0');
+      defaultData = { id: next };
+    } else if (tab === 'lotes') {
+      const nums = lotes.map(l => { const m = (l.lot_id || '').match(/LOT(\d+)/); return m ? parseInt(m[1]) : 0; });
+      const next = 'LOT' + String((nums.length > 0 ? Math.max(...nums) : 0) + 1).padStart(3, '0');
+      defaultData = { lot_id: next };
+    } else if (tab === 'movimientos') {
+      let max = 0;
+      monitorias.forEach(m => {
+        const match = (m.mon_inm_id_fk || '').match(/INM(\d+)/);
+        if (match) max = Math.max(max, parseInt(match[1]));
+      });
+      defaultData = { inm_id: 'INM' + String(max + 1).padStart(3, '0') };
+    }
+    setFormData(defaultData);
     setFormError('');
+    setErrors({});
     setEditingId(null);
     setShowModal(true);
   };
@@ -52,13 +71,30 @@ const Inventario = () => {
         estado: prod.estado || 'Activo', proveedor_id: prod.proveedor_id || ''
       });
       setFormError('');
+      setErrors({});
       setEditingId(prod.id);
       setShowModal(true);
     } catch (e) { console.error('Error al editar:', e); }
   };
 
-  const eliminarProducto = async (id) => { if (!window.confirm('Eliminar este producto? Esta accion no se puede deshacer.')) return; try { await productosService.eliminar(id); fetchData(); } catch(e) { alert('No se pudo eliminar: ' + (e.response?.data?.mensaje || e.message)); } };
-  const eliminarLote = async (id) => { if (!window.confirm('Eliminar este lote? Esta accion no se puede deshacer.')) return; try { await lotesService.eliminar(id); fetchData(); } catch(e) { alert('No se pudo eliminar: ' + (e.response?.data?.mensaje || e.message)); } };
+  const eliminarProducto = async (id) => {
+    if (!window.confirm('Eliminar este producto? Se borrarán todos sus lotes, movimientos y registros asociados.')) return;
+    try {
+      await productosService.eliminar(id, { params: { force: true } });
+      fetchData();
+    } catch(e) {
+      alert('No se pudo eliminar: ' + (e.response?.data?.mensaje || e.message));
+    }
+  };
+  const eliminarLote = async (id) => {
+    if (!window.confirm('Eliminar este lote? Se borrarán movimientos, monitoría y registros asociados.')) return;
+    try {
+      await lotesService.eliminar(id, { params: { force: true } });
+      fetchData();
+    } catch(e) {
+      alert('No se pudo eliminar: ' + (e.response?.data?.mensaje || e.message));
+    }
+  };
 
   const abrirEditarLote = (lote) => {
     setFormData({
@@ -70,6 +106,7 @@ const Inventario = () => {
       lot_estado: lote.lot_estado || 'Activo'
     });
     setFormError('');
+    setErrors({});
     setEditingId(lote.lot_id);
     setShowModal(true);
   };
@@ -79,11 +116,74 @@ const Inventario = () => {
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setFormData({ ...formData, [name]: value });
-  }; 
+    // Validación en tiempo real
+    validateField(name, value);
+  };
+
+  const validateField = (name, value) => {
+    const newErrors = { ...errors };
+    const tabActual = tab;
+
+    if (tabActual === 'productos') {
+      if (name === 'id') {
+        if (!value) newErrors.id = 'El ID es obligatorio';
+        else if (!editingId && productos.some(p => p.id === value)) newErrors.id = 'El ID ya existe';
+        else delete newErrors.id;
+      }
+      if (name === 'nombre' || (name === 'id' && !value)) {
+        if (name === 'nombre' && !value) newErrors.nombre = 'El nombre es obligatorio';
+        else if (name === 'nombre') delete newErrors.nombre;
+      }
+      if (name === 'precio' && value && parseFloat(value) <= 0) newErrors.precio = 'Debe ser mayor a 0';
+      else if (name === 'precio' && value) delete newErrors.precio;
+      if (name === 'proveedor_id' && value) delete newErrors.proveedor_id;
+    }
+
+    if (tabActual === 'lotes') {
+      if (name === 'lot_id') {
+        if (!value) newErrors.lot_id = 'El ID es obligatorio';
+        else if (!editingId && lotes.some(l => l.lot_id === value)) newErrors.lot_id = 'El ID ya existe';
+        else delete newErrors.lot_id;
+      }
+      if (name === 'lot_fecha_vencimiento' && !value) newErrors.lot_fecha_vencimiento = 'La fecha de vencimiento es obligatoria';
+      else if (name === 'lot_fecha_vencimiento') delete newErrors.lot_fecha_vencimiento;
+      if (name === 'lot_pro_id_fk' && value && !productos.some(p => p.id === value)) newErrors.lot_pro_id_fk = 'Producto no existe';
+      else if (name === 'lot_pro_id_fk') delete newErrors.lot_pro_id_fk;
+      if (name === 'lot_prov_id_fk' && value) delete newErrors.lot_prov_id_fk;
+      if (name === 'lot_cantidad_inicial' && value && parseInt(value) <= 0) newErrors.lot_cantidad_inicial = 'Debe ser mayor a 0';
+      else if (name === 'lot_cantidad_inicial') delete newErrors.lot_cantidad_inicial;
+    }
+
+    if (tabActual === 'movimientos') {
+      if (name === 'inm_id' && !value) newErrors.inm_id = 'El ID es obligatorio';
+      else if (name === 'inm_id') delete newErrors.inm_id;
+      if (name === 'inm_tipo_movimiento' && !value) newErrors.inm_tipo_movimiento = 'Selecciona un tipo';
+      else if (name === 'inm_tipo_movimiento') delete newErrors.inm_tipo_movimiento;
+      if (name === 'inm_pro_id_fk') {
+        if (!value) newErrors.inm_pro_id_fk = 'Selecciona un producto';
+        else delete newErrors.inm_pro_id_fk;
+      }
+      if (name === 'inm_lot_id_fk' && value && !lotes.some(l => l.lot_id === value)) newErrors.inm_lot_id_fk = 'Lote no existe';
+      else if (name === 'inm_lot_id_fk') delete newErrors.inm_lot_id_fk;
+      if (name === 'inm_cantidad') {
+        if (!value || parseInt(value) <= 0) newErrors.inm_cantidad = 'Debe ser mayor a 0';
+        else delete newErrors.inm_cantidad;
+      }
+      if (name === 'inm_fecha' && !value) newErrors.inm_fecha = 'La fecha es obligatoria';
+      else if (name === 'inm_fecha') delete newErrors.inm_fecha;
+      if (name === 'inm_motivo' && !value) newErrors.inm_motivo = 'El motivo es obligatorio';
+      else if (name === 'inm_motivo') delete newErrors.inm_motivo;
+    }
+
+    setErrors(newErrors);
+  };
+
+  const clearErrors = () => setErrors({});
 
   const handleSubmitProducto = async (e) => {
     e.preventDefault();
     setFormError('');
+    setErrors({});
     if (!formData.id || !formData.nombre) {
       setFormError('ID y Nombre son obligatorios');
       return;
@@ -134,6 +234,7 @@ const Inventario = () => {
   const handleSubmitLote = async (e) => {
     e.preventDefault();
     setFormError('');
+    setErrors({});
     if (!formData.lot_id || !formData.lot_fecha_vencimiento) {
       setFormError('ID y Fecha de Vencimiento son obligatorios');
       return;
@@ -173,6 +274,7 @@ const Inventario = () => {
   const handleSubmitMovimiento = async (e) => {
     e.preventDefault();
     setFormError('');
+    setErrors({});
     if (!formData.inm_id || !formData.inm_tipo_movimiento || !formData.inm_pro_id_fk || !formData.inm_fecha || !formData.inm_motivo) {
       setFormError('Todos los campos marcados con * son obligatorios');
       return;
@@ -306,7 +408,7 @@ const Inventario = () => {
           />
         </div>
         <div className="flex gap-2">
-          <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
+          <button onClick={() => fetchData()} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
             <RefreshCw size={18} className="text-slate-500" />
           </button>
           <button
@@ -356,9 +458,12 @@ const Inventario = () => {
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoBadge(p.estado)}`}>{p.estado}</span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <button onClick={() => abrirEditarProducto(p)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                      <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
+                        <button onClick={() => abrirEditarProducto(p)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Editar">
                           <Edit size={14} />
+                        </button>
+                        <button onClick={() => eliminarProducto(p.id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Eliminar">
+                          <Trash2 size={14} />
                         </button>
                       </td>
                     </tr>
@@ -611,11 +716,12 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="id" value={formData.id || ''} onChange={isEditing ? undefined : handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" style={isEditing ? {backgroundColor:'#f1f5f9', color:'#64748b', cursor:'default'} : {}} autoFocus />
+                      <input name="id" value={formData.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" autoFocus />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
-                      <input name="nombre" value={formData.nombre || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="nombre" value={formData.nombre || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nombre ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -625,7 +731,8 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Precio</label>
-                      <input name="precio" type="number" step="0.01" value={formData.precio || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="precio" type="number" step="0.01" value={formData.precio || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.precio ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.precio && <p className="text-red-500 text-xs mt-1">{errors.precio}</p>}
                     </div>
                   </div>
                   <div>
@@ -663,7 +770,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="lot_id" value={formData.lot_id || ''} onChange={isEditing ? undefined : handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" style={isEditing ? {backgroundColor:'#f1f5f9', color:'#64748b', cursor:'default'} : {}} autoFocus />
+                      <input name="lot_id" value={formData.lot_id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" autoFocus />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">N° Lote</label>
@@ -673,7 +780,13 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto ID</label>
-                      <input name="lot_pro_id_fk" value={formData.lot_pro_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <select name="lot_pro_id_fk" value={formData.lot_pro_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_pro_id_fk ? 'border-red-400' : 'border-slate-100'}`}>
+                        <option value="">Seleccionar producto...</option>
+                        {productos.filter(p => p.estado === 'Activo').map(p => (
+                          <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>
+                        ))}
+                      </select>
+                      {errors.lot_pro_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_pro_id_fk}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID</label>
@@ -687,13 +800,15 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Vencimiento <span className="required-star">*</span></label>
-                      <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_vencimiento ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.lot_fecha_vencimiento && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_vencimiento}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad Inicial</label>
-                      <input name="lot_cantidad_inicial" type="number" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="lot_cantidad_inicial" type="number" min="1" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.lot_cantidad_inicial && <p className="text-red-500 text-xs mt-1">{errors.lot_cantidad_inicial}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
@@ -714,36 +829,54 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="inm_id" autoFocus value={formData.inm_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="inm_id" value={formData.inm_id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo <span className="required-star">*</span></label>
-                      <select name="inm_tipo_movimiento" value={formData.inm_tipo_movimiento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="inm_tipo_movimiento" value={formData.inm_tipo_movimiento || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_tipo_movimiento ? 'border-red-400' : 'border-slate-100'}`}>
                         <option value="">Seleccionar...</option>
                         <option value="Entrada">Entrada</option>
                         <option value="Salida">Salida</option>
                         <option value="Ajuste">Ajuste</option>
                       </select>
+                      {errors.inm_tipo_movimiento && <p className="text-red-500 text-xs mt-1">{errors.inm_tipo_movimiento}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto ID <span className="required-star">*</span></label>
-                      <input name="inm_pro_id_fk" value={formData.inm_pro_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto <span className="required-star">*</span></label>
+                      <select name="inm_pro_id_fk" value={formData.inm_pro_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="">Seleccionar producto...</option>
+                        {productos.filter(p => p.estado === 'Activo').map(p => (
+                          <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>
+                        ))}
+                      </select>
+                      {errors.inm_pro_id_fk && <p className="text-red-500 text-xs mt-1">{errors.inm_pro_id_fk}</p>}
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lote ID</label>
-                      <input name="inm_lot_id_fk" value={formData.inm_lot_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lote</label>
+                      <select name="inm_lot_id_fk" value={formData.inm_lot_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="">Sin lote (opcional)</option>
+                        {lotes
+                          .filter(l => l.lot_pro_id_fk === formData.inm_pro_id_fk && l.lot_estado === 'Activo' && (l.lot_cantidad_actual || 0) > 0)
+                          .map(l => (
+                            <option key={l.lot_id} value={l.lot_id}>{l.lot_id} - {l.lot_numero || ''} (disp: {l.lot_cantidad_actual})</option>
+                          ))
+                        }
+                      </select>
+                      {errors.inm_lot_id_fk && <p className="text-red-500 text-xs mt-1">{errors.inm_lot_id_fk}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad <span className="required-star">*</span></label>
-                      <input name="inm_cantidad" type="number" value={formData.inm_cantidad || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="inm_cantidad" type="number" min="1" value={formData.inm_cantidad || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_cantidad ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.inm_cantidad && <p className="text-red-500 text-xs mt-1">{errors.inm_cantidad}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
-                      <input name="inm_fecha" type="date" value={formData.inm_fecha || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="inm_fecha" type="date" value={formData.inm_fecha || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_fecha ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.inm_fecha && <p className="text-red-500 text-xs mt-1">{errors.inm_fecha}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Usuario</label>
@@ -752,19 +885,23 @@ const Inventario = () => {
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Motivo <span className="required-star">*</span></label>
-                    <input name="inm_motivo" value={formData.inm_motivo || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    <input name="inm_motivo" value={formData.inm_motivo || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_motivo ? 'border-red-400' : 'border-slate-100'}`} />
+                    {errors.inm_motivo && <p className="text-red-500 text-xs mt-1">{errors.inm_motivo}</p>}
                   </div>
                 </>
               )}
 
               <button
                 type="submit"
-                disabled={formSubmitting}
+                disabled={formSubmitting || Object.keys(errors).length > 0}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-3.5 rounded-lg shadow-sm shadow-blue-100 transition-all active:scale-95 uppercase tracking-wider text-xs flex items-center justify-center gap-2"
               >
                 {formSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
                 {isEditing ? 'Actualizar' : 'Guardar'}
               </button>
+              {Object.keys(errors).length > 0 && !formSubmitting && (
+                <p className="text-red-500 text-xs text-center mt-2">Corrige los errores marcados antes de guardar</p>
+              )}
             </form>
           </div>
         </div>

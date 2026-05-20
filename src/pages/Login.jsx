@@ -7,11 +7,29 @@ const Login = () => {
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const validateField = (field, value) => {
+    const newErrors = { ...errors };
+    if (field === 'correo') {
+      if (!value.trim()) newErrors.correo = 'El correo es obligatorio';
+      else if (!/\S+@\S+\.\S+/.test(value)) newErrors.correo = 'Correo no válido';
+      else delete newErrors.correo;
+    }
+    if (field === 'password') {
+      if (!value) newErrors.password = 'La contraseña es obligatoria';
+      else delete newErrors.password;
+    }
+    setErrors(newErrors);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!correo || !password) {
+    setErrors({});
+    validateField('correo', correo);
+    validateField('password', password);
+    if (!correo.trim() || !password) {
       setError('Complete todos los campos');
       return;
     }
@@ -74,10 +92,11 @@ const Login = () => {
               <input
                 type="email"
                 placeholder="ejemplo@ezlogistics.com"
-                className="w-full bg-transparent border-none border-b border-slate-200 py-1.5 text-sm text-slate-700 outline-none focus:border-blue-500 font-medium transition-colors placeholder:text-slate-300"
+                className={`w-full bg-transparent border-b py-1.5 text-sm text-slate-700 outline-none focus:border-blue-500 font-medium transition-colors placeholder:text-slate-300 ${errors.correo ? 'border-red-400' : 'border-slate-200'}`}
                 value={correo}
-                onChange={(e) => setCorreo(e.target.value)}
+                onChange={(e) => { setCorreo(e.target.value); validateField('correo', e.target.value); }}
               />
+              {errors.correo && <p className="text-red-500 text-xs mt-1">{errors.correo}</p>}
             </div>
 
             {/* Campo CONTRASENA */}
@@ -86,10 +105,11 @@ const Login = () => {
               <input
                 type="password"
                 placeholder="••••••••"
-                className="w-full bg-transparent border-none border-b border-slate-200 py-1.5 text-sm text-slate-700 outline-none focus:border-blue-500 font-medium transition-colors placeholder:text-slate-300"
+                className={`w-full bg-transparent border-b py-1.5 text-sm text-slate-700 outline-none focus:border-blue-500 font-medium transition-colors placeholder:text-slate-300 ${errors.password ? 'border-red-400' : 'border-slate-200'}`}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); validateField('password', e.target.value); }}
               />
+              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
 
             {/* Checkbox + terminos */}
@@ -109,7 +129,7 @@ const Login = () => {
             <div className="flex items-center gap-4 pt-1 animate-slide-up animate-delay-500">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || Object.keys(errors).length > 0}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-slate-300 disabled:to-slate-300 text-white text-xs font-bold py-2.5 px-8 rounded-full shadow-lg transition-all active:scale-95 uppercase tracking-widest flex items-center gap-2 animate-glow"
                 style={{ boxShadow: '0 6px 18px rgba(37,99,235,0.25)' }}
               >

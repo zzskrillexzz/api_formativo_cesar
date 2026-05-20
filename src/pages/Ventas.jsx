@@ -23,6 +23,7 @@ const Ventas = () => {
   const [showModal, setShowModal] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
   const [productosDisponibles, setProductosDisponibles] = useState([]);
@@ -167,6 +168,7 @@ const Ventas = () => {
   const openModal = async () => {
     setEditingClienteId(null);
     setFormError('');
+    setErrors({});
     setProductosSeleccionados([]);
     setShowNewClientForm(false);
     setComprobanteFileName('');
@@ -191,6 +193,42 @@ const Ventas = () => {
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setFormData({ ...formData, [name]: value });
+    validateField(name, value);
+  };
+
+  const validateField = (name, value) => {
+    const newErrors = { ...errors };
+    const t = tab;
+    if (t === 'pedidos') {
+      if (name === 'ped_fecha' && !value) newErrors.ped_fecha = 'La fecha es obligatoria';
+      else if (name === 'ped_fecha') delete newErrors.ped_fecha;
+      if (name === 'ped_metodo_pago' && !value) newErrors.ped_metodo_pago = 'Selecciona un método de pago';
+      else if (name === 'ped_metodo_pago') delete newErrors.ped_metodo_pago;
+      if (name === 'ped_estado_entrega' && !value) newErrors.ped_estado_entrega = 'Selecciona un estado';
+      else if (name === 'ped_estado_entrega') delete newErrors.ped_estado_entrega;
+      if (name === 'ped_cli_id_fk' && !value) newErrors.ped_cli_id_fk = 'Selecciona un cliente';
+      else if (name === 'ped_cli_id_fk') delete newErrors.ped_cli_id_fk;
+    }
+    if (t === 'facturas') {
+      if (name === 'fecha_emision' && !value) newErrors.fecha_emision = 'La fecha es obligatoria';
+      else if (name === 'fecha_emision') delete newErrors.fecha_emision;
+      if (name === 'forma_pago' && !value) newErrors.forma_pago = 'Selecciona forma de pago';
+      else if (name === 'forma_pago') delete newErrors.forma_pago;
+      if (name === 'total' && value && parseFloat(value) <= 0) newErrors.total = 'Debe ser mayor a 0';
+      else if (name === 'total') delete newErrors.total;
+    }
+    if (t === 'clientes') {
+      if (name === 'cli_id' && !value) newErrors.cli_id = 'El ID es obligatorio';
+      else if (name === 'cli_id') delete newErrors.cli_id;
+      if (name === 'cli_nombre' && !value) newErrors.cli_nombre = 'El nombre es obligatorio';
+      else if (name === 'cli_nombre') delete newErrors.cli_nombre;
+      if (name === 'cli_apellido' && !value) newErrors.cli_apellido = 'El apellido es obligatorio';
+      else if (name === 'cli_apellido') delete newErrors.cli_apellido;
+      if (name === 'cli_correo' && !value) newErrors.cli_correo = 'El correo es obligatorio';
+      else if (name === 'cli_correo' && value && !/\S+@\S+\.\S+/.test(value)) newErrors.cli_correo = 'Correo no válido';
+      else if (name === 'cli_correo') delete newErrors.cli_correo;
+    }
+    setErrors(newErrors);
   };
 
   // ── Helpers para productos del pedido ──
@@ -315,6 +353,7 @@ const Ventas = () => {
 
   const handleQuickCreateCliente = async () => {
     setFormError('');
+    setErrors({});
     if (!formData.cli_id || !formData.cli_nombre || !formData.cli_apellido || !formData.cli_correo) {
       setFormError('ID, Nombre, Apellido y Correo son obligatorios para crear un cliente');
       return;
@@ -347,6 +386,7 @@ const Ventas = () => {
   const handleSubmitPedido = async (e) => {
     e.preventDefault();
     setFormError('');
+    setErrors({});
     if (!formData.ped_fecha || !formData.ped_metodo_pago || !formData.ped_estado_entrega || !formData.ped_cli_id_fk) {
       setFormError('Todos los campos con * son obligatorios');
       return;
@@ -420,6 +460,7 @@ const Ventas = () => {
   const handleSubmitFactura = async (e) => {
     e.preventDefault();
     setFormError('');
+    setErrors({});
     if (!formData.id || !formData.fecha_emision || formData.email_enviado === undefined || !formData.forma_pago) {
       setFormError('Todos los campos con * son obligatorios');
       return;
@@ -611,6 +652,7 @@ const Ventas = () => {
   const handleSubmitCliente = async (e) => {
     e.preventDefault();
     setFormError('');
+    setErrors({});
     if (!formData.cli_id || !formData.cli_tipo_documento || !formData.cli_nombre || !formData.cli_apellido || !formData.cli_correo) {
       setFormError('Los campos ID, Tipo Doc., Nombre, Apellido y Correo son obligatorios');
       return;
@@ -1009,11 +1051,12 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="ped_id" autoFocus value={formData.ped_id || ''} onChange={handleChange} disabled={!!editingPedidoId} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 disabled:text-slate-400 disabled:cursor-not-allowed" />
+                      <input name="ped_id" value={formData.ped_id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
-                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_fecha ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.ped_fecha && <p className="text-red-500 text-xs mt-1">{errors.ped_fecha}</p>}
                     </div>
                   </div>
                   <div>
@@ -1023,8 +1066,9 @@ const Ventas = () => {
                         name="ped_cli_id_fk"
                         value={formData.ped_cli_id_fk || ''}
                         onChange={handleChange}
-                        className="flex-1 p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                        className={`flex-1 p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium ${errors.ped_cli_id_fk ? 'border-red-400' : 'border-slate-100'}`}
                       >
+                      {errors.ped_cli_id_fk && <p className="text-red-500 text-xs mt-1">{errors.ped_cli_id_fk}</p>}
                         <option value="">Seleccionar cliente...</option>
                         {clientes.map(c => (
                           <option key={c.cli_id} value={c.cli_id}>
@@ -1098,7 +1142,8 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Metodo Pago <span className="required-star">*</span></label>
-                      <select name="ped_metodo_pago" value={formData.ped_metodo_pago || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="ped_metodo_pago" value={formData.ped_metodo_pago || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_metodo_pago ? 'border-red-400' : 'border-slate-100'}`}>
+                        {errors.ped_metodo_pago && <p className="text-red-500 text-xs mt-1">{errors.ped_metodo_pago}</p>}
                         <option value="">Seleccionar...</option>
                         <option value="Efectivo">Efectivo</option>
                         <option value="Tarjeta">Tarjeta</option>
@@ -1119,7 +1164,8 @@ const Ventas = () => {
                     )}
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado <span className="required-star">*</span></label>
-                      <select name="ped_estado_entrega" value={formData.ped_estado_entrega || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="ped_estado_entrega" value={formData.ped_estado_entrega || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_estado_entrega ? 'border-red-400' : 'border-slate-100'}`}>
+                        {errors.ped_estado_entrega && <p className="text-red-500 text-xs mt-1">{errors.ped_estado_entrega}</p>}
                         <option value="">Seleccionar...</option>
                         <option value="Pendiente">Pendiente</option>
                         <option value="En preparación">En preparación</option>
@@ -1216,11 +1262,12 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID Factura <span className="required-star">*</span></label>
-                      <input name="id" autoFocus value={formData.id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="id" value={formData.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Emisión <span className="required-star">*</span></label>
-                      <input name="fecha_emision" type="date" value={formData.fecha_emision || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="fecha_emision" type="date" value={formData.fecha_emision || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.fecha_emision ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.fecha_emision && <p className="text-red-500 text-xs mt-1">{errors.fecha_emision}</p>}
                     </div>
                   </div>
 
@@ -1276,7 +1323,8 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Forma Pago <span className="required-star">*</span></label>
-                      <select name="forma_pago" value={formData.forma_pago || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="forma_pago" value={formData.forma_pago || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.forma_pago ? 'border-red-400' : 'border-slate-100'}`}>
+                        {errors.forma_pago && <p className="text-red-500 text-xs mt-1">{errors.forma_pago}</p>}
                         <option value="">Seleccionar...</option>
                         <option value="Efectivo">Efectivo</option>
                         <option value="Tarjeta">Tarjeta</option>
@@ -1291,7 +1339,8 @@ const Ventas = () => {
                     )}
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total <span className="required-star">*</span></label>
-                      <input name="total" type="number" step="0.01" value={formData.total || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="total" type="number" step="0.01" value={formData.total || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.total ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.total && <p className="text-red-500 text-xs mt-1">{errors.total}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -1324,7 +1373,8 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="cli_id" type="number" autoFocus value={formData.cli_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="cli_id" type="number" autoFocus value={formData.cli_id || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_id ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.cli_id && <p className="text-red-500 text-xs mt-1">{errors.cli_id}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo Documento <span className="required-star">*</span></label>
@@ -1340,16 +1390,19 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
-                      <input name="cli_nombre" value={formData.cli_nombre || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="cli_nombre" value={formData.cli_nombre || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_nombre ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.cli_nombre && <p className="text-red-500 text-xs mt-1">{errors.cli_nombre}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Apellido <span className="required-star">*</span></label>
-                      <input name="cli_apellido" value={formData.cli_apellido || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="cli_apellido" value={formData.cli_apellido || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_apellido ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.cli_apellido && <p className="text-red-500 text-xs mt-1">{errors.cli_apellido}</p>}
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Correo <span className="required-star">*</span></label>
-                    <input name="cli_correo" type="email" value={formData.cli_correo || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    <input name="cli_correo" type="email" value={formData.cli_correo || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_correo ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.cli_correo && <p className="text-red-500 text-xs mt-1">{errors.cli_correo}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -1366,7 +1419,7 @@ const Ventas = () => {
 
               <button
                 type="submit"
-                disabled={formSubmitting}
+                disabled={formSubmitting || Object.keys(errors).length > 0}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-3.5 rounded-lg shadow-sm shadow-blue-100 transition-all active:scale-95 uppercase tracking-wider text-xs flex items-center justify-center gap-2"
               >
                 {formSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
