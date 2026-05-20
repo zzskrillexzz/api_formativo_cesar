@@ -73,9 +73,60 @@ def editarLotes(LOT_ID, data):
     c.close()
     return {"mensaje": "Lote actualizado correctamente"}
 
-def eliminarLotes(LOT_ID):
+def eliminarLotes(LOT_ID, fuerza=False):
+    """
+    Elimina un lote.
+    Si fuerza=True, elimina en cascada todos los registros que dependan de él.
+    Si fuerza=False (default), solo elimina si no tiene dependencias.
+    """
     c = current_app.mysql.connection.cursor()
-    c.execute("DELETE FROM t_lote WHERE lot_id = %s", (LOT_ID,))
-    current_app.mysql.connection.commit()
-    c.close()
-    return {"mensaje": "Lote eliminado correctamente"}
+
+    # Verificar que exista
+    c.execute("SELECT lot_id FROM t_lote WHERE lot_id = %s", (LOT_ID,))
+    if not c.fetchone():
+        c.close()
+        return {"ok": False, "mensaje": f"No existe un lote con ID {LOT_ID}"}, 404
+
+    if fuerza:
+        # Eliminar en cascada
+        # 1. Alertas de vencimiento
+        c.execute("DELETE FROM t_alerta_vencimiento WHERE alv_lot_id_fk = %s", (LOT_ID,))
+        # 2. Detalles de compra
+        c.execute("DELETE FROM t_detalle_compra WHERE dco_lot_id_fk = %s", (LOT_ID,))
+        # 3. Movimientos de inventario + su monitoria
+        c.execute("SELECT inm_id FROM t_inventario_movimiento WHERE inm_lot_id_fk = %s", (LOT_ID,))
+        for (inm_id,) in c.fetchall():
+            c.execute("DELETE FROM t_monitoria WHERE mon_inm_id_fk = %s", (inm_id,))
+        c.execute("DELETE FROM t_inventario_movimiento WHERE inm_lot_id_fk = %s", (LOT_ID,))
+        # 4. Monitoría directa
+        c.execute("DELETE FROM t_monitoria WHERE mon_lot_id_fk = %s", (LOT_ID,))
+        # 5. Detalles de pedido
+        c.execute("DELETE FROM t_detalle_pedido WHERE det_lot_id_fk = %s", (LOT_ID,))
+        # 6. El lote mismo
+        c.execute("DELETE FROM t_lote WHERE lot_id = %s", (LOT_ID,))
+        current_app.mysql.connection.commit()
+        c.close()
+        return {"ok": True, "mensaje": f"Lote {LOT_ID} eliminado junto con todos sus registros dependientes"}, 200
+    else:
+        # Verificar dependencias
+        deps = []
+        c.execute("SELECT COUNT(*) FROM t_alerta_vencimiento WHERE alv_lot_id_fk = %s", (LOT_ID,))
+        if c.fetchone()[0] > 0: deps.append("alertas de vencimiento")
+        c.execute("SELECT COUNT(*) FROM t_detalle_compra WHERE dco_lot_id_fk = %s", (LOT_ID,))
+        if c.fetchone()[0] > 0: deps.append("detalles de compra")
+        c.execute("SELECT COUNT(*) FROM t_inventario_movimiento WHERE inm_lot_id_fk = %s", (LOT_ID,))
+        if c.fetchone()[0] > 0: deps.append("movimientos de inventario")
+        c.execute("SELECT COUNT(*) FROM t_monitoria WHERE mon_lot_id_fk = %s", (LOT_ID,))
+        if c.fetchone()[0] > 0: deps.append("registros de monitoría")
+        c.execute("SELECT COUNT(*) FROM t_detalle_pedido WHERE det_lot_id_fk = %s", (LOT_ID,))
+        if c.fetchone()[0] > 0: deps.append("detalles de pedido")
+        if deps:
+            c.close()
+            return {
+                "ok": False,
+                "mensaje": f"No se puede eliminar el lote {LOT_ID} porque tiene registros dependientes en: {', '.join(deps)}. Usa fuerza=true para eliminar en cascada."
+            }, 409
+        c.execute("DELETE FROM t_lote WHERE lot_id = %s", (LOT_ID,))
+        current_app.mysql.connection.commit()
+        c.close()
+        return {"ok": True, "mensaje": f"Lote {LOT_ID} eliminado correctamente"}, 200

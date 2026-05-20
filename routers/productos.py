@@ -1,6 +1,6 @@
 from flask import Blueprint
 from services.auth_service import token_requerido
-from controllers.productos_controllers import cnListarProductos, cnRegistrarProductos, cnEditarProductos
+from controllers.productos_controllers import cnListarProductos, cnRegistrarProductos, cnEditarProductos, cnEliminarProductos
 
 productos_bp = Blueprint('productos', __name__)
 
@@ -18,3 +18,8 @@ def registrar():
 @token_requerido
 def editar():
     return cnEditarProductos()
+
+@productos_bp.route('/<id>', methods=["DELETE"])
+@token_requerido
+def eliminar(id):
+    return cnEliminarProductos(id)

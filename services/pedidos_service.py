@@ -194,8 +194,78 @@ def marcarFacturaEnviada(id):
     c.close()
 
 
+def revertirInventarioPedido(ped_id):
+    """
+    Revierte el inventario de todos los detalles de un pedido:
+    reingresa stock a productos y lotes, y registra movimientos de Entrada + monitoria.
+    """
+    from utils.id_generator import generarIdSiguiente
+
+    c = current_app.mysql.connection.cursor()
+
+    # Obtener todos los detalles del pedido
+    c.execute("SELECT det_id, det_pro_id_fk, det_lot_id_fk, det_cantidad, det_precio_unitario, det_subtotal FROM t_detalle_pedido WHERE det_ped_id_fk = %s", (ped_id,))
+    detalles = c.fetchall()
+
+    for det in detalles:
+        det_id, det_pro_id_fk, det_lot_id_fk, det_cantidad, det_precio_unitario, det_subtotal = det
+
+        # Reingresar stock al producto
+        c.execute("SELECT pro_cantidad_disponible FROM t_producto WHERE pro_id = %s", (det_pro_id_fk,))
+        row = c.fetchone()
+        if row:
+            stock_anterior = row[0] or 0
+            nuevo_stock = stock_anterior + det_cantidad
+            c.execute("UPDATE t_producto SET pro_cantidad_disponible = %s WHERE pro_id = %s", (nuevo_stock, det_pro_id_fk))
+        else:
+            stock_anterior = 0
+            nuevo_stock = det_cantidad
+
+        # Reingresar stock al lote si aplica
+        if det_lot_id_fk:
+            c.execute("SELECT lot_cantidad_actual, lot_estado FROM t_lote WHERE lot_id = %s", (det_lot_id_fk,))
+            row_lote = c.fetchone()
+            if row_lote:
+                stock_lote_anterior = row_lote[0] or 0
+                nuevo_stock_lote = stock_lote_anterior + det_cantidad
+                c.execute("UPDATE t_lote SET lot_cantidad_actual = %s WHERE lot_id = %s", (nuevo_stock_lote, det_lot_id_fk))
+                if row_lote[1] == 'Agotado' and nuevo_stock_lote > 0:
+                    c.execute("UPDATE t_lote SET lot_estado = 'Activo' WHERE lot_id = %s", (det_lot_id_fk,))
+
+        # Movimiento de inventario (Entrada por reversión)
+        inm_id = generarIdSiguiente('t_inventario_movimiento', 'inm_id', 'INM', 3)
+        c.execute("""
+            INSERT INTO t_inventario_movimiento (inm_id, inm_tipo_movimiento, inm_pro_id_fk, inm_lot_id_fk, inm_cantidad, inm_fecha, inm_motivo, inm_usu_id_fk)
+            VALUES (%s, 'Entrada', %s, %s, %s, CURDATE(), %s, NULL)
+        """, (inm_id, det_pro_id_fk, det_lot_id_fk, det_cantidad, f"Anulacion venta {ped_id}"))
+
+        # Monitoria
+        mon_id = generarIdSiguiente('t_monitoria', 'mon_id', 'MON', 3)
+        costo_total = det_cantidad * (float(det_precio_unitario) if det_precio_unitario else 0)
+        c.execute("""
+            INSERT INTO t_monitoria (mon_id, mon_pro_id_fk, mon_lot_id_fk, mon_inm_id_fk, mon_fecha, mon_tipo,
+                                     mon_cantidad, mon_saldo_anterior, mon_saldo_actual, mon_costo_unitario, mon_costo_total)
+            VALUES (%s, %s, %s, %s, CURDATE(), 'Entrada', %s, %s, %s, %s, %s)
+        """, (mon_id, det_pro_id_fk, det_lot_id_fk, inm_id, det_cantidad, stock_anterior, nuevo_stock,
+              float(det_precio_unitario) if det_precio_unitario else 0, costo_total))
+
+    # Eliminar los detalles ya revertidos
+    c.execute("DELETE FROM t_detalle_pedido WHERE det_ped_id_fk = %s", (ped_id,))
+    current_app.mysql.connection.commit()
+    c.close()
+
+
 def eliminarPedidos(ID):
     c = current_app.mysql.connection.cursor()
+
+    # Verificar si tiene detalles y revertir inventario antes de eliminar
+    c.execute("SELECT det_id FROM t_detalle_pedido WHERE det_ped_id_fk=%s LIMIT 1", (ID,))
+    if c.fetchone():
+        c.close()
+        # Revertir inventario de los detalles y eliminarlos
+        revertirInventarioPedido(ID)
+        c = current_app.mysql.connection.cursor()
+
     c.execute("DELETE FROM t_pedido WHERE ped_id=%s", (ID,))
     current_app.mysql.connection.commit()
     filas = c.rowcount

@@ -319,10 +319,22 @@ def cneverificarpago(id):
                     print(f"Error al crear factura automática para pedido {id}: {e}")
                     factura_creada = str(e)
 
+            # Si se rechazó el pago, revertir el inventario
+            inventario_revertido = None
+            if estado == 'Rechazado':
+                try:
+                    from services.pedidos_service import revertirInventarioPedido
+                    revertirInventarioPedido(id)
+                    inventario_revertido = True
+                except Exception as e:
+                    print(f"Error al revertir inventario para pedido {id}: {e}")
+                    inventario_revertido = str(e)
+
             return jsonify({
                 "mensaje": f"Pago del pedido {id} marcado como {estado}",
                 "ped_estado_pago": estado,
-                "factura_creada": factura_creada
+                "factura_creada": factura_creada,
+                "inventario_revertido": inventario_revertido
             }), 200
         return jsonify({"mensaje": "No se pudo actualizar el estado del pago"}), 500
 
@@ -391,16 +403,9 @@ def cneliminarpedidos(id):
         if not buscarPedido(id):
             return jsonify({"mensaje": f"No existe un pedido con el ID {id}"}), 404
 
-        # Verificar si el pedido tiene detalles asociados
-        c = current_app.mysql.connection.cursor()
-        c.execute("SELECT det_id FROM t_detalle_pedido WHERE det_ped_id_fk=%s LIMIT 1", (id,))
-        if c.fetchone():
-            c.close()
-            return jsonify({"mensaje": "No se puede eliminar: el pedido tiene detalles asociados"}), 409
-        c.close()
-
+        # eliminarPedidos ahora revierte el inventario automáticamente si el pedido tiene detalles
         if eliminarPedidos(id):
-            return jsonify({"mensaje": f"Pedido {id} eliminado correctamente"}), 200
+            return jsonify({"mensaje": f"Pedido {id} eliminado correctamente (inventario revertido)"}), 200
         return jsonify({"mensaje": "No se pudo eliminar el pedido"}), 500
 
     except Exception as e:

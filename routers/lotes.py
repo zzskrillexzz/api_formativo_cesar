@@ -1,6 +1,6 @@
 from flask import Blueprint
 from services.auth_service import token_requerido
-from controllers.lotes_controllers import cnlistadolotes, cnregistrarlotes, cnEditarlotes
+from controllers.lotes_controllers import cnlistadolotes, cnregistrarlotes, cnEditarlotes, cnEliminarLotes
 
 lotes_bp = Blueprint('lotes', __name__)
 
@@ -18,3 +18,8 @@ def registrar():
 @token_requerido
 def editar():
     return cnEditarlotes()
+
+@lotes_bp.route('/<id>', methods=["DELETE"])
+@token_requerido
+def eliminar(id):
+    return cnEliminarLotes(id)

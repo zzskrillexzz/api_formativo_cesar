@@ -1,5 +1,5 @@
 from flask import jsonify, request, current_app
-from services.productos_service import listarProductos, registrarProductos, editarProductos
+from services.productos_service import listarProductos, registrarProductos, editarProductos, eliminarProductos
 from utils.validators import validar_campos_texto
 
 def cnListarProductos():
@@ -74,6 +74,17 @@ def cnRegistrarProductos():
         import traceback
         print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
+
+def cnEliminarProductos(id):
+    try:
+        fuerza = request.args.get('force', 'false').lower() == 'true'
+        resultado, codigo = eliminarProductos(id, fuerza=fuerza)
+        return jsonify(resultado), codigo
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
 def cnEditarProductos():
     try:

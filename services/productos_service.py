@@ -45,6 +45,137 @@ def registrarProductos(data):
     except Exception as e:
         raise e
 
+def _forzar_eliminar_lote(cursor, lot_id):
+    """
+    Elimina un lote y todos sus registros dependientes en cascada.
+    Recibe un cursor abierto (sin commit).
+    """
+    # 1. Alertas de vencimiento que referencian al lote
+    cursor.execute("DELETE FROM t_alerta_vencimiento WHERE alv_lot_id_fk = %s", (lot_id,))
+    # 2. Detalles de compra que referencian al lote
+    cursor.execute("DELETE FROM t_detalle_compra WHERE dco_lot_id_fk = %s", (lot_id,))
+    # 3. Movimientos de inventario + su monitoria
+    cursor.execute("SELECT inm_id FROM t_inventario_movimiento WHERE inm_lot_id_fk = %s", (lot_id,))
+    for (inm_id,) in cursor.fetchall():
+        cursor.execute("DELETE FROM t_monitoria WHERE mon_inm_id_fk = %s", (inm_id,))
+    cursor.execute("DELETE FROM t_inventario_movimiento WHERE inm_lot_id_fk = %s", (lot_id,))
+    # 4. Monitoría que referencia al lote directamente
+    cursor.execute("DELETE FROM t_monitoria WHERE mon_lot_id_fk = %s", (lot_id,))
+    # 5. Detalles de pedido que referencian al lote (sin FK explicito pero existe la columna)
+    cursor.execute("DELETE FROM t_detalle_pedido WHERE det_lot_id_fk = %s", (lot_id,))
+    # 6. El lote mismo
+    cursor.execute("DELETE FROM t_lote WHERE lot_id = %s", (lot_id,))
+
+
+def eliminarProductos(pro_id, fuerza=False):
+    """
+    Elimina un producto.
+    Si fuerza=True, elimina en cascada todo lo que dependa de él (lotes, movimientos, etc.).
+    Si fuerza=False (default), solo elimina si no tiene dependencias.
+    """
+    try:
+        cursor = current_app.mysql.connection.cursor()
+
+        # Verificar que exista
+        cursor.execute("SELECT pro_nombre FROM t_producto WHERE pro_id = %s", (pro_id,))
+        prod = cursor.fetchone()
+        if not prod:
+            cursor.close()
+            return {"ok": False, "mensaje": f"No existe un producto con ID {pro_id}"}, 404
+
+        if fuerza:
+            # ── Eliminación forzada en cascada ──
+            # 1. Lotes del producto (con sus dependencias)
+            cursor.execute("SELECT lot_id FROM t_lote WHERE lot_pro_id_fk = %s", (pro_id,))
+            lots = [r[0] for r in cursor.fetchall()]
+            for lot_id in lots:
+                _forzar_eliminar_lote(cursor, lot_id)
+
+            # 2. Detalles de pedido que referencian al producto
+            cursor.execute("DELETE FROM t_detalle_pedido WHERE det_pro_id_fk = %s", (pro_id,))
+
+            # 3. Detalles de compra
+            cursor.execute("DELETE FROM t_detalle_compra WHERE dco_pro_id_fk = %s", (pro_id,))
+
+            # 4. Movimientos de inventario (los que no se fueron por lote)
+            cursor.execute("SELECT inm_id FROM t_inventario_movimiento WHERE inm_pro_id_fk = %s", (pro_id,))
+            for (inm_id,) in cursor.fetchall():
+                cursor.execute("DELETE FROM t_monitoria WHERE mon_inm_id_fk = %s", (inm_id,))
+            cursor.execute("DELETE FROM t_inventario_movimiento WHERE inm_pro_id_fk = %s", (pro_id,))
+
+            # 5. Monitoría restante
+            cursor.execute("DELETE FROM t_monitoria WHERE mon_pro_id_fk = %s", (pro_id,))
+
+            # 6. Alertas de vencimiento
+            cursor.execute("DELETE FROM t_alerta_vencimiento WHERE alv_pro_id_fk = %s", (pro_id,))
+
+            # 7. Relaciones proveedor-producto
+            cursor.execute("DELETE FROM t_proveedor_producto WHERE ppp_pro_id_fk = %s", (pro_id,))
+
+            # 8. El producto mismo
+            cursor.execute("DELETE FROM t_producto WHERE pro_id = %s", (pro_id,))
+            current_app.mysql.connection.commit()
+            filas = cursor.rowcount
+            cursor.close()
+
+            if filas == 0:
+                return {"ok": False, "mensaje": "No se pudo eliminar el producto"}, 500
+
+            return {"ok": True, "mensaje": f"Producto {pro_id} eliminado junto con {len(lots)} lote(s) y todos sus registros dependientes"}, 200
+
+        else:
+            # ── Eliminación segura (sin dependencias) ──
+            dependencias = []
+
+            cursor.execute("SELECT COUNT(*) FROM t_lote WHERE lot_pro_id_fk = %s", (pro_id,))
+            if cursor.fetchone()[0] > 0:
+                dependencias.append("lotes")
+
+            cursor.execute("SELECT COUNT(*) FROM t_detalle_pedido WHERE det_pro_id_fk = %s", (pro_id,))
+            if cursor.fetchone()[0] > 0:
+                dependencias.append("detalles de pedidos")
+
+            cursor.execute("SELECT COUNT(*) FROM t_detalle_compra WHERE dco_pro_id_fk = %s", (pro_id,))
+            if cursor.fetchone()[0] > 0:
+                dependencias.append("detalles de compras")
+
+            cursor.execute("SELECT COUNT(*) FROM t_inventario_movimiento WHERE inm_pro_id_fk = %s", (pro_id,))
+            if cursor.fetchone()[0] > 0:
+                dependencias.append("movimientos de inventario")
+
+            cursor.execute("SELECT COUNT(*) FROM t_monitoria WHERE mon_pro_id_fk = %s", (pro_id,))
+            if cursor.fetchone()[0] > 0:
+                dependencias.append("registros de monitoría")
+
+            cursor.execute("SELECT COUNT(*) FROM t_alerta_vencimiento WHERE alv_pro_id_fk = %s", (pro_id,))
+            if cursor.fetchone()[0] > 0:
+                dependencias.append("alertas de vencimiento")
+
+            cursor.execute("SELECT COUNT(*) FROM t_proveedor_producto WHERE ppp_pro_id_fk = %s", (pro_id,))
+            if cursor.fetchone()[0] > 0:
+                dependencias.append("relaciones proveedor-producto")
+
+            if dependencias:
+                cursor.close()
+                return {
+                    "ok": False,
+                    "mensaje": f"No se puede eliminar el producto {pro_id} ({prod[0]}) porque tiene registros dependientes en: {', '.join(dependencias)}. Usa fuerza=true para eliminar en cascada."
+                }, 409
+
+            cursor.execute("DELETE FROM t_producto WHERE pro_id = %s", (pro_id,))
+            current_app.mysql.connection.commit()
+            filas = cursor.rowcount
+            cursor.close()
+
+            if filas == 0:
+                return {"ok": False, "mensaje": "No se pudo eliminar el producto"}, 500
+
+            return {"ok": True, "mensaje": f"Producto {pro_id} eliminado correctamente"}, 200
+
+    except Exception as e:
+        raise e
+
+
 def editarProductos(pro_id, data):
     try:
         cursor = current_app.mysql.connection.cursor()

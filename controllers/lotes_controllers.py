@@ -1,5 +1,5 @@
 from flask import jsonify, request, current_app
-from services.lotes_service import listarLotes, registrarLotes, editarLotes
+from services.lotes_service import listarLotes, registrarLotes, editarLotes, eliminarLotes
 from utils.validators import validar_campos_texto
 
 def cnlistadolotes():
@@ -76,6 +76,17 @@ def cnregistrarlotes():
         import traceback
         print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
+
+def cnEliminarLotes(id):
+    try:
+        fuerza = request.args.get('force', 'false').lower() == 'true'
+        resultado, codigo = eliminarLotes(id, fuerza=fuerza)
+        return jsonify(resultado), codigo
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
 def cnEditarlotes():
     try:
