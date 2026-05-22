@@ -30,7 +30,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
           alt="Logo"
           className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 object-contain"
         />
-        <span className="text-white/70 text-[10px] font-bold uppercase tracking-[0.2em] -mt-1 leading-none select-none">logistics</span>
+        <span className="text-white/70 text-[20px] font-bold uppercase tracking-[0.2em] -mt-1 leading-none select-none">logistics</span>
       </div>
 
       <nav className="flex-1 px-3 space-y-0.5 relative z-10">

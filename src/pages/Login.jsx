@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/image/mi-logo.png';
 
 const Login = () => {
   const { login, loading } = useAuth();
@@ -44,17 +45,12 @@ const Login = () => {
         
         {/* ── PANEL IZQUIERDO ── */}
         <div className="hidden md:flex w-1/2 bg-gradient-to-b from-blue-600 to-blue-800 p-8 flex-col justify-between text-white relative min-h-[450px]">
-          {/* Icono superior */}
-          <div className="relative z-10">
-            <ShieldCheck size={22} className="text-white/80" />
-          </div>
+          {/* Logo superior */}
+          
 
-          {/* Espacio para logo (Ez Logistics) */}
+          {/* Espacio para logo grande */}
           <div className="relative z-10 flex flex-col items-center justify-center flex-1 -mt-10">
-            <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-4 ring-1 ring-white/20 animate-float">
-              <ShieldCheck size={32} className="text-white" />
-            </div>
-            <p className="text-white/90 text-lg font-black tracking-tight uppercase animate-fade-in animate-delay-200">Ez</p>
+            <img src={logo} alt="Logo" className="w-28 h-auto animate-float" />
             <p className="text-blue-200 text-lg font-black tracking-tight uppercase animate-fade-in animate-delay-300">Logistics</p>
             <div className="h-0.5 w-10 bg-blue-300/50 mt-3 rounded-full animate-fade-in animate-delay-400" />
           </div>

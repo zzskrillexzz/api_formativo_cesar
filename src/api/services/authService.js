@@ -9,7 +9,8 @@ export const authService = {
       });
       return response.data; // Retorna el usuario de la DB
     } catch (error) {
-      throw error.response?.data?.message || 'Error al iniciar sesión';
+      const mensaje = error.response?.data?.error || error.response?.data?.message || 'Error al iniciar sesión';
+      throw mensaje;
     }
   },
   logout: async () => {
