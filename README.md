@@ -160,10 +160,10 @@ FLASK_ENV=development          # "production" en producción
 
 # ── Base de Datos MySQL ──
 MYSQL_HOST=localhost
-MYSQL_PORT=3307
+MYSQL_PORT=330...
 MYSQL_USER=root
-MYSQL_PASSWORD=tu_password
-MYSQL_DB=BD_Distribuidora_SANDIEGO
+MYSQL_PASSWORD=xd
+MYSQL_DB=la_base_de_datos_que_tengas
 
 # ── Seguridad ──
 SECRET_KEY=clave_segura_aqui   # Generar con: python -c "import secrets; print(secrets.token_urlsafe(64))"
