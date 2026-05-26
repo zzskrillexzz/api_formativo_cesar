@@ -5,6 +5,7 @@ import { productosService } from '../api/services/productosService';
 import { lotesService } from '../api/services/lotesService';
 import { monitoriasService } from '../api/services/monitoriasService';
 import { inventariosMovimientosService } from '../api/services/inventariosMovimientosService';
+import { proveedoresService } from '../api/services/proveedoresService';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
@@ -14,6 +15,7 @@ const Inventario = () => {
   const [productos, setProductos] = useState([]);
   const [lotes, setLotes] = useState([]);
   const [monitorias, setMonitorias] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -308,13 +310,15 @@ const Inventario = () => {
   const fetchData = async (movParams = {}) => {
     setLoading(true);
     try {
-      const [prods, lots, monsRes] = await Promise.all([
+      const [prods, lots, monsRes, provs] = await Promise.all([
         productosService.listar().catch(() => []),
         lotesService.listar().catch(() => []),
-        monitoriasService.listar(movParams).catch(() => ({ data: [], total: 0 }))
+        monitoriasService.listar(movParams).catch(() => ({ data: [], total: 0 })),
+        proveedoresService.listar().catch(() => [])
       ]);
       setProductos(prods);
       setLotes(lots);
+      setProveedores(provs);
       // monsRes puede venir como {data, total} (nuevo) o array (viejo)
       if (Array.isArray(monsRes)) {
         setMonitorias(monsRes);
@@ -763,7 +767,12 @@ const Inventario = () => {
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID</label>
-                    <input name="proveedor_id" value={formData.proveedor_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    <select name="proveedor_id" value={formData.proveedor_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <option value="">Seleccionar proveedor...</option>
+                      {proveedores.map(p => (
+                        <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
+                      ))}
+                    </select>
                   </div>
                 </>
               )}
@@ -794,7 +803,12 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID</label>
-                      <input name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <select name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="">Seleccionar proveedor...</option>
+                        {proveedores.map(p => (
+                          <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
