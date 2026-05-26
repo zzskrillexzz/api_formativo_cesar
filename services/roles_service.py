@@ -70,7 +70,7 @@ def eliminarRoles(rol_id):
         cursor = current_app.mysql.connection.cursor()
         
         # Verificar si hay usuarios con este rol
-        cursor.execute("SELECT usu_id FROM t_usuario WHERE usu_rol = %s LIMIT 1", (rol_id,))
+        cursor.execute("SELECT usu_id FROM t_usuario WHERE usu_rol_id_fk = %s LIMIT 1", (rol_id,))
         if cursor.fetchone():
             cursor.close()
             return {"mensaje": "No se puede eliminar: hay usuarios con este rol", "error": True}

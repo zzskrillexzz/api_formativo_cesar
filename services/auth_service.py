@@ -8,7 +8,7 @@ import jwt
 def buscarPorCorreo(USU_CORREO):
     c = current_app.mysql.connection.cursor()
     sql = """
-        SELECT usu_id, usu_nombre, usu_rol, usu_correo, usu_contrasena, usu_estado
+        SELECT usu_id, usu_nombre, usu_rol_id_fk, usu_correo, usu_contrasena, usu_estado
         FROM t_usuario
         WHERE usu_correo = %s
     """

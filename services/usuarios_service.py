@@ -7,7 +7,7 @@ def listarUsuarios(page=1, limit=50, q=None, order_by=None, **filters):
     sb = SearchBuilder(
         table='t_usuario',
         search_fields=['usu_id', 'usu_nombre', 'usu_correo'],
-        exact_fields=['usu_rol', 'usu_estado'],
+        exact_fields=['usu_rol_id_fk', 'usu_estado'],
         default_order='usu_nombre ASC'
     )
     result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
@@ -18,7 +18,7 @@ def listarUsuarios(page=1, limit=50, q=None, order_by=None, **filters):
         u = usuarios(
             usu_id=item['usu_id'],
             usu_nombre=item['usu_nombre'],
-            usu_rol=item['usu_rol'],
+            usu_rol=item.get('usu_rol_id_fk', item.get('usu_rol')),
             usu_correo=item['usu_correo'],
             usu_contrasena=item['usu_contrasena'],
             usu_estado=item['usu_estado'],
@@ -33,7 +33,7 @@ def listarUsuarios(page=1, limit=50, q=None, order_by=None, **filters):
 def registrarUsuarios(USU_ID, USU_NOMBRE, USU_ROL, USU_CORREO, USU_CONTRASENA, USU_ESTADO, USU_ULTIMO_ACCESO):
     c = current_app.mysql.connection.cursor()
     sql = """
-        INSERT INTO t_usuario (usu_id, usu_nombre, usu_rol, usu_correo, usu_contrasena, usu_estado, usu_ultimo_acceso) 
+        INSERT INTO t_usuario (usu_id, usu_nombre, usu_rol_id_fk, usu_correo, usu_contrasena, usu_estado, usu_ultimo_acceso) 
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
     c.execute(sql, (USU_ID, USU_NOMBRE, USU_ROL, USU_CORREO, USU_CONTRASENA, USU_ESTADO, USU_ULTIMO_ACCESO))
@@ -47,7 +47,7 @@ def editarUsuarios(USU_ID, USU_NOMBRE, USU_ROL, USU_CORREO, USU_CONTRASENA, USU_
     c = current_app.mysql.connection.cursor()
     sql = """
         UPDATE t_usuario 
-        SET usu_nombre=%s, usu_rol=%s, usu_correo=%s, usu_contrasena=%s, usu_estado=%s, usu_ultimo_acceso=%s
+        SET usu_nombre=%s, usu_rol_id_fk=%s, usu_correo=%s, usu_contrasena=%s, usu_estado=%s, usu_ultimo_acceso=%s
         WHERE usu_id=%s
     """
     c.execute(sql, (USU_NOMBRE, USU_ROL, USU_CORREO, USU_CONTRASENA, USU_ESTADO, USU_ULTIMO_ACCESO, USU_ID))
@@ -68,7 +68,7 @@ def eliminarUsuarios(USU_ID):
 def buscarUsuarios(USU_ID):
     c = current_app.mysql.connection.cursor()
     sql = """
-        SELECT usu_id, usu_nombre, usu_rol, usu_correo, usu_contrasena, usu_estado, usu_ultimo_acceso 
+        SELECT usu_id, usu_nombre, usu_rol_id_fk, usu_correo, usu_contrasena, usu_estado, usu_ultimo_acceso 
         FROM t_usuario 
         WHERE usu_id = %s
     """
