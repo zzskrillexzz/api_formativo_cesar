@@ -147,11 +147,26 @@ const Inventario = () => {
         else if (!editingId && lotes.some(l => l.lot_id === value)) newErrors.lot_id = 'El ID ya existe';
         else delete newErrors.lot_id;
       }
+      if (name === 'lot_numero' && !value) newErrors.lot_numero = 'El número de lote es obligatorio';
+      else if (name === 'lot_numero') delete newErrors.lot_numero;
       if (name === 'lot_fecha_vencimiento' && !value) newErrors.lot_fecha_vencimiento = 'La fecha de vencimiento es obligatoria';
       else if (name === 'lot_fecha_vencimiento') delete newErrors.lot_fecha_vencimiento;
-      if (name === 'lot_pro_id_fk' && value && !productos.some(p => p.id === value)) newErrors.lot_pro_id_fk = 'Producto no existe';
-      else if (name === 'lot_pro_id_fk') delete newErrors.lot_pro_id_fk;
-      if (name === 'lot_prov_id_fk' && value) delete newErrors.lot_prov_id_fk;
+      if (name === 'lot_fecha_fabricacion' && value && formData.lot_fecha_vencimiento && value >= formData.lot_fecha_vencimiento) {
+        newErrors.lot_fecha_fabricacion = 'Debe ser anterior a la fecha de vencimiento';
+      } else if (name === 'lot_fecha_fabricacion') delete newErrors.lot_fecha_fabricacion;
+      if (name === 'lot_fecha_vencimiento' && value && formData.lot_fecha_fabricacion && formData.lot_fecha_fabricacion >= value) {
+        newErrors.lot_fecha_vencimiento = 'Debe ser posterior a la fecha de fabricación';
+      } else if (name === 'lot_fecha_vencimiento' && value) {
+        const soloVen = !newErrors.lot_fecha_vencimiento || newErrors.lot_fecha_vencimiento === 'Debe ser posterior a la fecha de fabricación';
+        if (soloVen) delete newErrors.lot_fecha_vencimiento;
+      }
+      if (name === 'lot_pro_id_fk') {
+        if (!value) newErrors.lot_pro_id_fk = 'Selecciona un producto';
+        else if (!productos.some(p => p.id === value)) newErrors.lot_pro_id_fk = 'Producto no existe';
+        else delete newErrors.lot_pro_id_fk;
+      }
+      if (name === 'lot_prov_id_fk' && !value) newErrors.lot_prov_id_fk = 'Selecciona un proveedor';
+      else if (name === 'lot_prov_id_fk') delete newErrors.lot_prov_id_fk;
       if (name === 'lot_cantidad_inicial' && value && parseInt(value) <= 0) newErrors.lot_cantidad_inicial = 'Debe ser mayor a 0';
       else if (name === 'lot_cantidad_inicial') delete newErrors.lot_cantidad_inicial;
     }
@@ -239,6 +254,22 @@ const Inventario = () => {
     setErrors({});
     if (!formData.lot_id || !formData.lot_fecha_vencimiento) {
       setFormError('ID y Fecha de Vencimiento son obligatorios');
+      return;
+    }
+    if (!formData.lot_numero) {
+      setFormError('El número de lote es obligatorio');
+      return;
+    }
+    if (!formData.lot_pro_id_fk) {
+      setFormError('Selecciona un producto para el lote');
+      return;
+    }
+    if (!formData.lot_prov_id_fk) {
+      setFormError('Selecciona un proveedor para el lote');
+      return;
+    }
+    if (formData.lot_fecha_fabricacion && formData.lot_fecha_vencimiento && formData.lot_fecha_fabricacion >= formData.lot_fecha_vencimiento) {
+      setFormError('La fecha de fabricación debe ser anterior a la fecha de vencimiento');
       return;
     }
     const cantInicial = parseInt(formData.lot_cantidad_inicial, 10);
@@ -786,8 +817,9 @@ const Inventario = () => {
                       <input name="lot_id" value={formData.lot_id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" autoFocus />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">N° Lote</label>
-                      <input name="lot_numero" value={formData.lot_numero || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">N° Lote <span className="required-star">*</span></label>
+                      <input name="lot_numero" value={formData.lot_numero || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_numero ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.lot_numero && <p className="text-red-500 text-xs mt-1">{errors.lot_numero}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -802,19 +834,21 @@ const Inventario = () => {
                       {errors.lot_pro_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_pro_id_fk}</p>}
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID</label>
-                      <select name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID <span className="required-star">*</span></label>
+                      <select name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_prov_id_fk ? 'border-red-400' : 'border-slate-100'}`}>
                         <option value="">Seleccionar proveedor...</option>
                         {proveedores.map(p => (
                           <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
                         ))}
                       </select>
+                      {errors.lot_prov_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_prov_id_fk}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Fabricación</label>
-                      <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_fabricacion ? 'border-red-400' : 'border-slate-100'}`} />
+                      {errors.lot_fecha_fabricacion && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_fabricacion}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Vencimiento <span className="required-star">*</span></label>
