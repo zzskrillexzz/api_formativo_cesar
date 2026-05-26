@@ -215,7 +215,6 @@ const Compras = () => {
     setFormSubmitting(true);
     try {
       await comprasService.editar(compraId, { com_estado: nuevoEstado });
-      setShowStatusModal(null);
       fetchData();
     } catch (err) {
       setFormError(err.response?.data?.mensaje || 'Error al cambiar estado');
@@ -271,12 +270,14 @@ const Compras = () => {
   ];
 
   const filteredCompras = compras.filter(c =>
-    (c.comp_id || '').toLowerCase().includes(searchTerm.toLowerCase())
+    [c.comp_id, c.comp_fecha, c.comp_prov_id_fk, c.comp_estado, c.comp_total, c.comp_observacion
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
   );
   const focusTrapRef = useFocusTrap(showModal || showEditModal);
 
   const filteredProveedores = proveedores.filter(p =>
-    (p.prov_nombre || p.prov_id || '').toLowerCase().includes(searchTerm.toLowerCase())
+    [p.prov_id, p.prov_nombre, p.prov_nit, p.prov_tipo, p.prov_contacto, p.prov_email, p.prov_direccion
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const estadoBadge = (estado) => {

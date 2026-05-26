@@ -218,7 +218,7 @@ const Inventario = () => {
         proveedor_id: formData.proveedor_id || null
       };
       if (isEditing) {
-        await productosService.editar(payload);
+        await productosService.editar(payload.id, payload);
       } else {
         await productosService.registrar(payload);
       }
@@ -258,7 +258,7 @@ const Inventario = () => {
         lot_estado: formData.lot_estado || 'Activo'
       };
       if (isEditing) {
-        await lotesService.editar(payload);
+        await lotesService.editar(payload.lot_id, payload);
       } else {
         await lotesService.registrar(payload);
       }
@@ -336,8 +336,8 @@ const Inventario = () => {
   useEffect(() => {
     if (tab !== 'movimientos') return;
     const params = {
-      limit: POR_PAGINA,
-      offset: (pagina - 1) * POR_PAGINA
+      page: pagina,
+      limit: POR_PAGINA
     };
     if (filtroTipo) params.tipo = filtroTipo;
     if (filtroFechaDesde) params.fecha_desde = filtroFechaDesde;
@@ -353,10 +353,14 @@ const Inventario = () => {
   ];
 
   const filteredProductos = productos.filter(p =>
-    (p.nombre || p.id || '').toLowerCase().includes(searchTerm.toLowerCase())
+    [p.id, p.nombre, p.categoria, p.descripcion, p.precio, p.estado,
+     p.cantidad_disponible, p.stock_minimo, p.proveedor_id
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
   );
   const filteredLotes = lotes.filter(l => {
-    const busca = (l.lot_id || l.lot_numero || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const busca = [l.lot_id, l.lot_numero, l.lot_fecha_fabricacion, l.lot_fecha_vencimiento,
+      l.lot_cantidad_inicial, l.lot_cantidad_actual, l.lot_pro_id_fk, l.lot_prov_id_fk, l.lot_estado
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     const porEstado = !filtroEstado || l.lot_estado === filtroEstado;
     const porProveedor = !filtroProveedor || (l.lot_prov_id_fk || '').toLowerCase().includes(filtroProveedor.toLowerCase());
     return busca && porEstado && porProveedor;

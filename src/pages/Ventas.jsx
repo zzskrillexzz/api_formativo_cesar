@@ -320,16 +320,19 @@ const Ventas = () => {
 
   const filteredPedidos = pedidos.filter(p =>
     (showAnulados || p.ped_estado_entrega !== 'Anulado') &&
-    (p.ped_id || '').toLowerCase().includes(searchTerm.toLowerCase())
+    [p.ped_id, p.ped_cli_id_fk, p.ped_fecha, p.ped_metodo_pago, p.ped_total,
+     p.ped_estado_pago, p.ped_estado_entrega, p.ped_cuenta_bancaria
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
   );
   const filteredFacturas = facturas.filter(f =>
-    (f.id || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (f.cli_nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (f.cli_apellido || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (f.cli_correo || '').toLowerCase().includes(searchTerm.toLowerCase())
+    [f.id, f.cli_nombre, f.cli_apellido, f.cli_correo, f.forma_pago,
+     f.fecha_emision, f.total, f.estado, f.cuenta_bancaria, f.cli_id_fk
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
   );
   const filteredClientes = clientes.filter(c =>
-    (c.cli_nombre || c.cli_apellido || (c.cli_id ? String(c.cli_id) : '')).toLowerCase().includes(searchTerm.toLowerCase())
+    [c.cli_id, c.cli_nombre, c.cli_apellido, c.cli_tipo_documento, c.cli_correo,
+     c.cli_telefono, c.cli_direccion, c.cli_nit
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getEstadoEntregaBadge = (estado) => {
