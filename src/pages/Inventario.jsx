@@ -28,7 +28,6 @@ const Inventario = () => {
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('');
-  const [filtroProveedor, setFiltroProveedor] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
@@ -397,8 +396,7 @@ const Inventario = () => {
       l.lot_cantidad_inicial, l.lot_cantidad_actual, l.lot_pro_id_fk, l.lot_prov_id_fk, l.lot_estado
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     const porEstado = !filtroEstado || l.lot_estado === filtroEstado;
-    const porProveedor = !filtroProveedor || (l.lot_prov_id_fk || '').toLowerCase().includes(filtroProveedor.toLowerCase());
-    return busca && porEstado && porProveedor;
+    return busca && porEstado;
   });
 
   const focusTrapRef = useFocusTrap(showModal);
@@ -532,16 +530,9 @@ const Inventario = () => {
               <option value="Vencido">Vencido</option>
               <option value="Cuarentena">Cuarentena</option>
             </select>
-            <input
-              type="text"
-              placeholder="Filtrar por proveedor..."
-              value={filtroProveedor}
-              onChange={(e) => setFiltroProveedor(e.target.value)}
-              className="text-xs border border-slate-200 rounded-md px-2.5 py-1.5 bg-white outline-none w-48"
-            />
-            {(filtroEstado || filtroProveedor) && (
+            {(filtroEstado) && (
               <button
-                onClick={() => { setFiltroEstado(''); setFiltroProveedor(''); }}
+                onClick={() => { setFiltroEstado(''); }}
                 className="text-xs text-red-500 font-medium hover:text-red-700 ml-auto"
               >
                 Limpiar filtros
