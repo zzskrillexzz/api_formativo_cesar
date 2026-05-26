@@ -7,17 +7,17 @@ from services.pedidos_service import (
 )
 from utils.id_generator import generarIdSiguiente
 from utils.validators import validar_campos_texto
+from utils.error_handler import safe_controller
+from utils.logger import get_logger
+
+log = get_logger(__name__)
 from services.clientes_service import buscarClientes
 from services.notificaciones_service import enviar_email, enviar_whatsapp, generar_mensaje_pedido_listo
 
+@safe_controller
 def cnlistadopedidos():
-    try:
-        x = listarPedidos()
-        return jsonify(x), 200
-    except Exception as e:
-        import traceback
-        print(traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
+    x = listarPedidos()
+    return jsonify(x), 200
 
 def cnregistrarpedidos():
     try:
@@ -118,20 +118,15 @@ def cnregistrarpedidos():
         return jsonify({"mensaje": "Pedido realizado correctamente", "datos": resultado}), 201
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        log.error(Error, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
+@safe_controller
 def cnbuscarpedido(id):
-    try:
-        pedido = buscarPedido(id)
-        if not pedido:
-            return jsonify({"mensaje": f"No existe un pedido con el ID {id}"}), 404
-        return jsonify(pedido), 200
-    except Exception as e:
-        import traceback
-        print(traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
+    pedido = buscarPedido(id)
+    if not pedido:
+        return jsonify({"mensaje": f"No existe un pedido con el ID {id}"}), 404
+    return jsonify(pedido), 200
 
 def cnsubircomprobante(id):
     try:
@@ -151,8 +146,7 @@ def cnsubircomprobante(id):
         return jsonify({"mensaje": "No se pudo actualizar el comprobante"}), 500
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        log.error(Error, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 def cnavanzarestado(id):
@@ -169,8 +163,7 @@ def cnavanzarestado(id):
     except ValueError as e:
         return jsonify({"mensaje": str(e)}), 400
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        log.error(Error, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 def cnenviarfactura(id):
@@ -186,8 +179,7 @@ def cnenviarfactura(id):
         return jsonify(resultado), 400
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        log.error(Error, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 def cneditarpedidos(id):
@@ -205,20 +197,17 @@ def cneditarpedidos(id):
         if faltantes:
             return jsonify({"mensaje": f"Faltan los siguientes campos: {faltantes}"}), 400
 
-        # Validar que la fecha no sea anterior a hoy
+        # Validar formato de fecha (se permite cualquier fecha en edición)
         from datetime import date
         try:
             fecha_pedido = data["ped_fecha"]
             if isinstance(fecha_pedido, str):
                 año, mes, dia = map(int, fecha_pedido.split("-"))
-                fecha_pedido_obj = date(año, mes, dia)
+                date(año, mes, dia)  # solo validar que sea fecha válida
             else:
                 return jsonify({"mensaje": "El formato de ped_fecha no es válido (use YYYY-MM-DD)"}), 400
         except (ValueError, TypeError):
             return jsonify({"mensaje": "El formato de ped_fecha no es válido (use YYYY-MM-DD)"}), 400
-
-        if fecha_pedido_obj < date.today():
-            return jsonify({"mensaje": "No se pueden crear pedidos en fechas pasadas. La fecha debe ser hoy o posterior."}), 400
 
         # Validar longitud de campos de texto opcionales
         errores = validar_campos_texto(data, "ped_cuenta_bancaria", "ped_comprobante_tipo")
@@ -269,8 +258,7 @@ def cneditarpedidos(id):
         return jsonify({"mensaje": "Pedido actualizado correctamente", "datos": resultado}), 200
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        log.error(Error, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -339,8 +327,7 @@ def cneverificarpago(id):
         return jsonify({"mensaje": "No se pudo actualizar el estado del pago"}), 500
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        log.error(Error, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -393,8 +380,7 @@ def cnnotificarpedido(id):
         }), 200
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        log.error(Error, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -409,8 +395,7 @@ def cneliminarpedidos(id):
         return jsonify({"mensaje": "No se pudo eliminar el pedido"}), 500
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        log.error(Error, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -592,8 +577,7 @@ def cnconfirmarentrega(token):
         )
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        log.error(Error, exc_info=True)
         return render_template_string(PAGINA_CONFIRMACION,
             icono='❌',
             titulo='Error del servidor',

@@ -14,7 +14,6 @@ class usuarios:
             "nombre": self.usu_nombre,
             "rol": self.usu_rol,
             "correo": self.usu_correo,
-            "contrasena": self.usu_contrasena,
             "estado": self.usu_estado,
             "ultimo_acceso": str(self.usu_ultimo_acceso) if self.usu_ultimo_acceso else None
         }

@@ -1174,6 +1174,271 @@
           "404": { "description": "Relación proveedor_producto no encontrada" }
         }
       }
+    },
+
+    "/login": {
+      "post": {
+        "tags": ["AUTENTICACIÓN"],
+        "summary": "Iniciar sesión",
+        "description": "Autentica un usuario y retorna un token JWT",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login exitoso",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginResponse" } } }
+          },
+          "401": { "description": "Credenciales incorrectas" }
+        }
+      }
+    },
+
+    "/logout": {
+      "post": {
+        "tags": ["AUTENTICACIÓN"],
+        "summary": "Cerrar sesión",
+        "description": "Revoca el token JWT actual",
+        "responses": {
+          "200": { "description": "Sesión cerrada correctamente" },
+          "401": { "description": "Token inválido o no proporcionado" }
+        }
+      }
+    },
+
+    "/roles": {
+      "get": {
+        "tags": ["ROLES"],
+        "summary": "Listar todos los roles",
+        "responses": {
+          "200": {
+            "description": "Lista de roles",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Rol" } } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["ROLES"],
+        "summary": "Crear un nuevo rol",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Rol" } } }
+        },
+        "responses": {
+          "201": { "description": "Rol creado exitosamente" },
+          "400": { "description": "Datos inválidos" },
+          "409": { "description": "El rol ya existe" }
+        }
+      },
+      "put": {
+        "tags": ["ROLES"],
+        "summary": "Actualizar un rol",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Rol" } } }
+        },
+        "responses": {
+          "200": { "description": "Rol actualizado correctamente" },
+          "404": { "description": "Rol no encontrado" }
+        }
+      }
+    },
+
+    "/roles/eliminar/{rol_id}": {
+      "delete": {
+        "tags": ["ROLES"],
+        "summary": "Eliminar un rol",
+        "parameters": [
+          { "name": "rol_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Rol eliminado correctamente" },
+          "404": { "description": "Rol no encontrado" },
+          "409": { "description": "No se puede eliminar: hay usuarios con este rol" }
+        }
+      }
+    },
+
+    "/roles/buscar": {
+      "get": {
+        "tags": ["ROLES"],
+        "summary": "Buscar rol por ID",
+        "parameters": [
+          { "name": "rol_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos del rol",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Rol" } } }
+          },
+          "404": { "description": "Rol no encontrado" }
+        }
+      }
+    },
+
+    "/pedidos/{id}/avanzar-estado": {
+      "put": {
+        "tags": ["PEDIDOS"],
+        "summary": "Avanzar estado de entrega (En preparación → En camino → Entregado)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Estado avanzado correctamente" },
+          "400": { "description": "No se puede avanzar desde el estado actual" },
+          "404": { "description": "Pedido no encontrado" }
+        }
+      }
+    },
+
+    "/pedidos/{id}/verificar-pago": {
+      "put": {
+        "tags": ["PEDIDOS"],
+        "summary": "Verificar o rechazar pago de un pedido",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "estado_pago": { "type": "string", "enum": ["Verificado", "Rechazado"] }
+                },
+                "required": ["estado_pago"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Pago verificado/rechazado correctamente" },
+          "400": { "description": "Estado inválido o pago ya verificado" },
+          "404": { "description": "Pedido no encontrado" }
+        }
+      }
+    },
+
+    "/pedidos/{id}/comprobante": {
+      "put": {
+        "tags": ["PEDIDOS"],
+        "summary": "Subir comprobante de pago (base64)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ped_comprobante": { "type": "string", "description": "Comprobante en base64" },
+                  "ped_comprobante_tipo": { "type": "string", "description": "MIME type (ej: application/pdf)" }
+                },
+                "required": ["ped_comprobante", "ped_comprobante_tipo"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Comprobante subido correctamente" },
+          "404": { "description": "Pedido no encontrado" }
+        }
+      }
+    },
+
+    "/pedidos/{id}/enviar-factura": {
+      "post": {
+        "tags": ["PEDIDOS"],
+        "summary": "Enviar factura por email al cliente",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Factura enviada correctamente" },
+          "400": { "description": "Error al enviar (cliente sin correo, etc.)" },
+          "404": { "description": "Pedido no encontrado" }
+        }
+      }
+    },
+
+    "/pedidos/{id}/notificar": {
+      "post": {
+        "tags": ["PEDIDOS"],
+        "summary": "Notificar al cliente que su pedido está listo (email y/o WhatsApp)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "medio": { "type": "string", "enum": ["email", "whatsapp", "ambos"], "default": "ambos" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Notificación procesada" },
+          "400": { "description": "Pago no verificado" },
+          "404": { "description": "Pedido no encontrado" }
+        }
+      }
+    },
+
+    "/verificar/{pedido_id}": {
+      "get": {
+        "tags": ["PÚBLICO"],
+        "summary": "Consultar estado de un pedido (público)",
+        "security": [],
+        "parameters": [
+          { "name": "pedido_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Estado del pedido" },
+          "404": { "description": "Pedido no encontrado" },
+          "429": { "description": "Demasiadas solicitudes (rate limit)" }
+        }
+      }
+    },
+
+    "/confirmar-entrega/{token}": {
+      "get": {
+        "tags": ["PÚBLICO"],
+        "summary": "Página de confirmación de entrega (QR)",
+        "security": [],
+        "parameters": [
+          { "name": "token", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Página HTML de confirmación de entrega" },
+          "404": { "description": "Token inválido" }
+        }
+      },
+      "post": {
+        "tags": ["PÚBLICO"],
+        "summary": "Confirmar entrega (envío del formulario QR)",
+        "security": [],
+        "parameters": [
+          { "name": "token", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Entrega confirmada exitosamente" },
+          "400": { "description": "Pedido ya entregado o en estado no válido" },
+          "404": { "description": "Token inválido" }
+        }
+      }
     }
   },
 
@@ -1394,6 +1659,37 @@
           "ppp_pro_id_fk": { "type": "string", "description": "ID del producto" }
         },
         "required": ["ppp_prov_id_fk", "ppp_pro_id_fk"]
+      },
+
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "usu_correo": { "type": "string", "format": "email", "description": "Correo del usuario" },
+          "usu_contrasena": { "type": "string", "format": "password", "description": "Contraseña del usuario" }
+        },
+        "required": ["usu_correo", "usu_contrasena"]
+      },
+
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string", "description": "Token JWT de acceso" },
+          "token_type": { "type": "string", "description": "Tipo de token (bearer)" },
+          "usu_id": { "type": "string", "description": "ID del usuario autenticado" },
+          "usu_nombre": { "type": "string", "description": "Nombre del usuario" },
+          "usu_rol_id_fk": { "type": "string", "description": "ID del rol del usuario" }
+        }
+      },
+
+      "Rol": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "ID del rol" },
+          "nombre": { "type": "string", "description": "Nombre del rol" },
+          "descripcion": { "type": "string", "description": "Descripción del rol" },
+          "estado": { "type": "integer", "description": "Estado (0=Inactivo, 1=Activo)", "default": 1 }
+        },
+        "required": ["id", "nombre"]
       }
     }
   }

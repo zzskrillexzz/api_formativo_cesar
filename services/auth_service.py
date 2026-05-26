@@ -1,5 +1,5 @@
 from flask import current_app, request, jsonify
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 import hashlib
 import bcrypt
@@ -8,7 +8,7 @@ import jwt
 def buscarPorCorreo(USU_CORREO):
     c = current_app.mysql.connection.cursor()
     sql = """
-        SELECT usu_id, usu_nombre, usu_rol_id_fk, usu_correo, usu_contrasena, usu_estado
+        SELECT usu_id, usu_nombre, usu_rol, usu_correo, usu_contrasena, usu_estado
         FROM t_usuario
         WHERE usu_correo = %s
     """
@@ -38,7 +38,7 @@ def crearToken(usu_id, usu_correo, usu_rol):
         "sub": usu_correo,
         "id":  usu_id,
         "rol": usu_rol,
-        "exp": datetime.utcnow() + timedelta(hours=8)
+        "exp": datetime.now(timezone.utc) + timedelta(hours=8)
     }
     return jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm="HS256")
 

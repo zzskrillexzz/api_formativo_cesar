@@ -1,11 +1,18 @@
 import os
 import sys
-import traceback
 import socket
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_mysqldb import MySQL
 from routers import cargarruta
 from config import config
+from utils.logger import get_logger, _LOG_DIR
+
+# ── Forzar salida UTF-8 en consola Windows ──
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
+log = get_logger(__name__)
 
 app = Flask(__name__)
 app.config.from_object(config)
@@ -20,16 +27,15 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    # Seguridad básica en headers
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
     return response
 
 # ── Manejador global de errores: siempre devuelve JSON con CORS ──
 @app.errorhandler(Exception)
 def handle_exception(error):
-    print(f"\n{'='*60}")
-    print(f"  ❌ ERROR 500 — {type(error).__name__}")
-    print(f"{'='*60}")
-    traceback.print_exc()
-    print(f"{'='*60}\n")
+    log.error("ERROR 500 — %s: %s", type(error).__name__, str(error), exc_info=True)
     response = jsonify({
         "error": "Error interno del servidor",
         "detalle": str(error)
@@ -37,6 +43,8 @@ def handle_exception(error):
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
     response.status_code = 500
     return response
 
@@ -67,25 +75,40 @@ with app.app_context():
         c = mysql.connection.cursor()
         c.execute("SELECT 1")
         c.close()
-        print("  ✅ Conexión a MySQL establecida correctamente")
+        log.info("Conexion a MySQL establecida correctamente")
     except Exception as e:
-        print(f"\n  ❌ ERROR DE CONEXIÓN A MYSQL: {e}")
-        print(f"     Revisa las credenciales en Backend/.env\n")
+        log.critical("ERROR DE CONEXION A MYSQL: %s — Revisa las credenciales en Backend/.env", e)
 
 cargarruta(app)
 
+# ── Servir el frontend build desde Flask ──
+FRONTEND_DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Frontend', 'dist')
+if os.path.isdir(FRONTEND_DIST):
+    @app.route('/assets/<path:filename>')
+    def frontend_assets(filename):
+        return send_from_directory(os.path.join(FRONTEND_DIST, 'assets'), filename)
+
+    @app.route('/<path:path>')
+    def frontend_fallback(path):
+        filepath = os.path.join(FRONTEND_DIST, path)
+        if os.path.isfile(filepath):
+            return send_from_directory(FRONTEND_DIST, path)
+        return send_from_directory(FRONTEND_DIST, 'index.html')
+
+    log.info("Sirviendo frontend desde: %s", FRONTEND_DIST)
+else:
+    log.warning("Frontend build no encontrado en %s — ejecuta: cd Frontend && pnpm build", FRONTEND_DIST)
+
 if __name__ == '__main__':
-    # 1. Leer puerto de variable de entorno PORT (si existe)
-    # 2. Si no, usar 5000 como preferido
-    # 3. Si el puerto está ocupado, usar uno libre
     preferred = int(os.getenv('PORT', 5000))
     port = find_free_port(preferred)
 
-    print(f"\n{'='*50}")
-    print(f"  🚀 Backend corriendo en:  http://localhost:{port}")
-    print(f"  📡 Puerto original solicitado: {preferred}")
+    log.info("=" * 50)
+    log.info("Backend corriendo en: http://localhost:%s", port)
+    log.info("Puerto original solicitado: %s", preferred)
     if port != preferred:
-        print(f"  ⚠️  El puerto {preferred} estaba ocupado — se asignó el {port}")
-    print(f"{'='*50}\n")
+        log.warning("El puerto %s estaba ocupado — se asigno el %s", preferred, port)
+    log.info("Logs en: %s", _LOG_DIR)
+    log.info("=" * 50)
 
     app.run(debug=True, port=port, host='0.0.0.0')

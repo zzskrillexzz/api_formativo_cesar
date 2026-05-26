@@ -15,8 +15,6 @@ class proveedores:
             "prov_nombre": self.prov_nombre,
             "prov_tipo": self.prov_tipo,
             "prov_contacto": self.prov_contacto,
-            "prov_telefono": self.prov_contacto,
             "prov_direccion": self.prov_direccion,
-            "prov_email": self.prov_email,
-            "prov_correo": self.prov_email
+            "prov_email": self.prov_email
         }
