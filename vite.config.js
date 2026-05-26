@@ -4,8 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '',  // Rutas relativas para servir desde Flask
   plugins: [
     react(),
-    tailwindcss(), // Añade esta línea
+    tailwindcss(),
   ],
 });
