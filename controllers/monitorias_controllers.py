@@ -7,19 +7,13 @@ from utils.error_handler import safe_controller
 
 @safe_controller
 def cnlistarMonitoria():
-    # ── Leer query params opcionales ──
-    limit = request.args.get("limit", type=int)
-    offset = request.args.get("offset", type=int)
-    tipo = request.args.get("tipo")
-    fecha_desde = request.args.get("fecha_desde")
-    fecha_hasta = request.args.get("fecha_hasta")
-    q = request.args.get("q")
-
-    resultado = listarMonitoria(
-        limit=limit, offset=offset,
-        tipo=tipo, fecha_desde=fecha_desde,
-        fecha_hasta=fecha_hasta, q=q
-    )
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 50, type=int)
+    q = request.args.get('q', None)
+    order_by = request.args.get('order_by', None)
+    # Pasar filtros específicos desde request.args
+    filtros = {k: v for k, v in request.args.items() if k not in ('page', 'limit', 'q', 'order_by')}
+    resultado = listarMonitoria(page=page, limit=limit, q=q, order_by=order_by, **filtros)
     return jsonify(resultado), 200
 
 @safe_controller

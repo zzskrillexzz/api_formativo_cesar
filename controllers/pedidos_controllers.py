@@ -16,7 +16,12 @@ from services.notificaciones_service import enviar_email, enviar_whatsapp, gener
 
 @safe_controller
 def cnlistadopedidos():
-    x = listarPedidos()
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 50, type=int)
+    q = request.args.get('q', None)
+    order_by = request.args.get('order_by', None)
+    filtros = {k: v for k, v in request.args.items() if k not in ('page', 'limit', 'q', 'order_by')}
+    x = listarPedidos(page=page, limit=limit, q=q, order_by=order_by, **filtros)
     return jsonify(x), 200
 
 def cnregistrarpedidos():
@@ -118,7 +123,7 @@ def cnregistrarpedidos():
         return jsonify({"mensaje": "Pedido realizado correctamente", "datos": resultado}), 201
 
     except Exception as e:
-        log.error(Error, exc_info=True)
+        log.error(f"Error en registrarPedidos: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @safe_controller
@@ -146,7 +151,7 @@ def cnsubircomprobante(id):
         return jsonify({"mensaje": "No se pudo actualizar el comprobante"}), 500
 
     except Exception as e:
-        log.error(Error, exc_info=True)
+        log.error(f"Error en subirComprobante: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 def cnavanzarestado(id):
@@ -163,7 +168,7 @@ def cnavanzarestado(id):
     except ValueError as e:
         return jsonify({"mensaje": str(e)}), 400
     except Exception as e:
-        log.error(Error, exc_info=True)
+        log.error(f"Error en avanzarEstado: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 def cnenviarfactura(id):
@@ -179,7 +184,7 @@ def cnenviarfactura(id):
         return jsonify(resultado), 400
 
     except Exception as e:
-        log.error(Error, exc_info=True)
+        log.error(f"Error en enviarFactura: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 def cneditarpedidos(id):
@@ -258,7 +263,7 @@ def cneditarpedidos(id):
         return jsonify({"mensaje": "Pedido actualizado correctamente", "datos": resultado}), 200
 
     except Exception as e:
-        log.error(Error, exc_info=True)
+        log.error(f"Error en editarPedidos: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -327,7 +332,7 @@ def cneverificarpago(id):
         return jsonify({"mensaje": "No se pudo actualizar el estado del pago"}), 500
 
     except Exception as e:
-        log.error(Error, exc_info=True)
+        log.error(f"Error en verificarPago: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -380,7 +385,7 @@ def cnnotificarpedido(id):
         }), 200
 
     except Exception as e:
-        log.error(Error, exc_info=True)
+        log.error(f"Error en notificarPedido: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -395,7 +400,7 @@ def cneliminarpedidos(id):
         return jsonify({"mensaje": "No se pudo eliminar el pedido"}), 500
 
     except Exception as e:
-        log.error(Error, exc_info=True)
+        log.error(f"Error en eliminarPedidos: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -577,7 +582,7 @@ def cnconfirmarentrega(token):
         )
 
     except Exception as e:
-        log.error(Error, exc_info=True)
+        log.error(f"Error en confirmarEntrega: {e}", exc_info=True)
         return render_template_string(PAGINA_CONFIRMACION,
             icono='❌',
             titulo='Error del servidor',

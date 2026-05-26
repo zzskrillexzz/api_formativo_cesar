@@ -1,16 +1,29 @@
 from flask import current_app
 from models.devoluciones_model import devoluciones
+from utils.search_builder import SearchBuilder
 from utils.id_generator import generarIdSiguiente
 
-def listarDevoluciones():
+def listarDevoluciones(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    c.execute("SELECT dev_id, dev_ped_id_fk, dev_pro_id_fk, dev_lot_id_fk, dev_cantidad, dev_motivo, dev_fecha, dev_usu_id_fk FROM t_devolucion ORDER BY dev_fecha DESC")
-    datos = c.fetchall()
+    sb = SearchBuilder(
+        table='t_devolucion',
+        search_fields=['dev_id', 'dev_motivo'],
+        exact_fields=['dev_fac_id_fk', 'dev_usu_id_fk'],
+        range_fields={'dev_fecha': 'date'},
+        default_order='dev_fecha DESC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     lista = []
-    for p in datos:
-        d = devoluciones(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7])
+    for item in result['data']:
+        d = devoluciones(item['dev_id'], item.get('dev_ped_id_fk'), item.get('dev_pro_id_fk'),
+                         item.get('dev_lot_id_fk'), item.get('dev_cantidad'),
+                         item['dev_motivo'], item.get('dev_fecha'), item.get('dev_usu_id_fk'))
         lista.append(d.todic())
-    return lista
+
+    result['data'] = lista
+    return result
 
 def generarId():
     c = current_app.mysql.connection.cursor()

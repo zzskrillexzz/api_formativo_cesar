@@ -1,21 +1,30 @@
 from flask import current_app
 from models.roles_model import roles
+from utils.search_builder import SearchBuilder
 
-def listarRoles():
+def listarRoles(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    sql = "SELECT rol_id, rol_nombre, rol_descripcion, rol_estado FROM t_rol"
-    c.execute(sql)
-    reg = c.fetchall()
+    sb = SearchBuilder(
+        table='t_rol',
+        search_fields=['rol_id', 'rol_nombre', 'rol_descripcion'],
+        exact_fields=['rol_estado'],
+        default_order='rol_nombre ASC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     lista = []
-    for p in reg:
+    for item in result['data']:
         rol = roles(
-            rol_id=p[0],
-            rol_nombre=p[1],
-            rol_descripcion=p[2],
-            rol_estado=p[3]
+            rol_id=item['rol_id'],
+            rol_nombre=item['rol_nombre'],
+            rol_descripcion=item['rol_descripcion'],
+            rol_estado=item['rol_estado']
         ).toDic()
         lista.append(rol)
-    return lista
+
+    result['data'] = lista
+    return result
 
 def registrarRoles(data):
     try:

@@ -1,19 +1,27 @@
 from flask import current_app
 from models.detalles_compras_model import detalles_compras
+from utils.search_builder import SearchBuilder
 
-def listarDetallesCompras():
+def listarDetallesCompras(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    sql = """
-        SELECT dco_id, dco_com_id_fk, dco_pro_id_fk, dco_lot_id_fk, dco_cantidad, dco_precio_compra, dco_subtotal 
-        FROM t_detalle_compra
-    """
-    c.execute(sql)
-    datos = c.fetchall()
+    sb = SearchBuilder(
+        table='t_detalle_compra',
+        search_fields=['dco_id', 'dco_com_id_fk', 'dco_pro_id_fk'],
+        exact_fields=['dco_com_id_fk', 'dco_pro_id_fk', 'dco_lot_id_fk'],
+        default_order='dco_id ASC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     lista = []
-    for p in datos:
-        dc = detalles_compras(p[0], p[1], p[2], p[3], p[4], p[5], p[6]).todic()
+    for item in result['data']:
+        dc = detalles_compras(item['dco_id'], item['dco_com_id_fk'], item['dco_pro_id_fk'],
+                              item.get('dco_lot_id_fk'), item['dco_cantidad'],
+                              item['dco_precio_compra'], item['dco_subtotal']).todic()
         lista.append(dc)
-    return lista
+
+    result['data'] = lista
+    return result
 
 def registrarDetallesCompras(DCO_ID, DCO_COM_ID_FK, DCO_PRO_ID_FK, DCO_LOT_ID_FK, DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL):
     c = current_app.mysql.connection.cursor()

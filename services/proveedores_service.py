@@ -1,19 +1,29 @@
 from flask import current_app
 from models.proveedores_model import proveedores
+from utils.search_builder import SearchBuilder
 
-def listarProveedores():
+def listarProveedores(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    sql = "SELECT prov_id, prov_nit, prov_nombre, prov_tipo, prov_contacto, prov_direccion, prov_email FROM t_proveedor"
-    c.execute(sql)
-    reg = c.fetchall()
+    sb = SearchBuilder(
+        table='t_proveedor',
+        search_fields=['prov_id', 'prov_nit', 'prov_nombre', 'prov_tipo', 'prov_contacto', 'prov_email'],
+        exact_fields=['prov_tipo'],
+        default_order='prov_nombre ASC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     lista = []
-    for p in reg:
+    for item in result['data']:
         prov = proveedores(
-            provID=p[0], provNit=p[1], provNombre=p[2], provTipo=p[3],
-            provContacto=p[4], provDireccion=p[5], provEmail=p[6]
+            provID=item['prov_id'], provNit=item['prov_nit'], provNombre=item['prov_nombre'],
+            provTipo=item['prov_tipo'], provContacto=item['prov_contacto'],
+            provDireccion=item['prov_direccion'], provEmail=item['prov_email']
         ).todic()
         lista.append(prov)
-    return lista
+
+    result['data'] = lista
+    return result
 
 def registrarProveedores(data):
     try:

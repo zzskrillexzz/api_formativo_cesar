@@ -1,31 +1,36 @@
 from flask import current_app
 from models.lotes_model import lotes
+from utils.search_builder import SearchBuilder
 
-def listarLotes():
+def listarLotes(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    sql = """
-        SELECT lot_id, lot_numero, lot_fecha_fabricacion, lot_fecha_vencimiento, 
-               lot_cantidad_inicial, lot_cantidad_actual, lot_pro_id_fk, lot_prov_id_fk, lot_estado 
-        FROM t_lote
-    """
-    c.execute(sql)
-    datos = c.fetchall()
-    
+    sb = SearchBuilder(
+        table='t_lote',
+        search_fields=['lot_id', 'lot_numero', 'lot_estado'],
+        exact_fields=['lot_estado', 'lot_pro_id_fk', 'lot_prov_id_fk'],
+        range_fields={'lot_fecha_fabricacion': 'date', 'lot_fecha_vencimiento': 'date', 'lot_cantidad_actual': 'int'},
+        default_order='lot_fecha_vencimiento ASC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     lista = []
-    for x in datos:
+    for item in result['data']:
         l = lotes(
-            lot_id = x[0],
-            lot_numero = x[1],
-            lot_fecha_fabricacion = x[2],
-            lot_fecha_vencimiento = x[3],
-            lot_cantidad_inicial = x[4],
-            lot_cantidad_actual = x[5],
-            lot_pro_id_fk = x[6],
-            lot_prov_id_fk = x[7],
-            lot_estado = x[8]
+            lot_id=item['lot_id'],
+            lot_numero=item['lot_numero'],
+            lot_fecha_fabricacion=item['lot_fecha_fabricacion'],
+            lot_fecha_vencimiento=item['lot_fecha_vencimiento'],
+            lot_cantidad_inicial=item['lot_cantidad_inicial'],
+            lot_cantidad_actual=item['lot_cantidad_actual'],
+            lot_pro_id_fk=item['lot_pro_id_fk'],
+            lot_prov_id_fk=item['lot_prov_id_fk'],
+            lot_estado=item['lot_estado']
         ).todic()
         lista.append(l)
-    return lista
+
+    result['data'] = lista
+    return result
 
 def registrarLotes(LOT_ID, LOT_NUMERO, LOT_FECHA_FABRICACION, LOT_FECHA_VENCIMIENTO, 
                    LOT_CANTIDAD_INICIAL, LOT_CANTIDAD_ACTUAL, LOT_PRO_ID_FK, LOT_PROV_ID_FK, LOT_ESTADO):

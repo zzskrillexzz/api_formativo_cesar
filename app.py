@@ -5,7 +5,7 @@ from flask import Flask, jsonify, send_from_directory
 from flask_mysqldb import MySQL
 from routers import cargarruta
 from config import config
-from utils.logger import get_logger, _LOG_DIR
+from utils.logger import get_logger
 
 # ── Forzar salida UTF-8 en consola Windows ──
 if sys.platform == 'win32':
@@ -108,7 +108,6 @@ if __name__ == '__main__':
     log.info("Puerto original solicitado: %s", preferred)
     if port != preferred:
         log.warning("El puerto %s estaba ocupado — se asigno el %s", preferred, port)
-    log.info("Logs en: %s", _LOG_DIR)
     log.info("=" * 50)
 
     app.run(debug=True, port=port, host='0.0.0.0')

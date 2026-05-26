@@ -1,13 +1,13 @@
 from flask import Blueprint
 from services.auth_service import token_requerido
-from controllers.sesiones_controllers import cnbuscarsesiones,cneditarsesiones,cnlistadosesiones,cneliminarsesiones, cnregistrarsesiones
+from controllers.sesiones_controllers import cnbuscarsesiones,cneditarsesiones,cnlistarsesiones,cneliminarsesiones, cnregistrarsesiones
 
 sesiones_bp = Blueprint('sesiones', __name__)
 
 @sesiones_bp.route('/', methods=["GET"])
 @token_requerido
 def listado():
-    return cnlistadosesiones()
+    return cnlistarsesiones()
 
 @sesiones_bp.route('/', methods=["POST"])
 @token_requerido

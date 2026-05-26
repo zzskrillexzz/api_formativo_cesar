@@ -1,23 +1,32 @@
 from flask import current_app
+from utils.search_builder import SearchBuilder
 from utils.id_generator import generarIdSiguiente
 
-def listarDetallesPedidos():
+def listarDetallesPedidos(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    c.execute("SELECT det_id, det_ped_id_fk, det_pro_id_fk, det_lot_id_fk, det_cantidad, det_precio_unitario, det_subtotal FROM t_detalle_pedido")
-    datos = c.fetchall()
-    lista = []
-    for row in datos:
-        lista.append({
-            "det_id": row[0],
-            "det_ped_id_fk": row[1],
-            "det_pro_id_fk": row[2],
-            "det_lot_id_fk": row[3],
-            "det_cantidad": row[4],
-            "det_precio_unitario": float(row[5]) if row[5] else None,
-            "det_subtotal": float(row[6]) if row[6] else None
-        })
+    sb = SearchBuilder(
+        table='t_detalle_pedido',
+        search_fields=['det_id', 'det_ped_id_fk', 'det_pro_id_fk'],
+        exact_fields=['det_ped_id_fk', 'det_pro_id_fk', 'det_lot_id_fk'],
+        default_order='det_id ASC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
     c.close()
-    return lista
+
+    lista = []
+    for item in result['data']:
+        lista.append({
+            "det_id": item['det_id'],
+            "det_ped_id_fk": item['det_ped_id_fk'],
+            "det_pro_id_fk": item['det_pro_id_fk'],
+            "det_lot_id_fk": item.get('det_lot_id_fk'),
+            "det_cantidad": item['det_cantidad'],
+            "det_precio_unitario": float(item['det_precio_unitario']) if item.get('det_precio_unitario') else None,
+            "det_subtotal": float(item['det_subtotal']) if item.get('det_subtotal') else None
+        })
+
+    result['data'] = lista
+    return result
 
 def _descontarInventario(c, det_pro_id_fk, det_lot_id_fk, det_cantidad, det_ped_id_fk, det_precio_unitario, det_subtotal):
     """

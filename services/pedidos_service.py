@@ -2,28 +2,40 @@ from flask import current_app
 from models.pedidos_model import pedidos
 from services.notificaciones_service import enviar_email, generar_mensaje_factura_envio
 from services.clientes_service import buscarClientes
+from utils.search_builder import SearchBuilder
 import base64
 
-def listarPedidos():
+def listarPedidos(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    sql = "SELECT ped_id, ped_fecha, ped_metodo_pago, ped_cuenta_bancaria, ped_comprobante_tipo, ped_estado_entrega, ped_estado_pago, ped_total, ped_cli_id_fk, ped_usu_id_fk, ped_token_entrega, ped_notificado, ped_factura_enviada FROM t_pedido"
-    c.execute(sql)
-    reg = c.fetchall()
+    sb = SearchBuilder(
+        table='t_pedido',
+        search_fields=['ped_id', 'ped_metodo_pago', 'ped_estado_entrega', 'ped_estado_pago'],
+        exact_fields=['ped_estado_entrega', 'ped_estado_pago', 'ped_metodo_pago', 'ped_cli_id_fk', 'ped_usu_id_fk'],
+        range_fields={'ped_fecha': 'date', 'ped_total': 'decimal'},
+        default_order='ped_fecha DESC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     listav = []
-    for p in reg:
-        tiene = p[4] is not None
+    for item in result['data']:
+        tiene = item.get('ped_comprobante_tipo') is not None
         ped = pedidos(
-            ID=p[0], FECHA=p[1], METODO_DE_PAGO=p[2], CUENTA_BANCARIA=p[3],
-            ped_comprobante_tipo=p[4],
-            ESTADO=p[5], TOTAL=p[7], ID_CLIENTE=p[8], ped_usu_id_fk=p[9]
+            ID=item['ped_id'], FECHA=item['ped_fecha'], METODO_DE_PAGO=item['ped_metodo_pago'],
+            CUENTA_BANCARIA=item.get('ped_cuenta_bancaria'),
+            ped_comprobante_tipo=item.get('ped_comprobante_tipo'),
+            ESTADO=item['ped_estado_entrega'], TOTAL=item['ped_total'],
+            ID_CLIENTE=item['ped_cli_id_fk'], ped_usu_id_fk=item.get('ped_usu_id_fk')
         ).a_diccionario()
-        ped['ped_estado_pago'] = p[6] or 'Pendiente de pago'
+        ped['ped_estado_pago'] = item.get('ped_estado_pago') or 'Pendiente de pago'
         ped['ped_tiene_comprobante'] = tiene
-        ped['ped_token_entrega'] = p[10]
-        ped['ped_notificado'] = bool(p[11]) if len(p) > 11 else False
-        ped['ped_factura_enviada'] = bool(p[12]) if len(p) > 12 else False
+        ped['ped_token_entrega'] = item.get('ped_token_entrega')
+        ped['ped_notificado'] = bool(item.get('ped_notificado')) if item.get('ped_notificado') is not None else False
+        ped['ped_factura_enviada'] = bool(item.get('ped_factura_enviada')) if item.get('ped_factura_enviada') is not None else False
         listav.append(ped)
-    return listav
+
+    result['data'] = listav
+    return result
 
 def registrarPedidos(ID, FECHA, METODO_DE_PAGO, ESTADO, TOTAL, ID_CLIENTE, ped_cuenta_bancaria=None, ped_comprobante=None, ped_comprobante_tipo=None, ped_usu_id_fk=None):
     c = current_app.mysql.connection.cursor()

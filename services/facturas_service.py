@@ -1,28 +1,38 @@
 from flask import current_app
 from models.facturas_model import facturas
+from utils.search_builder import SearchBuilder
 
-def listarFacturas():
+def listarFacturas(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    sql = """
-        SELECT f.fac_id, f.fac_fecha_emision, f.fac_email_enviado, f.fac_forma_pago,
-               f.fac_cuenta_bancaria, f.fac_total, f.fac_usu_id_fk, f.fac_estado,
-               p.ped_cli_id_fk, cl.cli_nombre, cl.cli_apellido, cl.cli_correo
-        FROM t_factura f
-        LEFT JOIN t_pedido p ON f.fac_id = p.ped_id
-        LEFT JOIN t_cliente cl ON p.ped_cli_id_fk = cl.cli_id
-    """
-    c.execute(sql)
-    reg = c.fetchall()
+    sb = SearchBuilder(
+        table='t_factura f',
+        search_fields=['fac_id', 'fac_forma_pago', 'fac_estado'],
+        exact_fields=['fac_estado', 'fac_forma_pago', 'fac_usu_id_fk', 'fac_cli_id_fk'],
+        range_fields={'fac_fecha_emision': 'date', 'fac_total': 'decimal'},
+        join_clause='LEFT JOIN t_pedido ON fac_id = ped_id LEFT JOIN t_cliente ON ped_cli_id_fk = cli_id',
+        select_columns='f.*, cli_nombre, cli_apellido, cli_correo, ped_cli_id_fk as fac_cli_id_fk',
+        default_order='fac_fecha_emision DESC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     lista = []
-    for f_row in reg:
+    for item in result['data']:
         fac = facturas(
-            id=f_row[0], fecha_emision=f_row[1], email_enviado=f_row[2],
-            forma_pago=f_row[3], cuenta_bancaria=f_row[4], total=f_row[5],
-            usuario_id=f_row[6], fac_estado=f_row[7],
-            cli_id_fk=f_row[8], cli_nombre=f_row[9], cli_apellido=f_row[10], cli_correo=f_row[11]
+            id=item['fac_id'], fecha_emision=item['fac_fecha_emision'],
+            email_enviado=item['fac_email_enviado'],
+            forma_pago=item['fac_forma_pago'], cuenta_bancaria=item['fac_cuenta_bancaria'],
+            total=item['fac_total'], usuario_id=item['fac_usu_id_fk'],
+            fac_estado=item['fac_estado'],
+            cli_id_fk=item.get('fac_cli_id_fk'),
+            cli_nombre=item.get('cli_nombre'),
+            cli_apellido=item.get('cli_apellido'),
+            cli_correo=item.get('cli_correo')
         ).todic()
         lista.append(fac)
-    return lista
+
+    result['data'] = lista
+    return result
 
 def registrarFacturas(data):
     try:

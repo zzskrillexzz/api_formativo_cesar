@@ -1,12 +1,24 @@
 from flask import current_app
 from models.mas_vendidos_model import mas_vendidos
+from utils.search_builder import SearchBuilder
 
-def listarMasVendidos():
+def listarMasVendidos(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    c.execute("SELECT pro_id, pro_nombre, total_unidades_vendidas FROM v_mas_vendidos ORDER BY total_unidades_vendidas DESC")
-    datos = c.fetchall()
+    sb = SearchBuilder(
+        table='v_mas_vendidos',
+        search_fields=['pro_id', 'pro_nombre'],
+        default_order='total_unidades_vendidas DESC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
     c.close()
+
     lista = []
-    for p in datos:
-        lista.append(mas_vendidos(p[0], p[1], p[2]).todic())
-    return lista
+    for item in result['data']:
+        lista.append(mas_vendidos(
+            item['pro_id'],
+            item['pro_nombre'],
+            item.get('total_unidades_vendidas', item.get('total_vendido', 0))
+        ).todic())
+
+    result['data'] = lista
+    return result

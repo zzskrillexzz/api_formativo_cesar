@@ -1,43 +1,31 @@
-from flask import jsonify, request, current_app
+from flask import jsonify, request
 from services.sesiones_service import listarSesiones, registrarSesiones, editarSesiones, eliminarSesiones, buscarSesiones
-from utils.validators import validar_campos_texto
 from utils.error_handler import safe_controller
 
 @safe_controller
-def cnlistadosesiones():
-    return jsonify(listarSesiones()), 200
+def cnlistarsesiones():
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 50, type=int)
+    q = request.args.get('q', None)
+    order_by = request.args.get('order_by', None)
+    filtros = {k: v for k, v in request.args.items() if k not in ('page', 'limit', 'q', 'order_by')}
+    datos = listarSesiones(page=page, limit=limit, q=q, order_by=order_by, **filtros)
+    return jsonify(datos), 200
 
 @safe_controller
 def cnregistrarsesiones():
     data = request.get_json()
-    requerido = ["ses_id", "ses_usu_id_fk", "ses_fecha_inicio", "ses_ip", "ses_activa"]
-    
-    # Validar campos faltantes
-    if not data or any(x not in data for x in requerido):
-        return jsonify({"mensaje": "Faltan campos obligatorios"}), 400
+    if not data:
+        return jsonify({"mensaje": "No se enviaron datos JSON"}), 400
 
-    # Validar si el usuario existe (FK)
-    c = current_app.mysql.connection.cursor()
-    c.execute("SELECT usu_id FROM t_usuario WHERE usu_id = %s", (data["ses_usu_id_fk"],))
-    if not c.fetchone():
-        c.close()
-        return jsonify({"mensaje": "El usuario especificado no existe"}), 400
-
-    # Validar longitud de la IP
-    msg = validar_campos_texto(data, "ses_ip")
-    if msg:
-        return jsonify({"mensaje": " | ".join(msg)}), 400
-
-    # Validar ID duplicado
-    c.execute("SELECT ses_id FROM t_sesion WHERE ses_id = %s", (data["ses_id"],))
-    if c.fetchone():
-        c.close()
-        return jsonify({"mensaje": "El ID de sesión ya existe"}), 409
-    c.close()
+    requerido = ["ses_id", "ses_usu_id_fk", "ses_fecha_inicio", "ses_activa"]
+    faltantes = [x for x in requerido if x not in data]
+    if faltantes:
+        return jsonify({"mensaje": f"Faltan los siguientes campos: {faltantes}"}), 400
 
     resultado = registrarSesiones(
         data["ses_id"], data["ses_usu_id_fk"], data["ses_fecha_inicio"],
-        data.get("ses_fecha_fin"), data["ses_ip"], data["ses_activa"]
+        data.get("ses_fecha_fin"), data.get("ses_ip"), data["ses_activa"]
     )
     return jsonify({"mensaje": "Sesión registrada", "datos": resultado}), 201
 
@@ -46,10 +34,10 @@ def cneditarsesiones():
     data = request.get_json()
     if not data or "ses_id" not in data:
         return jsonify({"mensaje": "ID de sesión requerido"}), 400
-    
+
     resultado = editarSesiones(
-        data["ses_id"], data["ses_usu_id_fk"], data["ses_fecha_inicio"],
-        data.get("ses_fecha_fin"), data["ses_ip"], data["ses_activa"]
+        data["ses_id"], data.get("ses_usu_id_fk"), data.get("ses_fecha_inicio"),
+        data.get("ses_fecha_fin"), data.get("ses_ip"), data.get("ses_activa")
     )
     return jsonify({"mensaje": "Sesión actualizada", "datos": resultado}), 200
 

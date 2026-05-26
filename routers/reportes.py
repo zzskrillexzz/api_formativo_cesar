@@ -1,13 +1,13 @@
 from flask import Blueprint
 from services.auth_service import token_requerido
-from controllers.reportes_controllers import cnlistadoreportes, cnregistrarreportes, cneditarreportes, cneliminarreportes, cnbuscarreportes
+from controllers.reportes_controllers import cnlistarreportes, cnregistrarreportes, cneditarreportes, cneliminarreportes, cnbuscarreportes
 
 reportes_bp = Blueprint('reportes', __name__)
 
 @reportes_bp.route('/', methods=["GET"])
 @token_requerido
 def listado():
-    return cnlistadoreportes()
+    return cnlistarreportes()
 
 @reportes_bp.route('/', methods=["POST"])
 @token_requerido

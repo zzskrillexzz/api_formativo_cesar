@@ -1,21 +1,28 @@
 from flask import current_app
 from models.proveedores_productos_model import proveedores_productos
+from utils.search_builder import SearchBuilder
 
-def listarProveedoresProductos():
+def listarProveedoresProductos(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    sql = "SELECT ppp_prov_id_fk, ppp_pro_id_fk FROM t_proveedor_producto"
-    c.execute(sql)
-    datos = c.fetchall()
-    
+    sb = SearchBuilder(
+        table='t_proveedor_producto',
+        search_fields=['ppp_prov_id_fk', 'ppp_pro_id_fk'],
+        exact_fields=['ppp_prov_id_fk', 'ppp_pro_id_fk'],
+        default_order='ppp_prov_id_fk ASC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     lista = []
-    for p in datos:
+    for item in result['data']:
         pp = proveedores_productos(
-            ppp_prov_id_fk = p[0],
-            ppp_pro_id_fk = p[1]
+            ppp_prov_id_fk=item['ppp_prov_id_fk'],
+            ppp_pro_id_fk=item['ppp_pro_id_fk']
         ).todic()
         lista.append(pp)
-    
-    return lista
+
+    result['data'] = lista
+    return result
 
 
 def registrarProveedoresProductos(PPP_PROV_ID_FK, PPP_PRO_ID_FK):

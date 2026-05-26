@@ -1,24 +1,31 @@
 from flask import current_app
 from models.compras_model import compras
+from utils.search_builder import SearchBuilder
 import base64
 
-def listarCompras():
+def listarCompras(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    sql = """
-        SELECT c.com_id, c.com_fecha, c.com_prov_id_fk, c.com_usu_id_fk, c.com_total, c.com_estado, c.com_observacion,
-               c.com_comprobante_tipo
-        FROM t_compra c
-    """
-    c.execute(sql)
-    datos = c.fetchall()
-    
+    sb = SearchBuilder(
+        table='t_compra',
+        search_fields=['com_id', 'com_estado', 'com_observacion'],
+        exact_fields=['com_estado', 'com_prov_id_fk', 'com_usu_id_fk'],
+        range_fields={'com_fecha': 'date', 'com_total': 'decimal'},
+        default_order='com_fecha DESC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     lista = []
-    for x in datos:
-        tiene_comprobante = x[7] is not None
-        com = compras(x[0], x[1], x[2], x[3], x[4], x[5], x[6], None, x[7]).todic()
+    for item in result['data']:
+        tiene_comprobante = item.get('com_comprobante_tipo') is not None
+        com = compras(item['com_id'], item['com_fecha'], item['com_prov_id_fk'],
+                      item['com_usu_id_fk'], item['com_total'], item['com_estado'],
+                      item['com_observacion'], None, item.get('com_comprobante_tipo')).todic()
         com['comp_tiene_comprobante'] = tiene_comprobante
         lista.append(com)
-    return lista
+
+    result['data'] = lista
+    return result
 
 def registrarCompras(COM_ID, COM_FECHA, COM_PROV_ID_FK, COM_USU_ID_FK, COM_TOTAL, COM_ESTADO, COM_OBSERVACION, COM_COMPROBANTE=None, COM_COMPROBANTE_TIPO=None):
     c = current_app.mysql.connection.cursor()

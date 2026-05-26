@@ -1,29 +1,33 @@
 from flask import current_app
 from models.usuarios_model import usuarios
+from utils.search_builder import SearchBuilder
 
-def listarUsuarios():
+def listarUsuarios(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    sql = """
-        SELECT usu_id, usu_nombre, usu_rol, usu_correo, usu_contrasena, usu_estado, usu_ultimo_acceso 
-        FROM t_usuario
-    """
-    c.execute(sql)
-    datos = c.fetchall()
-    
+    sb = SearchBuilder(
+        table='t_usuario',
+        search_fields=['usu_id', 'usu_nombre', 'usu_correo'],
+        exact_fields=['usu_rol', 'usu_estado'],
+        default_order='usu_nombre ASC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     lista = []
-    for p in datos:
+    for item in result['data']:
         u = usuarios(
-            usu_id = p[0],
-            usu_nombre = p[1],
-            usu_rol = p[2],
-            usu_correo = p[3],
-            usu_contrasena = p[4],
-            usu_estado = p[5],
-            usu_ultimo_acceso = p[6]
+            usu_id=item['usu_id'],
+            usu_nombre=item['usu_nombre'],
+            usu_rol=item['usu_rol'],
+            usu_correo=item['usu_correo'],
+            usu_contrasena=item['usu_contrasena'],
+            usu_estado=item['usu_estado'],
+            usu_ultimo_acceso=item.get('usu_ultimo_acceso')
         ).todic()
         lista.append(u)
-    
-    return lista
+
+    result['data'] = lista
+    return result
 
 
 def registrarUsuarios(USU_ID, USU_NOMBRE, USU_ROL, USU_CORREO, USU_CONTRASENA, USU_ESTADO, USU_ULTIMO_ACCESO):

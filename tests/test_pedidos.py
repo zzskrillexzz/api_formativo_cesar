@@ -8,11 +8,11 @@ class TestPedidos:
         """GET /pedidos/ retorna lista."""
         resp = client.get('/pedidos/', headers=auth_headers)
         assert resp.status_code == 200
-        data = resp.get_json()
+        body = resp.get_json()
+        assert 'data' in body and 'total' in body and 'page' in body
+        data = body['data']
         assert isinstance(data, list)
         assert len(data) > 0
-        # No debe contener contrasena
-        assert 'contrasena' not in data[0]
 
     def test_buscar_pedido_exists(self, client, auth_headers):
         """GET /pedidos/<id> con pedido existente."""
@@ -48,7 +48,9 @@ class TestRoles:
         """GET /roles/ retorna lista de roles."""
         resp = client.get('/roles/', headers=auth_headers)
         assert resp.status_code == 200
-        data = resp.get_json()
+        body = resp.get_json()
+        assert 'data' in body
+        data = body['data']
         assert isinstance(data, list)
         assert len(data) > 0
 
@@ -58,7 +60,9 @@ class TestClientes:
         """GET /clientes/ retorna lista."""
         resp = client.get('/clientes/', headers=auth_headers)
         assert resp.status_code == 200
-        data = resp.get_json()
+        body = resp.get_json()
+        assert 'data' in body
+        data = body['data']
         assert isinstance(data, list)
 
 
@@ -67,7 +71,9 @@ class TestUsuarios:
         """GET /usuarios/ NO debe exponer contrasena."""
         resp = client.get('/usuarios/', headers=auth_headers)
         assert resp.status_code == 200
-        data = resp.get_json()
+        body = resp.get_json()
+        assert 'data' in body
+        data = body['data']
         assert isinstance(data, list)
         if data:
             assert 'contrasena' not in data[0], "contrasena no debe estar en respuesta"

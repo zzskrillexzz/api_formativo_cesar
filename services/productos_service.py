@@ -1,25 +1,37 @@
 from flask import current_app
 from models.productos_model import productos
+from utils.search_builder import SearchBuilder
 
-def listarProductos():
+def listarProductos(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
-    sql = """SELECT pro_id, pro_nombre, pro_categoria, pro_descripcion, pro_precio,
-                    pro_cantidad_disponible, pro_stock_minimo, pro_fecha_caducidad,
-                    pro_registro_invima, pro_fecha_vencimiento_registro,
-                    pro_control_especial, pro_tipo_control, pro_estado, pro_prov_id_fk
-             FROM t_producto"""
-    c.execute(sql)
-    reg = c.fetchall()
+    sb = SearchBuilder(
+        table='t_producto',
+        search_fields=['pro_id', 'pro_nombre', 'pro_categoria', 'pro_descripcion'],
+        exact_fields=['pro_estado', 'pro_categoria', 'pro_prov_id_fk', 'pro_control_especial'],
+        range_fields={'pro_precio': 'decimal', 'pro_cantidad_disponible': 'int', 'pro_stock_minimo': 'int'},
+        join_clause='LEFT JOIN t_proveedor ON pro_prov_id_fk = prov_id',
+        select_columns='t_producto.*, prov_nombre as proveedor_nombre',
+        default_order='pro_nombre ASC'
+    )
+    result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
+    c.close()
+
     lista = []
-    for p in reg:
+    for item in result['data']:
         prod = productos(
-            proID=p[0], proNombre=p[1], proCategoria=p[2], proDescripcion=p[3],
-            proPrecio=p[4], proCantidad=p[5], proStockMinimo=p[6],
-            proFechaCaducidad=p[7], proRegistroInvima=p[8], proFechaVencimientoRegistro=p[9],
-            proControlEspecial=p[10], proTipoControl=p[11], proEstado=p[12], proIDprovedor=p[13]
+            proID=item['pro_id'], proNombre=item['pro_nombre'], proCategoria=item['pro_categoria'],
+            proDescripcion=item['pro_descripcion'], proPrecio=item['pro_precio'],
+            proCantidad=item['pro_cantidad_disponible'], proStockMinimo=item['pro_stock_minimo'],
+            proFechaCaducidad=item['pro_fecha_caducidad'],
+            proRegistroInvima=item['pro_registro_invima'],
+            proFechaVencimientoRegistro=item['pro_fecha_vencimiento_registro'],
+            proControlEspecial=item['pro_control_especial'], proTipoControl=item['pro_tipo_control'],
+            proEstado=item['pro_estado'], proIDprovedor=item['pro_prov_id_fk']
         ).toDic()
         lista.append(prod)
-    return lista
+
+    result['data'] = lista
+    return result
 
 def registrarProductos(data):
     try:
