@@ -303,7 +303,7 @@ const Compras = () => {
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 bg-white border border-slate-200 px-5 py-3 rounded-lg w-96 shadow-sm">
+        <div className="flex items-center gap-3 bg-white border border-slate-300 px-5 py-3 rounded-lg w-96 shadow-sm">
           <Search size={18} className="text-slate-400" />
           <input type="text" placeholder={tab === 'compras' ? 'Buscar compra...' : 'Buscar proveedor...'}
             className="bg-transparent border-none outline-none text-sm w-full font-medium"
@@ -456,14 +456,14 @@ const Compras = () => {
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
                       <input name="com_fecha" type="date" value={formData.com_fecha || ''} onChange={handleChange}
-                        className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_fecha ? 'border-red-400' : 'border-slate-100'}`} />
+                        className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_fecha ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.com_fecha && <p className="text-red-500 text-xs mt-1">{errors.com_fecha}</p>}
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor <span className="required-star">*</span></label>
                     <select name="com_prov_id_fk" value={formData.com_prov_id_fk || ''} onChange={handleChange}
-                      className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_prov_id_fk ? 'border-red-400' : 'border-slate-100'}`}>
+                      className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_prov_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
                       <option value="">Seleccionar proveedor...</option>
                       {errors.com_prov_id_fk && <p className="text-red-500 text-xs mt-1">{errors.com_prov_id_fk}</p>}
                       {proveedores.map(p => <option key={p.prov_id} value={p.prov_id}>{p.prov_nombre} ({p.prov_id})</option>)}
@@ -473,13 +473,13 @@ const Compras = () => {
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total <span className="required-star">*</span></label>
                       <input name="com_total" type="number" step="0.01" value={formData.com_total || ''} onChange={handleChange}
-                        className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_total ? 'border-red-400' : 'border-slate-100'}`} />
+                        className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_total ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.com_total && <p className="text-red-500 text-xs mt-1">{errors.com_total}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
                       <select name="com_estado" value={formData.com_estado || 'Pendiente'} onChange={handleChange}
-                        className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
                       </select>
                     </div>
@@ -488,12 +488,12 @@ const Compras = () => {
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Observación</label>
                     <textarea name="com_observacion" rows="2" value={formData.com_observacion || ''} onChange={handleChange}
                       placeholder="Notas adicionales..."
-                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 resize-none" />
+                      className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 resize-none" />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Comprobante de pago (PDF / imagen)</label>
                     <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" onChange={(e) => handleFileChange(e, false)}
-                      className="w-full p-2 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium mt-1 file:mr-3 file:py-1.5 file:px-3 file:rounded file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 file:border-0 hover:file:bg-blue-100 transition-colors" />
+                      className="w-full p-2 bg-white border-2 border-slate-300 rounded-md outline-none text-sm font-medium mt-1 file:mr-3 file:py-1.5 file:px-3 file:rounded file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 file:border-0 hover:file:bg-blue-100 transition-colors" />
                     {comprobanteFile && <p className="text-xs text-emerald-600 font-medium mt-1">Archivo: {comprobanteFile.nombre}</p>}
                   </div>
                 </>
@@ -509,20 +509,20 @@ const Compras = () => {
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">NIT <span className="required-star">*</span></label>
                       <input name="nit" value={formData.nit || ''} onChange={handleChange}
-                        className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nit ? 'border-red-400' : 'border-slate-100'}`} />
+                        className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nit ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.nit && <p className="text-red-500 text-xs mt-1">{errors.nit}</p>}
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
                     <input name="nombre" value={formData.nombre || ''} onChange={handleChange}
-                      className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nombre ? 'border-red-400' : 'border-slate-100'}`} />
+                      className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nombre ? 'border-red-400' : 'border-slate-300'}`} />
                     {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo <span className="required-star">*</span></label>
                     <select name="tipo" value={formData.tipo || ''} onChange={handleChange}
-                      className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.tipo ? 'border-red-400' : 'border-slate-100'}`}>
+                      className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.tipo ? 'border-red-400' : 'border-slate-300'}`}>
                       <option value="">Seleccionar...</option>
                       {errors.tipo && <p className="text-red-500 text-xs mt-1">{errors.tipo}</p>}
                       <option value="Laboratorio">Laboratorio</option>
@@ -533,18 +533,18 @@ const Compras = () => {
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Contacto <span className="required-star">*</span></label>
                     <input name="contacto" value={formData.contacto || ''} onChange={handleChange}
-                      className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.contacto ? 'border-red-400' : 'border-slate-100'}`} />
+                      className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.contacto ? 'border-red-400' : 'border-slate-300'}`} />
                     {errors.contacto && <p className="text-red-500 text-xs mt-1">{errors.contacto}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección <span className="required-star">*</span></label>
                     <input name="direccion" value={formData.direccion || ''} onChange={handleChange}
-                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email <span className="required-star">*</span></label>
                     <input name="email" type="email" value={formData.email || ''} onChange={handleChange}
-                      className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.email ? 'border-red-400' : 'border-slate-100'}`} />
+                      className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.email ? 'border-red-400' : 'border-slate-300'}`} />
                     {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
                 </>
@@ -576,12 +576,12 @@ const Compras = () => {
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha</label>
                   <input name="comp_fecha" type="date" value={editData.comp_fecha || ''} onChange={handleEditChange}
-                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor</label>
                   <select name="comp_prov_id_fk" value={editData.comp_prov_id_fk || ''} onChange={handleEditChange}
-                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                    className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                     <option value="">Seleccionar proveedor...</option>
                     {proveedores.map(p => <option key={p.prov_id} value={p.prov_id}>{p.prov_nombre} ({p.prov_id})</option>)}
                   </select>
@@ -591,12 +591,12 @@ const Compras = () => {
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total</label>
                   <input name="comp_total" type="number" step="0.01" value={editData.comp_total || ''} onChange={handleEditChange}
-                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
                   <select name="comp_estado" value={editData.comp_estado || 'Pendiente'} onChange={handleEditChange}
-                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                    className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                     {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
                   </select>
                 </div>
@@ -605,12 +605,12 @@ const Compras = () => {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Observación</label>
                 <textarea name="comp_observacion" rows="2" value={editData.comp_observacion || ''} onChange={handleEditChange}
                   placeholder="Notas adicionales..."
-                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 resize-none" />
+                  className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 resize-none" />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Comprobante de pago (PDF / imagen)</label>
                 <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" onChange={(e) => handleFileChange(e, true)}
-                  className="w-full p-2 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium mt-1 file:mr-3 file:py-1.5 file:px-3 file:rounded file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 file:border-0 hover:file:bg-blue-100 transition-colors" />
+                  className="w-full p-2 bg-white border-2 border-slate-300 rounded-md outline-none text-sm font-medium mt-1 file:mr-3 file:py-1.5 file:px-3 file:rounded file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 file:border-0 hover:file:bg-blue-100 transition-colors" />
                 {comprobanteFile && <p className="text-xs text-emerald-600 font-medium mt-1">Nuevo archivo: {comprobanteFile.nombre}</p>}
                 {editData.comp_comprobante && !comprobanteFile && (
                   <p className="text-xs text-slate-400 font-medium mt-1">Ya existe un comprobante. Seleccione un nuevo archivo para reemplazarlo.</p>

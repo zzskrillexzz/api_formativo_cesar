@@ -434,7 +434,7 @@ const Inventario = () => {
 
       {/* Barra de acciones */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 bg-white border border-slate-200 px-5 py-3 rounded-lg w-96 shadow-sm">
+        <div className="flex items-center gap-3 bg-white border border-slate-300 px-5 py-3 rounded-lg w-96 shadow-sm">
           <Search size={18} className="text-slate-400" />
           <input
             type="text"
@@ -522,7 +522,7 @@ const Inventario = () => {
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
-              className="text-xs font-medium border border-slate-200 rounded-md px-2.5 py-1.5 bg-white outline-none cursor-pointer"
+              className="text-xs font-medium border border-slate-400 rounded-md px-2.5 py-1.5 bg-white outline-none cursor-pointer shadow-sm"
             >
               <option value="">Todos los estados</option>
               <option value="Activo">Activo</option>
@@ -604,7 +604,7 @@ const Inventario = () => {
             <select
               value={filtroTipo}
               onChange={(e) => { setFiltroTipo(e.target.value); setPagina(1); }}
-              className="text-xs font-medium border border-slate-200 rounded-md px-2.5 py-1.5 bg-white outline-none cursor-pointer"
+              className="text-xs font-medium border border-slate-400 rounded-md px-2.5 py-1.5 bg-white outline-none cursor-pointer shadow-sm"
             >
               <option value="">Todos los tipos</option>
               <option value="Entrada">Entrada</option>
@@ -615,7 +615,7 @@ const Inventario = () => {
               type="date"
               value={filtroFechaDesde}
               onChange={(e) => { setFiltroFechaDesde(e.target.value); setPagina(1); }}
-              className="text-xs border border-slate-200 rounded-md px-2.5 py-1.5 bg-white outline-none"
+              className="text-xs border border-slate-400 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm"
               title="Desde"
             />
             <span className="text-slate-300 text-xs">→</span>
@@ -623,7 +623,7 @@ const Inventario = () => {
               type="date"
               value={filtroFechaHasta}
               onChange={(e) => { setFiltroFechaHasta(e.target.value); setPagina(1); }}
-              className="text-xs border border-slate-200 rounded-md px-2.5 py-1.5 bg-white outline-none"
+              className="text-xs border border-slate-400 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm"
               title="Hasta"
             />
             {(filtroTipo || filtroFechaDesde || filtroFechaHasta) && (
@@ -750,37 +750,37 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
-                      <input name="nombre" value={formData.nombre || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nombre ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="nombre" value={formData.nombre || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nombre ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Categoría</label>
-                      <input name="categoria" value={formData.categoria || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="categoria" value={formData.categoria || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Precio</label>
-                      <input name="precio" type="number" step="0.01" value={formData.precio || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.precio ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="precio" type="number" step="0.01" value={formData.precio || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.precio ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.precio && <p className="text-red-500 text-xs mt-1">{errors.precio}</p>}
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Descripción</label>
-                    <input name="descripcion" value={formData.descripcion || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    <input name="descripcion" value={formData.descripcion || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Stock</label>
-                      <input name="cantidad_disponible" type="number" value={formData.cantidad_disponible || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="cantidad_disponible" type="number" value={formData.cantidad_disponible || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Stock Mín.</label>
-                      <input name="stock_minimo" type="number" value={formData.stock_minimo || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="stock_minimo" type="number" value={formData.stock_minimo || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
-                      <select name="estado" value={formData.estado || 'Activo'} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="estado" value={formData.estado || 'Activo'} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="Activo">Activo</option>
                         <option value="Descontinuado">Descontinuado</option>
                         <option value="Suspendido">Suspendido</option>
@@ -789,7 +789,7 @@ const Inventario = () => {
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID</label>
-                    <select name="proveedor_id" value={formData.proveedor_id || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                    <select name="proveedor_id" value={formData.proveedor_id || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                       <option value="">Seleccionar proveedor...</option>
                       {proveedores.map(p => (
                         <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
@@ -809,14 +809,14 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">N° Lote <span className="required-star">*</span></label>
-                      <input name="lot_numero" value={formData.lot_numero || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_numero ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="lot_numero" value={formData.lot_numero || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_numero ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_numero && <p className="text-red-500 text-xs mt-1">{errors.lot_numero}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto ID</label>
-                      <select name="lot_pro_id_fk" value={formData.lot_pro_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_pro_id_fk ? 'border-red-400' : 'border-slate-100'}`}>
+                      <select name="lot_pro_id_fk" value={formData.lot_pro_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_pro_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
                         <option value="">Seleccionar producto...</option>
                         {productos.filter(p => p.estado === 'Activo').map(p => (
                           <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>
@@ -826,7 +826,7 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID <span className="required-star">*</span></label>
-                      <select name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_prov_id_fk ? 'border-red-400' : 'border-slate-100'}`}>
+                      <select name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_prov_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
                         <option value="">Seleccionar proveedor...</option>
                         {proveedores.map(p => (
                           <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
@@ -838,24 +838,24 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Fabricación</label>
-                      <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_fabricacion ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_fabricacion ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_fecha_fabricacion && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_fabricacion}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Vencimiento <span className="required-star">*</span></label>
-                      <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_vencimiento ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_vencimiento ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_fecha_vencimiento && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_vencimiento}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad Inicial</label>
-                      <input name="lot_cantidad_inicial" type="number" min="1" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="lot_cantidad_inicial" type="number" min="1" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_cantidad_inicial && <p className="text-red-500 text-xs mt-1">{errors.lot_cantidad_inicial}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
-                      <select name="lot_estado" value={formData.lot_estado || 'Activo'} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="lot_estado" value={formData.lot_estado || 'Activo'} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="Activo">Activo</option>
                         <option value="Agotado">Agotado</option>
                         <option value="Vencido">Vencido</option>
@@ -876,7 +876,7 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo <span className="required-star">*</span></label>
-                      <select name="inm_tipo_movimiento" value={formData.inm_tipo_movimiento || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_tipo_movimiento ? 'border-red-400' : 'border-slate-100'}`}>
+                      <select name="inm_tipo_movimiento" value={formData.inm_tipo_movimiento || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_tipo_movimiento ? 'border-red-400' : 'border-slate-300'}`}>
                         <option value="">Seleccionar...</option>
                         <option value="Entrada">Entrada</option>
                         <option value="Salida">Salida</option>
@@ -888,7 +888,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto <span className="required-star">*</span></label>
-                      <select name="inm_pro_id_fk" value={formData.inm_pro_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="inm_pro_id_fk" value={formData.inm_pro_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar producto...</option>
                         {productos.filter(p => p.estado === 'Activo').map(p => (
                           <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>
@@ -898,7 +898,7 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lote</label>
-                      <select name="inm_lot_id_fk" value={formData.inm_lot_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="inm_lot_id_fk" value={formData.inm_lot_id_fk || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Sin lote (opcional)</option>
                         {lotes
                           .filter(l => l.lot_pro_id_fk === formData.inm_pro_id_fk && l.lot_estado === 'Activo' && (l.lot_cantidad_actual || 0) > 0)
@@ -913,12 +913,12 @@ const Inventario = () => {
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad <span className="required-star">*</span></label>
-                      <input name="inm_cantidad" type="number" min="1" value={formData.inm_cantidad || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_cantidad ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="inm_cantidad" type="number" min="1" value={formData.inm_cantidad || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_cantidad ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.inm_cantidad && <p className="text-red-500 text-xs mt-1">{errors.inm_cantidad}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
-                      <input name="inm_fecha" type="date" value={formData.inm_fecha || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_fecha ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="inm_fecha" type="date" value={formData.inm_fecha || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_fecha ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.inm_fecha && <p className="text-red-500 text-xs mt-1">{errors.inm_fecha}</p>}
                     </div>
                     <div>
@@ -928,7 +928,7 @@ const Inventario = () => {
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Motivo <span className="required-star">*</span></label>
-                    <input name="inm_motivo" value={formData.inm_motivo || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_motivo ? 'border-red-400' : 'border-slate-100'}`} />
+                    <input name="inm_motivo" value={formData.inm_motivo || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_motivo ? 'border-red-400' : 'border-slate-300'}`} />
                     {errors.inm_motivo && <p className="text-red-500 text-xs mt-1">{errors.inm_motivo}</p>}
                   </div>
                 </>

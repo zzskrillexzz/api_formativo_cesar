@@ -712,7 +712,7 @@ const Ventas = () => {
 
       {/* Barra de acciones */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 bg-white border border-slate-200 px-5 py-3 rounded-lg w-96 shadow-sm">
+        <div className="flex items-center gap-3 bg-white border border-slate-300 px-5 py-3 rounded-lg w-96 shadow-sm">
           <Search size={18} className="text-slate-400" />
           <input
             type="text"
@@ -1058,7 +1058,7 @@ const Ventas = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
-                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_fecha ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_fecha ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.ped_fecha && <p className="text-red-500 text-xs mt-1">{errors.ped_fecha}</p>}
                     </div>
                   </div>
@@ -1069,7 +1069,7 @@ const Ventas = () => {
                         name="ped_cli_id_fk"
                         value={formData.ped_cli_id_fk || ''}
                         onChange={handleChange}
-                        className={`flex-1 p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium ${errors.ped_cli_id_fk ? 'border-red-400' : 'border-slate-100'}`}
+                        className={`flex-1 p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium ${errors.ped_cli_id_fk ? 'border-red-400' : 'border-slate-300'}`}
                       >
                       {errors.ped_cli_id_fk && <p className="text-red-500 text-xs mt-1">{errors.ped_cli_id_fk}</p>}
                         <option value="">Seleccionar cliente...</option>
@@ -1096,11 +1096,11 @@ const Ventas = () => {
                       <div className="grid grid-cols-3 gap-2">
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">ID *</label>
-                          <input name="cli_id" type="number" value={formData.cli_id || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-200 rounded text-sm mt-0.5" />
+                          <input name="cli_id" type="number" value={formData.cli_id || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Tipo Doc *</label>
-                          <select name="cli_tipo_documento" value={formData.cli_tipo_documento || 'CC'} onChange={handleChange} className="w-full p-2 bg-white border border-slate-200 rounded text-sm mt-0.5">
+                          <select name="cli_tipo_documento" value={formData.cli_tipo_documento || 'CC'} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5">
                             <option value="CC">CC</option>
                             <option value="NIT">NIT</option>
                             <option value="CE">CE</option>
@@ -1109,27 +1109,27 @@ const Ventas = () => {
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Teléfono</label>
-                          <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-200 rounded text-sm mt-0.5" />
+                          <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Nombre *</label>
-                          <input name="cli_nombre" value={formData.cli_nombre || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-200 rounded text-sm mt-0.5" />
+                          <input name="cli_nombre" value={formData.cli_nombre || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Apellido *</label>
-                          <input name="cli_apellido" value={formData.cli_apellido || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-200 rounded text-sm mt-0.5" />
+                          <input name="cli_apellido" value={formData.cli_apellido || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Dirección</label>
-                          <input name="cli_direccion" value={formData.cli_direccion || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-200 rounded text-sm mt-0.5" />
+                          <input name="cli_direccion" value={formData.cli_direccion || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Correo *</label>
-                          <input name="cli_correo" type="email" value={formData.cli_correo || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-200 rounded text-sm mt-0.5" />
+                          <input name="cli_correo" type="email" value={formData.cli_correo || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                       </div>
                       <div className="flex gap-2 justify-end pt-1">
@@ -1145,7 +1145,7 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Metodo Pago <span className="required-star">*</span></label>
-                      <select name="ped_metodo_pago" value={formData.ped_metodo_pago || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_metodo_pago ? 'border-red-400' : 'border-slate-100'}`}>
+                      <select name="ped_metodo_pago" value={formData.ped_metodo_pago || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_metodo_pago ? 'border-red-400' : 'border-slate-300'}`}>
                         {errors.ped_metodo_pago && <p className="text-red-500 text-xs mt-1">{errors.ped_metodo_pago}</p>}
                         <option value="">Seleccionar...</option>
                         <option value="Efectivo">Efectivo</option>
@@ -1161,13 +1161,13 @@ const Ventas = () => {
                           placeholder="Ej: Nequi, Bancolombia, Davivienda..."
                           value={formData.ped_cuenta_bancaria || ''}
                           onChange={handleChange}
-                          className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
+                          className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
                         />
                       </div>
                     )}
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado <span className="required-star">*</span></label>
-                      <select name="ped_estado_entrega" value={formData.ped_estado_entrega || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_estado_entrega ? 'border-red-400' : 'border-slate-100'}`}>
+                      <select name="ped_estado_entrega" value={formData.ped_estado_entrega || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_estado_entrega ? 'border-red-400' : 'border-slate-300'}`}>
                         {errors.ped_estado_entrega && <p className="text-red-500 text-xs mt-1">{errors.ped_estado_entrega}</p>}
                         <option value="">Seleccionar...</option>
                         <option value="Pendiente">Pendiente</option>
@@ -1197,7 +1197,7 @@ const Ventas = () => {
                         <select
                           value={nuevoProducto.pro_id}
                           onChange={(e) => { setErrorProducto(''); setNuevoProducto({ ...nuevoProducto, pro_id: e.target.value }); }}
-                          className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium"
+                          className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-md outline-none text-sm font-medium"
                         >
                           <option value="">Seleccionar producto...</option>
                           {productosDisponibles.map(prod => (
@@ -1211,7 +1211,7 @@ const Ventas = () => {
                         type="number" min="1" placeholder="Cant."
                         value={nuevoProducto.cantidad}
                         onChange={(e) => setNuevoProducto({ ...nuevoProducto, cantidad: e.target.value })}
-                        className="w-20 p-2.5 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium text-center shrink-0"
+                        className="w-20 p-2.5 bg-white border-2 border-slate-300 rounded-md outline-none text-sm font-medium text-center shrink-0"
                       />
                       <button type="button" onClick={agregarProducto}
                         className="px-4 py-2.5 bg-emerald-600 text-white rounded-md text-xs font-bold uppercase hover:bg-emerald-700 transition-all shrink-0 whitespace-nowrap">
@@ -1269,7 +1269,7 @@ const Ventas = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Emisión <span className="required-star">*</span></label>
-                      <input name="fecha_emision" type="date" value={formData.fecha_emision || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.fecha_emision ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="fecha_emision" type="date" value={formData.fecha_emision || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.fecha_emision ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.fecha_emision && <p className="text-red-500 text-xs mt-1">{errors.fecha_emision}</p>}
                     </div>
                   </div>
@@ -1299,7 +1299,7 @@ const Ventas = () => {
                           });
                         }
                       }}
-                      className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
+                      className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
                     >
                       <option value="">Seleccionar pedido...</option>
                       {pedidos
@@ -1326,7 +1326,7 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Forma Pago <span className="required-star">*</span></label>
-                      <select name="forma_pago" value={formData.forma_pago || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.forma_pago ? 'border-red-400' : 'border-slate-100'}`}>
+                      <select name="forma_pago" value={formData.forma_pago || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.forma_pago ? 'border-red-400' : 'border-slate-300'}`}>
                         {errors.forma_pago && <p className="text-red-500 text-xs mt-1">{errors.forma_pago}</p>}
                         <option value="">Seleccionar...</option>
                         <option value="Efectivo">Efectivo</option>
@@ -1337,19 +1337,19 @@ const Ventas = () => {
                     {formData.forma_pago === 'Transferencia' && (
                       <div>
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuenta Bancaria</label>
-                        <input name="cuenta_bancaria" placeholder="Ej: Nequi, Bancolombia, Davivienda..." value={formData.cuenta_bancaria || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                        <input name="cuenta_bancaria" placeholder="Ej: Nequi, Bancolombia, Davivienda..." value={formData.cuenta_bancaria || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                       </div>
                     )}
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total <span className="required-star">*</span></label>
-                      <input name="total" type="number" step="0.01" value={formData.total || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.total ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="total" type="number" step="0.01" value={formData.total || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.total ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.total && <p className="text-red-500 text-xs mt-1">{errors.total}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email Enviado <span className="required-star">*</span></label>
-                      <select name="email_enviado" value={formData.email_enviado !== undefined ? formData.email_enviado : ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="email_enviado" value={formData.email_enviado !== undefined ? formData.email_enviado : ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="1">Sí (Enviado)</option>
                         <option value="0">No (Pendiente)</option>
@@ -1357,7 +1357,7 @@ const Ventas = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
-                      <select name="estado" value={formData.estado || 'Vigente'} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="estado" value={formData.estado || 'Vigente'} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="Vigente">Vigente</option>
                         <option value="Anulada">Anulada</option>
                       </select>
@@ -1376,12 +1376,12 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="cli_id" type="number" autoFocus value={formData.cli_id || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_id ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="cli_id" type="number" autoFocus value={formData.cli_id || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_id ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.cli_id && <p className="text-red-500 text-xs mt-1">{errors.cli_id}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo Documento <span className="required-star">*</span></label>
-                      <select name="cli_tipo_documento" value={formData.cli_tipo_documento || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="cli_tipo_documento" value={formData.cli_tipo_documento || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="">Seleccionar...</option>
                         <option value="CC">CC</option>
                         <option value="NIT">NIT</option>
@@ -1393,28 +1393,28 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
-                      <input name="cli_nombre" value={formData.cli_nombre || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_nombre ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="cli_nombre" value={formData.cli_nombre || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_nombre ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.cli_nombre && <p className="text-red-500 text-xs mt-1">{errors.cli_nombre}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Apellido <span className="required-star">*</span></label>
-                      <input name="cli_apellido" value={formData.cli_apellido || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_apellido ? 'border-red-400' : 'border-slate-100'}`} />
+                      <input name="cli_apellido" value={formData.cli_apellido || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_apellido ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.cli_apellido && <p className="text-red-500 text-xs mt-1">{errors.cli_apellido}</p>}
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Correo <span className="required-star">*</span></label>
-                    <input name="cli_correo" type="email" value={formData.cli_correo || ''} onChange={handleChange} className={`w-full p-3 bg-slate-50 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_correo ? 'border-red-400' : 'border-slate-100'}`} />
+                    <input name="cli_correo" type="email" value={formData.cli_correo || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cli_correo ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.cli_correo && <p className="text-red-500 text-xs mt-1">{errors.cli_correo}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Teléfono</label>
-                      <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección</label>
-                      <input name="cli_direccion" value={formData.cli_direccion || ''} onChange={handleChange} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="cli_direccion" value={formData.cli_direccion || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                   </div>
                 </>
@@ -2095,7 +2095,7 @@ const SubirComprobanteForm = ({ pedidoId, onSuccess, onCancel }) => {
           type="file"
           accept=".pdf,.png,.jpg,.jpeg"
           onChange={handleFileChange}
-          className="w-full p-2 bg-slate-50 border border-slate-100 rounded-md outline-none text-sm font-medium mt-1 file:mr-3 file:py-1.5 file:px-3 file:rounded file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 file:border-0 hover:file:bg-blue-100"
+          className="w-full p-2 bg-white border-2 border-slate-300 rounded-md outline-none text-sm font-medium mt-1 file:mr-3 file:py-1.5 file:px-3 file:rounded file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 file:border-0 hover:file:bg-blue-100"
         />
         {archivo && (
           <p className="text-xs text-emerald-600 font-medium mt-1">Archivo: {archivo.nombre}</p>
