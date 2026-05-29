@@ -40,7 +40,8 @@ const Ventas = () => {
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
   const [pedidoACancelar, setPedidoACancelar] = useState(null);
   const [cancelLoading, setCancelLoading] = useState(false);
-  const [showAnulados, setShowAnulados] = useState(false);
+  const [filtroEstadoPedido, setFiltroEstadoPedido] = useState('');
+  const [filtroEstadoFactura, setFiltroEstadoFactura] = useState('');
   const [showSubirComprobanteModal, setShowSubirComprobanteModal] = useState(false);
   const [pedidoSubirComprobante, setPedidoSubirComprobante] = useState(null);
 
@@ -318,17 +319,20 @@ const Ventas = () => {
     { id: 'clientes', label: 'Clientes', icon: Users },
   ];
 
-  const filteredPedidos = pedidos.filter(p =>
-    (showAnulados || p.ped_estado_entrega !== 'Anulado') &&
-    [p.ped_id, p.ped_cli_id_fk, p.ped_fecha, p.ped_metodo_pago, p.ped_total,
+  const filteredPedidos = pedidos.filter(p => {
+    const porEstado = !filtroEstadoPedido || p.ped_estado_entrega === filtroEstadoPedido;
+    const busca = [p.ped_id, p.ped_cli_id_fk, p.ped_fecha, p.ped_metodo_pago, p.ped_total,
      p.ped_estado_pago, p.ped_estado_entrega, p.ped_cuenta_bancaria
-    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const filteredFacturas = facturas.filter(f =>
-    [f.id, f.cli_nombre, f.cli_apellido, f.cli_correo, f.forma_pago,
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
+    return porEstado && busca;
+  });
+  const filteredFacturas = facturas.filter(f => {
+    const porEstado = !filtroEstadoFactura || f.estado === filtroEstadoFactura;
+    const busca = [f.id, f.cli_nombre, f.cli_apellido, f.cli_correo, f.forma_pago,
      f.fecha_emision, f.total, f.estado, f.cuenta_bancaria, f.cli_id_fk
-    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
+    return porEstado && busca;
+  });
   const filteredClientes = clientes.filter(c =>
     [c.cli_id, c.cli_nombre, c.cli_apellido, c.cli_tipo_documento, c.cli_correo,
      c.cli_telefono, c.cli_direccion, c.cli_nit
@@ -746,6 +750,32 @@ const Ventas = () => {
       {/* TAB: Pedidos */}
       {tab === 'pedidos' && (
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          {/* ── Tarjetas resumen ── */}
+          <div className="grid grid-cols-6 gap-2 px-6 pt-4 pb-2">
+            {(() => {
+              const cards = [
+                { label: 'Todos', count: pedidos.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
+                { label: 'Pendientes', count: pedidos.filter(p => p.ped_estado_entrega === 'Pendiente').length, icon: '🟡', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'Pendiente' },
+                { label: 'Preparación', count: pedidos.filter(p => p.ped_estado_entrega === 'En preparación').length, icon: '🟠', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', filtro: 'En preparación' },
+                { label: 'En camino', count: pedidos.filter(p => p.ped_estado_entrega === 'En camino').length, icon: '🔵', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: 'En camino' },
+                { label: 'Entregados', count: pedidos.filter(p => p.ped_estado_entrega === 'Entregado').length, icon: '🟢', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Entregado' },
+                { label: 'Anulados', count: pedidos.filter(p => p.ped_estado_entrega === 'Anulado').length, icon: '🔴', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Anulado' },
+              ];
+              return cards.map((c, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setFiltroEstadoPedido(c.filtro)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${c.color} transition-all hover:shadow-md ${filtroEstadoPedido === c.filtro ? 'ring-2 ring-blue-400 scale-[1.03]' : ''}`}
+                >
+                  <span className="text-lg">{c.icon}</span>
+                  <div className="text-left">
+                    <div className={`text-base font-black ${c.text}`}>{c.count}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}</div>
+                  </div>
+                </button>
+              ));
+            })()}
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
@@ -900,10 +930,11 @@ const Ventas = () => {
             </table>
           </div>
           <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 flex items-center justify-between text-xs">
-            <label className="flex items-center gap-2 text-slate-400 font-medium cursor-pointer">
-              <input type="checkbox" checked={showAnulados} onChange={(e) => setShowAnulados(e.target.checked)} className="rounded" />
-              Mostrar pedidos anulados
-            </label>
+            {(filtroEstadoPedido) && (
+              <button onClick={() => setFiltroEstadoPedido('')} className="text-slate-400 hover:text-red-500 transition-colors font-bold uppercase">
+                ✕ Limpiar filtro
+              </button>
+            )}
             <span className="text-slate-400 font-bold">
               {filteredPedidos.length} de {pedidos.length} pedidos
             </span>
@@ -914,6 +945,29 @@ const Ventas = () => {
       {/* TAB: Facturas */}
       {tab === 'facturas' && (
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          {/* ── Tarjetas resumen ── */}
+          <div className="grid grid-cols-3 gap-2 px-6 pt-4 pb-2">
+            {(() => {
+              const cards = [
+                { label: 'Todas', count: facturas.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
+                { label: 'Vigentes', count: facturas.filter(f => f.estado === 'Vigente').length, icon: '🟢', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Vigente' },
+                { label: 'Anuladas', count: facturas.filter(f => f.estado === 'Anulada').length, icon: '🔴', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Anulada' },
+              ];
+              return cards.map((c, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setFiltroEstadoFactura(c.filtro)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${c.color} transition-all hover:shadow-md ${filtroEstadoFactura === c.filtro ? 'ring-2 ring-blue-400 scale-[1.03]' : ''}`}
+                >
+                  <span className="text-lg">{c.icon}</span>
+                  <div className="text-left">
+                    <div className={`text-base font-black ${c.text}`}>{c.count}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}</div>
+                  </div>
+                </button>
+              ));
+            })()}
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">

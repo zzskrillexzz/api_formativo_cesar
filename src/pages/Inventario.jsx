@@ -28,6 +28,7 @@ const Inventario = () => {
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroProducto, setFiltroProducto] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
@@ -43,9 +44,17 @@ const Inventario = () => {
       const next = 'PRO' + String((nums.length > 0 ? Math.max(...nums) : 0) + 1).padStart(3, '0');
       defaultData = { id: next };
     } else if (tab === 'lotes') {
-      const nums = lotes.map(l => { const m = (l.lot_id || '').match(/LOT(\d+)/); return m ? parseInt(m[1]) : 0; });
-      const next = 'LOT' + String((nums.length > 0 ? Math.max(...nums) : 0) + 1).padStart(3, '0');
-      defaultData = { lot_id: next };
+      const nums = lotes
+        .map(l => { const m = (l.lot_id || '').match(/LOT(\d+)/); return m ? parseInt(m[1]) : 0; })
+        .filter(n => n > 0)
+        .sort((a, b) => a - b);
+      let nextNum = 1;
+      for (const n of nums) {
+        if (n === nextNum) nextNum++;
+        else if (n > nextNum) break;
+      }
+      const next = 'LOT' + String(nextNum).padStart(3, '0');
+      defaultData = { lot_id: next, lot_numero: '' };
     } else if (tab === 'movimientos') {
       let max = 0;
       monitorias.forEach(m => {
@@ -97,6 +106,16 @@ const Inventario = () => {
     }
   };
 
+  const cambiarEstadoLote = async (id, nuevoEstado) => {
+    if (!window.confirm(`¿Cambiar estado del lote ${id} a "${nuevoEstado}"?`)) return;
+    try {
+      await lotesService.editar(id, { lot_estado: nuevoEstado });
+      fetchData();
+    } catch(e) {
+      alert('No se pudo cambiar el estado: ' + (e.response?.data?.mensaje || e.message));
+    }
+  };
+
   const abrirEditarLote = (lote) => {
     setFormData({
       lot_id: lote.lot_id, lot_numero: lote.lot_numero || '',
@@ -117,6 +136,26 @@ const Inventario = () => {
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setFormData({ ...formData, [name]: value });
+
+    // ── Auto-generar lot_numero al seleccionar producto (solo nuevos lotes) ──
+    if (!editingId && tab === 'lotes' && name === 'lot_pro_id_fk' && value) {
+      const prod = productos.find(p => p.id === value);
+      if (prod) {
+        const abrev = prod.nombre.slice(0, 3).toUpperCase();
+        const anio = new Date().getFullYear();
+        const prefijo = `LT-${abrev}-${anio}-`;
+        let maxSeq = 0;
+        lotes.forEach(l => {
+          if (l.lot_numero && l.lot_numero.startsWith(prefijo)) {
+            const m = l.lot_numero.match(/-(\d+)$/);
+            if (m) maxSeq = Math.max(maxSeq, parseInt(m[1], 10));
+          }
+        });
+        const nextSeq = String(maxSeq + 1).padStart(3, '0');
+        setFormData(prev => ({ ...prev, lot_numero: `${prefijo}${nextSeq}` }));
+      }
+    }
+
     // Validación en tiempo real
     validateField(name, value);
   };
@@ -147,6 +186,7 @@ const Inventario = () => {
         else delete newErrors.lot_id;
       }
       if (name === 'lot_numero' && !value) newErrors.lot_numero = 'El número de lote es obligatorio';
+      else if (name === 'lot_numero' && value && !editingId && lotes.some(l => l.lot_numero === value)) newErrors.lot_numero = 'Este número de lote ya existe';
       else if (name === 'lot_numero') delete newErrors.lot_numero;
       if (name === 'lot_fecha_vencimiento' && !value) newErrors.lot_fecha_vencimiento = 'La fecha de vencimiento es obligatoria';
       else if (name === 'lot_fecha_vencimiento') delete newErrors.lot_fecha_vencimiento;
@@ -349,14 +389,9 @@ const Inventario = () => {
       setProductos(prods);
       setLotes(lots);
       setProveedores(provs);
-      // monsRes puede venir como {data, total} (nuevo) o array (viejo)
-      if (Array.isArray(monsRes)) {
-        setMonitorias(monsRes);
-        setTotalMovimientos(monsRes.length);
-      } else {
-        setMonitorias(monsRes.data || []);
-        setTotalMovimientos(monsRes.total ?? 0);
-      }
+      // monsRes siempre viene como {data: [...], total, page, limit, pages}
+      setMonitorias(monsRes.data || []);
+      setTotalMovimientos(monsRes.total ?? 0);
     } catch (err) {
       console.error('Error cargando inventario:', err);
     } finally {
@@ -391,27 +426,50 @@ const Inventario = () => {
      p.cantidad_disponible, p.stock_minimo, p.proveedor_id
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getDiasRestantes = (fechaVen) => {
+    if (!fechaVen) return null;
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const ven = new Date(fechaVen.split('T')[0]);
+    return Math.ceil((ven - hoy) / (1000 * 60 * 60 * 24));
+  };
+
   const filteredLotes = lotes.filter(l => {
     const busca = [l.lot_id, l.lot_numero, l.lot_fecha_fabricacion, l.lot_fecha_vencimiento,
       l.lot_cantidad_inicial, l.lot_cantidad_actual, l.lot_pro_id_fk, l.lot_prov_id_fk, l.lot_estado
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
-    const porEstado = !filtroEstado || l.lot_estado === filtroEstado;
-    return busca && porEstado;
+    const porEstado = !filtroEstado
+      ? true
+      : filtroEstado === '__proximos__'
+        ? (l.lot_estado === 'Activo' && getDiasRestantes(l.lot_fecha_vencimiento) !== null && getDiasRestantes(l.lot_fecha_vencimiento) >= 0 && getDiasRestantes(l.lot_fecha_vencimiento) <= 30)
+        : l.lot_estado === filtroEstado;
+    const porProducto = !filtroProducto || l.lot_pro_id_fk === filtroProducto;
+    return busca && porEstado && porProducto;
   });
 
   const focusTrapRef = useFocusTrap(showModal);
 
   const getEstadoBadge = (estado) => {
     const map = {
-      'Activo': 'text-emerald-600 bg-emerald-50',
-      'Agotado': 'text-red-600 bg-red-50',
-      'Vencido': 'text-orange-600 bg-orange-50',
-      'Cuarentena': 'text-yellow-600 bg-yellow-50',
-      'Descontinuado': 'text-slate-500 bg-slate-100',
-      'Suspendido': 'text-red-500 bg-red-50',
+      'Activo': { cls: 'text-emerald-600 bg-emerald-50', dot: 'bg-emerald-500' },
+      'Agotado': { cls: 'text-red-600 bg-red-50', dot: 'bg-red-500' },
+      'Vencido': { cls: 'text-orange-600 bg-orange-50', dot: 'bg-orange-500' },
+      'Cuarentena': { cls: 'text-yellow-600 bg-yellow-50', dot: 'bg-yellow-500' },
+      'Descontinuado': { cls: 'text-slate-500 bg-slate-100', dot: 'bg-slate-400' },
+      'Suspendido': { cls: 'text-red-500 bg-red-50', dot: 'bg-red-400' },
     };
-    return map[estado] || 'text-slate-500 bg-slate-100';
+    return map[estado] || { cls: 'text-slate-500 bg-slate-100', dot: 'bg-slate-400' };
   };
+
+  const getStockBarColor = (disp, min) => {
+    if (!min || min <= 0) return 'bg-emerald-400';
+    const ratio = (disp || 0) / min;
+    if (ratio >= 1.5) return 'bg-emerald-400';
+    if (ratio >= 1) return 'bg-blue-400';
+    if (ratio >= 0.5) return 'bg-amber-400';
+    return 'bg-red-400';
+  };
+
 
   if (loading) return <ThemeLoader module="Inventario" />;
 
@@ -459,7 +517,7 @@ const Inventario = () => {
 
       {/* TAB: Productos */}
       {tab === 'productos' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
@@ -476,8 +534,18 @@ const Inventario = () => {
               <tbody className="divide-y divide-slate-50 text-sm font-bold text-slate-600">
                 {filteredProductos.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400 italic">
-                      {searchTerm ? 'Sin resultados para esta búsqueda' : 'No hay productos registrados'}
+                    <td colSpan="7" className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <Package size={40} strokeWidth={1.2} className="text-slate-300" />
+                        <p className="text-sm font-medium text-slate-400">
+                          {searchTerm ? 'Sin resultados para esta búsqueda' : 'No hay productos registrados'}
+                        </p>
+                        {!searchTerm && (
+                          <button onClick={openModal} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-sm">
+                            <Plus size={14} /> Crear primer producto
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -488,12 +556,23 @@ const Inventario = () => {
                       <td className="px-6 py-4 text-slate-400">{p.categoria || '-'}</td>
                       <td className="px-6 py-4 text-right">${parseFloat(p.precio || 0).toLocaleString()}</td>
                       <td className="px-6 py-4 text-right">
-                        <span className={`font-bold ${(p.cantidad_disponible || 0) <= (p.stock_minimo || 0) ? 'text-red-600' : 'text-slate-800'}`}>
-                          {p.cantidad_disponible || 0}
-                        </span>
+                        <div className="flex items-center gap-2 justify-end">
+                          <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${getStockBarColor(p.cantidad_disponible, p.stock_minimo)}`}
+                              style={{ width: `${Math.min((p.cantidad_disponible || 0) / Math.max(p.stock_minimo || 1, 1) * 100, 100)}%` }}
+                            />
+                          </div>
+                          <span className={`font-bold text-xs ${(p.cantidad_disponible || 0) <= (p.stock_minimo || 0) ? 'text-red-600' : 'text-slate-800'}`}>
+                            {p.cantidad_disponible || 0}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoBadge(p.estado)}`}>{p.estado}</span>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoBadge(p.estado).cls}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${getEstadoBadge(p.estado).dot}`} />
+                          {p.estado}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
                         <button onClick={() => abrirEditarProducto(p)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Editar">
@@ -517,28 +596,66 @@ const Inventario = () => {
 
       {/* TAB: Lotes */}
       {tab === 'lotes' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <div className="flex items-center gap-3 px-6 py-3 border-b border-slate-100 bg-slate-50/30">
+        <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
             <select
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
-              className="text-xs font-medium border border-slate-400 rounded-md px-2.5 py-1.5 bg-white outline-none cursor-pointer shadow-sm"
+              value={filtroProducto}
+              onChange={(e) => setFiltroProducto(e.target.value)}
+              className="text-xs border border-slate-300 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm font-medium text-slate-600"
             >
-              <option value="">Todos los estados</option>
-              <option value="Activo">Activo</option>
-              <option value="Agotado">Agotado</option>
-              <option value="Vencido">Vencido</option>
-              <option value="Cuarentena">Cuarentena</option>
+              <option value="">Todos los productos</option>
+              {productos.map(p => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
             </select>
-            {(filtroEstado) && (
+            {(filtroEstado || filtroProducto) && (
               <button
-                onClick={() => { setFiltroEstado(''); }}
-                className="text-xs text-red-500 font-medium hover:text-red-700 ml-auto"
+                onClick={() => { setFiltroEstado(''); setFiltroProducto(''); }}
+                className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-500 transition-colors px-2"
               >
-                Limpiar filtros
+                ✕ Limpiar filtros
               </button>
             )}
           </div>
+          {/* ── Tarjetas resumen ── */}
+          {(() => {
+            const hoy = new Date(); hoy.setHours(0,0,0,0);
+            const en30 = new Date(hoy); en30.setDate(en30.getDate() + 30);
+            const activos = lotes.filter(l => l.lot_estado === 'Activo').length;
+            const proximos = lotes.filter(l => {
+              if (l.lot_estado !== 'Activo' || !l.lot_fecha_vencimiento) return false;
+              const dr = getDiasRestantes(l.lot_fecha_vencimiento);
+              return dr !== null && dr >= 0 && dr <= 30;
+            }).length;
+            const vencidos = lotes.filter(l => l.lot_estado === 'Vencido').length;
+            const agotados = lotes.filter(l => l.lot_estado === 'Agotado').length;
+            const cuarentena = lotes.filter(l => l.lot_estado === 'Cuarentena').length;
+            const cards = [
+              { label: 'Todos', count: lotes.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
+              { label: 'Activos', count: activos, icon: '🟢', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Activo' },
+              { label: 'Próximos', count: proximos, icon: '⚠️', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', sub: '≤ 30 días', filtro: '__proximos__' },
+              { label: 'Vencidos', count: vencidos, icon: '🔴', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Vencido' },
+              { label: 'Agotados', count: agotados, icon: '📦', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'Agotado' },
+              { label: 'Cuarentena', count: cuarentena, icon: '🟡', color: 'border-yellow-200 bg-yellow-50/50', text: 'text-yellow-700', filtro: 'Cuarentena' },
+            ];
+            return (
+              <div className="grid grid-cols-6 gap-2 px-6 pt-4 pb-2">
+                {cards.map((c, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setFiltroEstado(c.filtro)}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${c.color} transition-all hover:shadow-md ${filtroEstado === c.filtro ? 'ring-2 ring-blue-400 scale-[1.03]' : ''}`}
+                  >
+                    <span className="text-lg">{c.icon}</span>
+                    <div className="text-left">
+                      <div className={`text-base font-black ${c.text}`}>{c.count}</div>
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}{c.sub ? <span className="text-slate-400 ml-0.5">{c.sub}</span> : ''}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
@@ -546,22 +663,35 @@ const Inventario = () => {
                   <th className="px-6 py-4">ID</th>
                   <th className="px-6 py-4">N° Lote</th>
                   <th className="px-6 py-4">Producto</th>
-                  <th className="px-6 py-4 text-right">Cant. Inicial</th>
-                  <th className="px-6 py-4 text-right">Cant. Actual</th>
+                  <th className="px-6 py-4">Consumo</th>
                   <th className="px-6 py-4 text-right">Vencimiento</th>
                   <th className="px-6 py-4">Estado</th>
-                  <th className="px-6 py-4 text-right">Acción</th>
+                  <th className="px-6 py-4 text-right w-20">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 text-sm font-bold text-slate-600">
                 {filteredLotes.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center text-slate-400 italic">
-                      {searchTerm ? 'Sin resultados' : 'No hay lotes registrados'}
+                    <td colSpan="8" className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <Layers size={40} strokeWidth={1.2} className="text-slate-300" />
+                        <p className="text-sm font-medium text-slate-400">
+                          {searchTerm ? 'Sin resultados para esta búsqueda' : 'No hay lotes registrados'}
+                        </p>
+                        {!searchTerm && (
+                          <button onClick={openModal} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-sm">
+                            <Plus size={14} /> Crear primer lote
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  filteredLotes.map((l, i) => (
+                  filteredLotes.map((l, i) => {
+                    const consumido = l.lot_cantidad_inicial - (l.lot_cantidad_actual || 0);
+                    const pctConsumo = l.lot_cantidad_inicial > 0 ? Math.round((consumido / l.lot_cantidad_inicial) * 100) : 0;
+                    const barColor = pctConsumo >= 90 ? 'bg-red-400' : pctConsumo >= 50 ? 'bg-amber-400' : 'bg-emerald-400';
+                    return (
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-6 py-4 text-slate-400 text-xs">{l.lot_id}</td>
                       <td className="px-6 py-4">{l.lot_numero}</td>
@@ -573,19 +703,71 @@ const Inventario = () => {
                           ) : (l.lot_pro_id_fk || '-');
                         })()}
                       </td>
-                      <td className="px-6 py-4 text-right">{l.lot_cantidad_inicial}</td>
-                      <td className="px-6 py-4 text-right">{l.lot_cantidad_actual}</td>
-                      <td className="px-6 py-4 text-right text-slate-400">{l.lot_fecha_vencimiento || '-'}</td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoBadge(l.lot_estado)}`}>{l.lot_estado}</span>
+                        <div className="flex flex-col gap-1 min-w-[120px]">
+                          <div className="flex items-center justify-between text-[11px] font-medium">
+                            <span className="text-slate-400">{l.lot_cantidad_inicial}</span>
+                            <span className="text-slate-600">{l.lot_cantidad_actual || 0}</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pctConsumo, 100)}%` }} />
+                          </div>
+                          <span className="text-[10px] text-slate-400 text-right">{pctConsumo}% usado</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button onClick={() => abrirEditarLote(l)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                          <Edit size={14} />
-                        </button>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-slate-400 text-xs">{l.lot_fecha_vencimiento || '-'}</span>
+                          {l.lot_fecha_vencimiento && (() => {
+                            const dr = getDiasRestantes(l.lot_fecha_vencimiento);
+                            if (dr === null) return null;
+                            const pct = Math.min(Math.max((dr / 90) * 100, 0), 100);
+                            const color = dr <= 0 ? 'bg-slate-400'
+                              : dr <= 30 ? 'bg-red-400'
+                              : dr <= 60 ? 'bg-orange-400'
+                              : 'bg-emerald-400';
+                            return (
+                              <div className="w-20 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="relative group inline-block">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase cursor-default ${getEstadoBadge(l.lot_estado).cls}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${getEstadoBadge(l.lot_estado).dot}`} />
+                            {l.lot_estado}
+                          </span>
+                          <div className="absolute left-0 top-full mt-1 z-20 hidden group-hover:block bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
+                            {['Activo', 'Agotado', 'Vencido', 'Cuarentena']
+                              .filter(e => e !== l.lot_estado)
+                              .map(e => (
+                                <button
+                                  key={e}
+                                  onClick={() => cambiarEstadoLote(l.lot_id, e)}
+                                  className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors"
+                                >
+                                  Cambiar a {e}
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button onClick={() => abrirEditarLote(l)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Editar">
+                            <Edit size={14} />
+                          </button>
+                          <button onClick={() => eliminarLote(l.lot_id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Eliminar">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -598,19 +780,22 @@ const Inventario = () => {
 
       {/* TAB: Movimientos */}
       {tab === 'movimientos' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           {/* ── Filtros ── */}
-          <div className="flex items-center gap-3 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
-            <select
-              value={filtroTipo}
-              onChange={(e) => { setFiltroTipo(e.target.value); setPagina(1); }}
-              className="text-xs font-medium border border-slate-400 rounded-md px-2.5 py-1.5 bg-white outline-none cursor-pointer shadow-sm"
-            >
-              <option value="">Todos los tipos</option>
-              <option value="Entrada">Entrada</option>
-              <option value="Salida">Salida</option>
-              <option value="Ajuste">Ajuste</option>
-            </select>
+          <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
+            {['', 'Entrada', 'Salida', 'Ajuste'].map(tipo => (
+              <button
+                key={tipo}
+                onClick={() => { setFiltroTipo(tipo); setPagina(1); }}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                  filtroTipo === tipo
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                }`}
+              >
+                {tipo || 'Todos'}
+              </button>
+            ))}
             <input
               type="date"
               value={filtroFechaDesde}
@@ -657,7 +842,12 @@ const Inventario = () => {
               <tbody className="divide-y divide-slate-50 text-sm font-bold text-slate-600">
                 {monitorias.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400 italic">No hay movimientos registrados</td>
+                    <td colSpan="7" className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <AlertTriangle size={40} strokeWidth={1.2} className="text-slate-300" />
+                        <p className="text-sm font-medium text-slate-400">No hay movimientos registrados</p>
+                      </div>
+                    </td>
                   </tr>
                 ) : (
                   monitorias.map((m, i) => (
@@ -672,10 +862,16 @@ const Inventario = () => {
                         })()}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase ${
                           m.mon_tipo === 'Entrada' ? 'text-emerald-600 bg-emerald-50' : 
                           m.mon_tipo === 'Salida' ? 'text-red-600 bg-red-50' : 'text-yellow-600 bg-yellow-50'
-                        }`}>{m.mon_tipo}</span>
+                        }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          m.mon_tipo === 'Entrada' ? 'bg-emerald-500' : 
+                          m.mon_tipo === 'Salida' ? 'bg-red-500' : 'bg-yellow-500'
+                        }`} />
+                        {m.mon_tipo}
+                      </span>
                       </td>
                       <td className="px-6 py-4 text-right">{m.mon_cantidad}</td>
                       <td className="px-6 py-4 text-right text-slate-400">{m.mon_saldo_anterior}</td>
@@ -809,7 +1005,7 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">N° Lote <span className="required-star">*</span></label>
-                      <input name="lot_numero" value={formData.lot_numero || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_numero ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="lot_numero" value={formData.lot_numero || ''} disabled={!editingId} className="w-full p-3 bg-slate-100 border-2 border-slate-200 rounded-md outline-none text-sm font-medium text-slate-500 mt-1" />
                       {errors.lot_numero && <p className="text-red-500 text-xs mt-1">{errors.lot_numero}</p>}
                     </div>
                   </div>

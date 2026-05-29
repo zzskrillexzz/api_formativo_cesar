@@ -3,10 +3,8 @@ import api from '../axios';
 export const monitoriasService = {
   listar: async (params = {}) => {
     const res = await api.get('/monitorias/', { params });
-    // El backend ahora retorna {data: [...], total, page, limit, pages}
-    if (res.data && Array.isArray(res.data.data)) {
-      return res.data.data;
-    }
+    // El backend retorna {data: [...], total, page, limit, pages}
+    // Retornamos completo para que la UI pueda usar total y paginación
     return res.data;
   },
   registrar: async (data) => {

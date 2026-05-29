@@ -16,6 +16,8 @@ const Compras = () => {
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtroEstadoCompra, setFiltroEstadoCompra] = useState('');
+  const [filtroProveedorCompra, setFiltroProveedorCompra] = useState('');
 
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -269,10 +271,13 @@ const Compras = () => {
     { id: 'proveedores', label: 'Proveedores', icon: Package },
   ];
 
-  const filteredCompras = compras.filter(c =>
-    [c.comp_id, c.comp_fecha, c.comp_prov_id_fk, c.comp_estado, c.comp_total, c.comp_observacion
-    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCompras = compras.filter(c => {
+    const porEstado = !filtroEstadoCompra || c.comp_estado === filtroEstadoCompra;
+    const porProveedor = !filtroProveedorCompra || c.comp_prov_id_fk === filtroProveedorCompra;
+    const busca = [c.comp_id, c.comp_fecha, c.comp_prov_id_fk, c.comp_estado, c.comp_total, c.comp_observacion
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
+    return porEstado && porProveedor && busca;
+  });
   const focusTrapRef = useFocusTrap(showModal || showEditModal);
 
   const filteredProveedores = proveedores.filter(p =>
@@ -302,12 +307,34 @@ const Compras = () => {
         ))}
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 bg-white border border-slate-300 px-5 py-3 rounded-lg w-96 shadow-sm">
-          <Search size={18} className="text-slate-400" />
-          <input type="text" placeholder={tab === 'compras' ? 'Buscar compra...' : 'Buscar proveedor...'}
-            className="bg-transparent border-none outline-none text-sm w-full font-medium"
-            value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 bg-white border border-slate-300 px-5 py-3 rounded-lg w-80 shadow-sm">
+            <Search size={18} className="text-slate-400" />
+            <input type="text" placeholder={tab === 'compras' ? 'Buscar compra...' : 'Buscar proveedor...'}
+              className="bg-transparent border-none outline-none text-sm w-full font-medium"
+              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
+          {tab === 'compras' && (
+            <select
+              value={filtroProveedorCompra}
+              onChange={(e) => setFiltroProveedorCompra(e.target.value)}
+              className="text-xs border border-slate-300 rounded-md px-2.5 py-3 bg-white outline-none shadow-sm font-medium text-slate-600"
+            >
+              <option value="">Todos los proveedores</option>
+              {proveedores.map(p => (
+                <option key={p.prov_id || p.id} value={p.prov_id || p.id}>{p.prov_nombre || p.nombre}</option>
+              ))}
+            </select>
+          )}
+          {(filtroEstadoCompra || filtroProveedorCompra) && (
+            <button
+              onClick={() => { setFiltroEstadoCompra(''); setFiltroProveedorCompra(''); }}
+              className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-500 transition-colors px-2"
+            >
+              ✕ Limpiar
+            </button>
+          )}
         </div>
         <div className="flex gap-2">
           <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
@@ -324,6 +351,30 @@ const Compras = () => {
       {tab === 'compras' && (
         <>
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden card-hover">
+          {/* ── Tarjetas resumen ── */}
+          <div className="grid grid-cols-4 gap-2 px-5 pt-4 pb-2">
+            {(() => {
+              const cards = [
+                { label: 'Todas', count: compras.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
+                { label: 'Pendientes', count: compras.filter(c => c.comp_estado === 'Pendiente').length, icon: '🟡', color: 'border-yellow-200 bg-yellow-50/50', text: 'text-yellow-700', filtro: 'Pendiente' },
+                { label: 'Recibidas', count: compras.filter(c => c.comp_estado === 'Recibida').length, icon: '🟢', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Recibida' },
+                { label: 'Canceladas', count: compras.filter(c => c.comp_estado === 'Cancelada').length, icon: '🔴', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Cancelada' },
+              ];
+              return cards.map((c, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setFiltroEstadoCompra(c.filtro)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${c.color} transition-all hover:shadow-md ${filtroEstadoCompra === c.filtro ? 'ring-2 ring-blue-400 scale-[1.03]' : ''}`}
+                >
+                  <span className="text-lg">{c.icon}</span>
+                  <div className="text-left">
+                    <div className={`text-base font-black ${c.text}`}>{c.count}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}</div>
+                  </div>
+                </button>
+              ));
+            })()}
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
