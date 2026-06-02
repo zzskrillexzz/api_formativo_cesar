@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar } from './components/layout/Sidebar';
-import { Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Wifi, WifiOff, Database, Loader2 } from 'lucide-react';
 import { Notificaciones } from './components/Notificaciones';
 
 // ── Lazy-loading de páginas (code-splitting por ruta) ──
@@ -23,6 +23,7 @@ const Layout = () => {
   const { isLogged, role, user } = useAuth();
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [conectado, setConectado] = useState(true);
+  const [dbConectado, setDbConectado] = useState(true);
   const [currentTab, setCurrentTab] = useState('Dashboard');
 
   const handleTabChange = (tab) => {
@@ -44,6 +45,27 @@ const Layout = () => {
     };
     check();
     const interval = setInterval(check, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const checkDb = async () => {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 3000);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/health`, { method: 'GET', signal: ctrl.signal });
+        clearTimeout(timer);
+        if (res.ok) {
+          const data = await res.json();
+          setDbConectado(data.db === 'conectada');
+        } else {
+          setDbConectado(false);
+        }
+      } catch { setDbConectado(false); }
+    };
+    checkDb();
+    const interval = setInterval(checkDb, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -77,11 +99,19 @@ const Layout = () => {
           <div className="max-w-7xl mx-auto">
             <header className="mb-6 flex justify-between items-center">
               <h2 className="text-2xl font-bold text-white tracking-tight">{activeTab}</h2>
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase shadow-sm transition-colors ${
-                conectado ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-              }`}>
-                {conectado ? <Wifi size={12} /> : <WifiOff size={12} />}
-                {conectado ? 'Conectado' : 'Desconectado'}
+              <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase shadow-sm transition-colors ${
+                  conectado ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                }`}>
+                  {conectado ? <Wifi size={12} /> : <WifiOff size={12} />}
+                  {conectado ? 'Server' : 'Server'}
+                </div>
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase shadow-sm transition-colors ${
+                  dbConectado ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                }`}>
+                  {dbConectado ? <Database size={12} /> : <Database size={12} className="opacity-60" />}
+                  {dbConectado ? 'BD Activa' : 'BD Caída'}
+                </div>
               </div>
             </header>
 

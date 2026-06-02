@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Package, Layers, AlertTriangle, Search, Plus, X, RefreshCw, Edit, Loader2, Trash2 } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { productosService } from '../api/services/productosService';
@@ -32,10 +32,23 @@ const Inventario = () => {
   const [filtroTipo, setFiltroTipo] = useState('');
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
+  const [filtroEstadoProducto, setFiltroEstadoProducto] = useState('');
+  const [filtroCategoriaProducto, setFiltroCategoriaProducto] = useState('');
+  const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
   const [pagina, setPagina] = useState(1);
   const [totalMovimientos, setTotalMovimientos] = useState(0);
   const POR_PAGINA = 15;
   const isEditing = !!editingId;
+  const formSnapshotRef = useRef({});
+
+  const handleAddCategory = () => {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    setFormData(prev => ({ ...prev, categoria: name }));
+    setNewCategoryName('');
+    setShowNewCategoryForm(false);
+  };
 
   const openModal = () => {
     let defaultData = {};
@@ -64,6 +77,7 @@ const Inventario = () => {
       defaultData = { inm_id: 'INM' + String(max + 1).padStart(3, '0') };
     }
     setFormData(defaultData);
+    formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     setFormError('');
     setErrors({});
     setEditingId(null);
@@ -73,13 +87,15 @@ const Inventario = () => {
   const abrirEditarProducto = (prod) => {
     try {
       if (!prod) return;
-      setFormData({
+      const editData = {
         id: prod.id, nombre: prod.nombre, categoria: prod.categoria || '',
         descripcion: prod.descripcion || '', precio: prod.precio || '',
         cantidad_disponible: prod.cantidad_disponible != null ? prod.cantidad_disponible : '',
         stock_minimo: prod.stock_minimo != null ? prod.stock_minimo : '',
         estado: prod.estado || 'Activo', proveedor_id: prod.proveedor_id || ''
-      });
+      };
+      setFormData(editData);
+      formSnapshotRef.current = JSON.parse(JSON.stringify(editData));
       setFormError('');
       setErrors({});
       setEditingId(prod.id);
@@ -117,14 +133,16 @@ const Inventario = () => {
   };
 
   const abrirEditarLote = (lote) => {
-    setFormData({
+    const editData = {
       lot_id: lote.lot_id, lot_numero: lote.lot_numero || '',
       lot_fecha_fabricacion: lote.lot_fecha_fabricacion || '',
       lot_fecha_vencimiento: lote.lot_fecha_vencimiento || '',
       lot_cantidad_inicial: lote.lot_cantidad_inicial || '',
       lot_pro_id_fk: lote.lot_pro_id_fk || '', lot_prov_id_fk: lote.lot_prov_id_fk || '',
       lot_estado: lote.lot_estado || 'Activo'
-    });
+    };
+    setFormData(editData);
+    formSnapshotRef.current = JSON.parse(JSON.stringify(editData));
     setFormError('');
     setErrors({});
     setEditingId(lote.lot_id);
@@ -240,6 +258,10 @@ const Inventario = () => {
     e.preventDefault();
     setFormError('');
     setErrors({});
+    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+      setFormError(isEditing ? 'No se realizaron cambios en el producto' : 'Completa los campos del producto antes de guardar');
+      return;
+    }
     if (!formData.id || !formData.nombre) {
       setFormError('ID y Nombre son obligatorios');
       return;
@@ -291,6 +313,10 @@ const Inventario = () => {
     e.preventDefault();
     setFormError('');
     setErrors({});
+    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+      setFormError(isEditing ? 'No se realizaron cambios en el lote' : 'Completa los campos del lote antes de guardar');
+      return;
+    }
     if (!formData.lot_id || !formData.lot_fecha_vencimiento) {
       setFormError('ID y Fecha de Vencimiento son obligatorios');
       return;
@@ -347,6 +373,10 @@ const Inventario = () => {
     e.preventDefault();
     setFormError('');
     setErrors({});
+    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+      setFormError('Completa los campos del movimiento antes de guardar');
+      return;
+    }
     if (!formData.inm_id || !formData.inm_tipo_movimiento || !formData.inm_pro_id_fk || !formData.inm_fecha || !formData.inm_motivo) {
       setFormError('Todos los campos marcados con * son obligatorios');
       return;
@@ -421,11 +451,14 @@ const Inventario = () => {
     { id: 'movimientos', label: 'Movimientos', icon: AlertTriangle },
   ];
 
-  const filteredProductos = productos.filter(p =>
-    [p.id, p.nombre, p.categoria, p.descripcion, p.precio, p.estado,
-     p.cantidad_disponible, p.stock_minimo, p.proveedor_id
-    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProductos = productos.filter(p => {
+    const busca = [p.id, p.nombre, p.categoria, p.descripcion, p.precio, p.estado,
+      p.cantidad_disponible, p.stock_minimo, p.proveedor_id
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
+    const porEstado = !filtroEstadoProducto || p.estado === filtroEstadoProducto;
+    const porCategoria = !filtroCategoriaProducto || p.categoria === filtroCategoriaProducto;
+    return busca && porEstado && porCategoria;
+  });
 
   const getDiasRestantes = (fechaVen) => {
     if (!fechaVen) return null;
@@ -518,6 +551,56 @@ const Inventario = () => {
       {/* TAB: Productos */}
       {tab === 'productos' && (
         <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          {/* ── Filtros de productos ── */}
+          <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
+            <select
+              value={filtroCategoriaProducto}
+              onChange={(e) => setFiltroCategoriaProducto(e.target.value)}
+              className="text-xs border border-slate-300 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm font-medium text-slate-600"
+            >
+              <option value="">Todas las categorías</option>
+              {[...new Set(productos.map(p => p.categoria).filter(Boolean))].sort().map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            {(filtroEstadoProducto || filtroCategoriaProducto) && (
+              <button
+                onClick={() => { setFiltroEstadoProducto(''); setFiltroCategoriaProducto(''); }}
+                className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-500 transition-colors px-2"
+              >
+                ✕ Limpiar filtros
+              </button>
+            )}
+          </div>
+          {/* ── Tarjetas resumen ── */}
+          {(() => {
+            const activos = productos.filter(p => p.estado === 'Activo').length;
+            const descontinuados = productos.filter(p => p.estado === 'Descontinuado').length;
+            const suspendidos = productos.filter(p => p.estado === 'Suspendido').length;
+            const cards = [
+              { label: 'Todos', count: productos.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
+              { label: 'Activos', count: activos, icon: '✅', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Activo' },
+              { label: 'Descontinuados', count: descontinuados, icon: '⛔', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'Descontinuado' },
+              { label: 'Suspendidos', count: suspendidos, icon: '🚫', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Suspendido' },
+            ];
+            return (
+              <div className="grid grid-cols-4 gap-2 px-6 pt-4 pb-2">
+                {cards.map((c, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setFiltroEstadoProducto(c.filtro)}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${c.color} transition-all hover:shadow-md ${filtroEstadoProducto === c.filtro ? 'ring-2 ring-blue-400 scale-[1.03]' : ''}`}
+                  >
+                    <span className="text-lg">{c.icon}</span>
+                    <div className="text-left">
+                      <div className={`text-base font-black ${c.text}`}>{c.count}</div>
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
@@ -632,11 +715,11 @@ const Inventario = () => {
             const cuarentena = lotes.filter(l => l.lot_estado === 'Cuarentena').length;
             const cards = [
               { label: 'Todos', count: lotes.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
-              { label: 'Activos', count: activos, icon: '🟢', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Activo' },
+              { label: 'Activos', count: activos, icon: '✅', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Activo' },
               { label: 'Próximos', count: proximos, icon: '⚠️', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', sub: '≤ 30 días', filtro: '__proximos__' },
-              { label: 'Vencidos', count: vencidos, icon: '🔴', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Vencido' },
+              { label: 'Vencidos', count: vencidos, icon: '🗑️', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Vencido' },
               { label: 'Agotados', count: agotados, icon: '📦', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'Agotado' },
-              { label: 'Cuarentena', count: cuarentena, icon: '🟡', color: 'border-yellow-200 bg-yellow-50/50', text: 'text-yellow-700', filtro: 'Cuarentena' },
+              { label: 'Cuarentena', count: cuarentena, icon: '🧪', color: 'border-yellow-200 bg-yellow-50/50', text: 'text-yellow-700', filtro: 'Cuarentena' },
             ];
             return (
               <div className="grid grid-cols-6 gap-2 px-6 pt-4 pb-2">
@@ -950,11 +1033,54 @@ const Inventario = () => {
                       {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Categoría</label>
-                      <input name="categoria" value={formData.categoria || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <div className="flex gap-2 mt-1">
+                        <select name="categoria" value={formData.categoria || ''} onChange={handleChange} className="flex-1 p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+                          <option value="">Seleccionar categoría...</option>
+                          {[...new Set(productos.map(p => p.categoria).filter(Boolean))].sort().map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setShowNewCategoryForm(!showNewCategoryForm)}
+                          className="px-2.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-sm font-bold flex items-center gap-1 shrink-0"
+                          title="Agregar nueva categoría"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                      {showNewCategoryForm && (
+                        <div className="flex gap-2 mt-2 p-2 bg-slate-50 rounded-md border border-slate-200">
+                          <input
+                            type="text"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            placeholder="Nombre de la categoría..."
+                            className="flex-1 p-2 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddCategory}
+                            className="px-3 py-2 text-xs font-bold text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-all"
+                          >
+                            Crear
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setShowNewCategoryForm(false); setNewCategoryName(''); }}
+                            className="px-3 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-100 transition-all"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      )}
                     </div>
+                  </div>
+                  <div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Precio</label>
                       <input name="precio" type="number" step="0.01" value={formData.precio || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.precio ? 'border-red-400' : 'border-slate-300'}`} />

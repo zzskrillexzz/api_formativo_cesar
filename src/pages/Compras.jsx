@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Truck, Package, Search, Plus, X, RefreshCw, Loader2, Edit3, Trash2, FileText, Download } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -18,6 +18,8 @@ const Compras = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroEstadoCompra, setFiltroEstadoCompra] = useState('');
   const [filtroProveedorCompra, setFiltroProveedorCompra] = useState('');
+  const [filtroTipoProveedor, setFiltroTipoProveedor] = useState('');
+  const formSnapshotRef = useRef({});
 
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -52,11 +54,15 @@ const Compras = () => {
     if (tab === 'compras') {
       const nums = compras.map(c => { const m = (c.comp_id || '').match(/COM(\d+)/); return m ? parseInt(m[1]) : 0; });
       const max = nums.length > 0 ? Math.max(...nums) : 0;
-      setFormData({ com_id: 'COM' + String(max + 1).padStart(3, '0') });
+      const defaultData = { com_id: 'COM' + String(max + 1).padStart(3, '0') };
+      setFormData(defaultData);
+      formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     } else {
       const nums = proveedores.map(p => { const m = (p.id || '').match(/PROV(\d+)/); return m ? parseInt(m[1]) : 0; });
       const max = nums.length > 0 ? Math.max(...nums) : 0;
-      setFormData({ id: 'PROV' + String(max + 1).padStart(3, '0') });
+      const defaultData = { id: 'PROV' + String(max + 1).padStart(3, '0') };
+      setFormData(defaultData);
+      formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     }
     setFormError('');
     setComprobanteFile(null);
@@ -69,6 +75,7 @@ const Compras = () => {
     try {
       const detalle = await comprasService.buscar(compra.comp_id);
       setEditData(detalle);
+      formSnapshotRef.current = JSON.parse(JSON.stringify(detalle));
       setShowEditModal(true);
     } catch (_) {
       setFormError('Error al cargar datos de la compra');
@@ -150,6 +157,10 @@ const Compras = () => {
   const handleSubmitCompra = async (e) => {
     e.preventDefault();
     setFormError('');
+    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+      setFormError('Completa los campos de la compra antes de guardar');
+      return;
+    }
     if (!formData.com_id || !formData.com_fecha || !formData.com_prov_id_fk || !formData.com_total) {
       setFormError('Los campos con * son obligatorios');
       return;
@@ -184,6 +195,10 @@ const Compras = () => {
   const handleEditCompra = async (e) => {
     e.preventDefault();
     setFormError('');
+    if (JSON.stringify(editData) === JSON.stringify(formSnapshotRef.current)) {
+      setFormError('No se realizaron cambios en la compra');
+      return;
+    }
     const total = parseFloat(editData.comp_total);
     if (isNaN(total) || total <= 0) {
       setFormError('El total debe ser un número mayor a 0');
@@ -242,6 +257,10 @@ const Compras = () => {
   const handleSubmitProveedor = async (e) => {
     e.preventDefault();
     setFormError('');
+    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+      setFormError('Completa los campos del proveedor antes de guardar');
+      return;
+    }
     if (!formData.id || !formData.nit || !formData.nombre || !formData.tipo || !formData.contacto || !formData.direccion || !formData.email) {
       setFormError('Todos los campos son obligatorios');
       return;
@@ -280,10 +299,12 @@ const Compras = () => {
   });
   const focusTrapRef = useFocusTrap(showModal || showEditModal);
 
-  const filteredProveedores = proveedores.filter(p =>
-    [p.prov_id, p.prov_nombre, p.prov_nit, p.prov_tipo, p.prov_contacto, p.prov_email, p.prov_direccion
-    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProveedores = proveedores.filter(p => {
+    const busca = [p.prov_id, p.prov_nombre, p.prov_nit, p.prov_tipo, p.prov_contacto, p.prov_email, p.prov_direccion
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
+    const porTipo = !filtroTipoProveedor || p.prov_tipo === filtroTipoProveedor;
+    return busca && porTipo;
+  });
 
   const estadoBadge = (estado) => {
     const cls = estado === 'Recibida' ? 'text-emerald-600 bg-emerald-50' :
@@ -356,9 +377,9 @@ const Compras = () => {
             {(() => {
               const cards = [
                 { label: 'Todas', count: compras.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
-                { label: 'Pendientes', count: compras.filter(c => c.comp_estado === 'Pendiente').length, icon: '🟡', color: 'border-yellow-200 bg-yellow-50/50', text: 'text-yellow-700', filtro: 'Pendiente' },
-                { label: 'Recibidas', count: compras.filter(c => c.comp_estado === 'Recibida').length, icon: '🟢', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Recibida' },
-                { label: 'Canceladas', count: compras.filter(c => c.comp_estado === 'Cancelada').length, icon: '🔴', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Cancelada' },
+                { label: 'Pendientes', count: compras.filter(c => c.comp_estado === 'Pendiente').length, icon: '⏳', color: 'border-yellow-200 bg-yellow-50/50', text: 'text-yellow-700', filtro: 'Pendiente' },
+                { label: 'Recibidas', count: compras.filter(c => c.comp_estado === 'Recibida').length, icon: '✅', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Recibida' },
+                { label: 'Canceladas', count: compras.filter(c => c.comp_estado === 'Cancelada').length, icon: '🚫', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Cancelada' },
               ];
               return cards.map((c, idx) => (
                 <button
@@ -451,6 +472,56 @@ const Compras = () => {
       {/* Proveedores */}
       {tab === 'proveedores' && (
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden card-hover">
+          {/* ── Filtros de proveedores ── */}
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
+            <select
+              value={filtroTipoProveedor}
+              onChange={(e) => setFiltroTipoProveedor(e.target.value)}
+              className="text-xs border border-slate-300 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm font-medium text-slate-600"
+            >
+              <option value="">Todos los tipos</option>
+              {[...new Set(proveedores.map(p => p.prov_tipo).filter(Boolean))].sort().map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            {filtroTipoProveedor && (
+              <button
+                onClick={() => setFiltroTipoProveedor('')}
+                className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-500 transition-colors px-2"
+              >
+                ✕ Limpiar filtros
+              </button>
+            )}
+          </div>
+          {/* ── Tarjetas resumen ── */}
+          {(() => {
+            const laboratorio = proveedores.filter(p => p.prov_tipo === 'Laboratorio').length;
+            const distribuidor = proveedores.filter(p => p.prov_tipo === 'Distribuidor').length;
+            const importador = proveedores.filter(p => p.prov_tipo === 'Importador').length;
+            const cards = [
+              { label: 'Todos', count: proveedores.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
+              { label: 'Laboratorio', count: laboratorio, icon: '🔬', color: 'border-purple-200 bg-purple-50/50', text: 'text-purple-700', filtro: 'Laboratorio' },
+              { label: 'Distribuidor', count: distribuidor, icon: '🚚', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', filtro: 'Distribuidor' },
+              { label: 'Importador', count: importador, icon: '🌐', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: 'Importador' },
+            ];
+            return (
+              <div className="grid grid-cols-4 gap-2 px-5 pt-4 pb-2">
+                {cards.map((c, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setFiltroTipoProveedor(c.filtro)}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${c.color} transition-all hover:shadow-md ${filtroTipoProveedor === c.filtro ? 'ring-2 ring-blue-400 scale-[1.03]' : ''}`}
+                  >
+                    <span className="text-lg">{c.icon}</span>
+                    <div className="text-left">
+                      <div className={`text-base font-black ${c.text}`}>{c.count}</div>
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, FileText, Users, Search, Plus, X, RefreshCw, Eye, Trash2, Edit3, AlertTriangle, Loader2, Truck, Package, QrCode } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { pedidosService } from '../api/services/pedidosService';
@@ -42,6 +42,8 @@ const Ventas = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [filtroEstadoPedido, setFiltroEstadoPedido] = useState('');
   const [filtroEstadoFactura, setFiltroEstadoFactura] = useState('');
+  const [filtroTipoDocCliente, setFiltroTipoDocCliente] = useState('');
+  const formSnapshotRef = useRef({});
   const [showSubirComprobanteModal, setShowSubirComprobanteModal] = useState(false);
   const [pedidoSubirComprobante, setPedidoSubirComprobante] = useState(null);
 
@@ -174,7 +176,9 @@ const Ventas = () => {
     setShowNewClientForm(false);
     setComprobanteFileName('');
     if (tab === 'pedidos') {
-      setFormData({ ped_id: nextPedidoId });
+      const defaultData = { ped_id: nextPedidoId };
+      setFormData(defaultData);
+      formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
       try {
         const prods = await productosService.listar();
         setProductosDisponibles(prods.filter(p => p.estado === 'Activo'));
@@ -182,9 +186,13 @@ const Ventas = () => {
         setProductosDisponibles([]);
       }
     } else if (tab === 'facturas') {
-      setFormData({ id: nextFacturaId, email_enviado: '0' });
+      const defaultData = { id: nextFacturaId, email_enviado: '0' };
+      setFormData(defaultData);
+      formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     } else {
-      setFormData({});
+      const defaultData = {};
+      setFormData(defaultData);
+      formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     }
     setShowModal(true);
   };
@@ -333,11 +341,13 @@ const Ventas = () => {
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     return porEstado && busca;
   });
-  const filteredClientes = clientes.filter(c =>
-    [c.cli_id, c.cli_nombre, c.cli_apellido, c.cli_tipo_documento, c.cli_correo,
-     c.cli_telefono, c.cli_direccion, c.cli_nit
-    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredClientes = clientes.filter(c => {
+    const busca = [c.cli_id, c.cli_nombre, c.cli_apellido, c.cli_tipo_documento, c.cli_correo,
+      c.cli_telefono, c.cli_direccion, c.cli_nit
+    ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
+    const porTipoDoc = !filtroTipoDocCliente || c.cli_tipo_documento === filtroTipoDocCliente;
+    return busca && porTipoDoc;
+  });
 
   const getEstadoEntregaBadge = (estado) => {
     const map = {
@@ -394,6 +404,10 @@ const Ventas = () => {
     e.preventDefault();
     setFormError('');
     setErrors({});
+    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+      setFormError(editingPedidoId ? 'No se realizaron cambios en el pedido' : 'Completa los campos del pedido antes de guardar');
+      return;
+    }
     if (!formData.ped_fecha || !formData.ped_metodo_pago || !formData.ped_estado_entrega || !formData.ped_cli_id_fk) {
       setFormError('Todos los campos con * son obligatorios');
       return;
@@ -468,6 +482,10 @@ const Ventas = () => {
     e.preventDefault();
     setFormError('');
     setErrors({});
+    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+      setFormError('Completa los campos de la factura antes de guardar');
+      return;
+    }
     if (!formData.id || !formData.fecha_emision || formData.email_enviado === undefined || !formData.forma_pago) {
       setFormError('Todos los campos con * son obligatorios');
       return;
@@ -507,14 +525,16 @@ const Ventas = () => {
   const abrirEditarPedido = async (pedido) => {
     try {
       // Usar datos del pedido desde la tabla
-      setFormData({
+      const editData = {
         ped_id: pedido.ped_id,
         ped_fecha: pedido.ped_fecha,
         ped_metodo_pago: pedido.ped_metodo_pago,
         ped_cuenta_bancaria: pedido.ped_cuenta_bancaria || '',
         ped_estado_entrega: pedido.ped_estado_entrega,
         ped_cli_id_fk: pedido.ped_cli_id_fk,
-      });
+      };
+      setFormData(editData);
+      formSnapshotRef.current = JSON.parse(JSON.stringify(editData));
       setEditingPedidoId(pedido.ped_id);
       setFormError('');
       setProductosSeleccionados([]);
@@ -642,7 +662,7 @@ const Ventas = () => {
   };
 
   const abrirEditarCliente = (cliente) => {
-    setFormData({
+    const editData = {
       cli_id: cliente.cli_id,
       cli_tipo_documento: cliente.cli_tipo_documento || '',
       cli_nombre: cliente.cli_nombre || '',
@@ -650,7 +670,9 @@ const Ventas = () => {
       cli_correo: cliente.cli_correo || '',
       cli_telefono: cliente.cli_telefono || '',
       cli_direccion: cliente.cli_direccion || ''
-    });
+    };
+    setFormData(editData);
+    formSnapshotRef.current = JSON.parse(JSON.stringify(editData));
     setEditingClienteId(cliente.cli_id);
     setFormError('');
     setShowModal(true);
@@ -660,6 +682,10 @@ const Ventas = () => {
     e.preventDefault();
     setFormError('');
     setErrors({});
+    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+      setFormError(editingClienteId ? 'No se realizaron cambios en el cliente' : 'Completa los campos del cliente antes de guardar');
+      return;
+    }
     if (!formData.cli_id || !formData.cli_tipo_documento || !formData.cli_nombre || !formData.cli_apellido || !formData.cli_correo) {
       setFormError('Los campos ID, Tipo Doc., Nombre, Apellido y Correo son obligatorios');
       return;
@@ -755,11 +781,11 @@ const Ventas = () => {
             {(() => {
               const cards = [
                 { label: 'Todos', count: pedidos.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
-                { label: 'Pendientes', count: pedidos.filter(p => p.ped_estado_entrega === 'Pendiente').length, icon: '🟡', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'Pendiente' },
-                { label: 'Preparación', count: pedidos.filter(p => p.ped_estado_entrega === 'En preparación').length, icon: '🟠', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', filtro: 'En preparación' },
-                { label: 'En camino', count: pedidos.filter(p => p.ped_estado_entrega === 'En camino').length, icon: '🔵', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: 'En camino' },
-                { label: 'Entregados', count: pedidos.filter(p => p.ped_estado_entrega === 'Entregado').length, icon: '🟢', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Entregado' },
-                { label: 'Anulados', count: pedidos.filter(p => p.ped_estado_entrega === 'Anulado').length, icon: '🔴', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Anulado' },
+                { label: 'Pendientes', count: pedidos.filter(p => p.ped_estado_entrega === 'Pendiente').length, icon: '⏳', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'Pendiente' },
+                { label: 'Preparación', count: pedidos.filter(p => p.ped_estado_entrega === 'En preparación').length, icon: '📦', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', filtro: 'En preparación' },
+                { label: 'En camino', count: pedidos.filter(p => p.ped_estado_entrega === 'En camino').length, icon: '🚚', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: 'En camino' },
+                { label: 'Entregados', count: pedidos.filter(p => p.ped_estado_entrega === 'Entregado').length, icon: '✅', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Entregado' },
+                { label: 'Anulados', count: pedidos.filter(p => p.ped_estado_entrega === 'Anulado').length, icon: '🚫', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Anulado' },
               ];
               return cards.map((c, idx) => (
                 <button
@@ -950,8 +976,8 @@ const Ventas = () => {
             {(() => {
               const cards = [
                 { label: 'Todas', count: facturas.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
-                { label: 'Vigentes', count: facturas.filter(f => f.estado === 'Vigente').length, icon: '🟢', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Vigente' },
-                { label: 'Anuladas', count: facturas.filter(f => f.estado === 'Anulada').length, icon: '🔴', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Anulada' },
+                { label: 'Vigentes', count: facturas.filter(f => f.estado === 'Vigente').length, icon: '✅', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Vigente' },
+                { label: 'Anuladas', count: facturas.filter(f => f.estado === 'Anulada').length, icon: '🚫', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Anulada' },
               ];
               return cards.map((c, idx) => (
                 <button
@@ -1034,6 +1060,58 @@ const Ventas = () => {
       {/* TAB: Clientes */}
       {tab === 'clientes' && (
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          {/* ── Filtros de clientes ── */}
+          <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
+            <select
+              value={filtroTipoDocCliente}
+              onChange={(e) => setFiltroTipoDocCliente(e.target.value)}
+              className="text-xs border border-slate-300 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm font-medium text-slate-600"
+            >
+              <option value="">Todos los tipos</option>
+              {[...new Set(clientes.map(c => c.cli_tipo_documento).filter(Boolean))].sort().map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            {filtroTipoDocCliente && (
+              <button
+                onClick={() => setFiltroTipoDocCliente('')}
+                className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-500 transition-colors px-2"
+              >
+                ✕ Limpiar filtros
+              </button>
+            )}
+          </div>
+          {/* ── Tarjetas resumen ── */}
+          {(() => {
+            const cc = clientes.filter(c => c.cli_tipo_documento === 'CC').length;
+            const nit = clientes.filter(c => c.cli_tipo_documento === 'NIT').length;
+            const ce = clientes.filter(c => c.cli_tipo_documento === 'CE').length;
+            const ti = clientes.filter(c => c.cli_tipo_documento === 'TI').length;
+            const cards = [
+              { label: 'Todos', count: clientes.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
+              { label: 'CC', count: cc, icon: '🪪', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'CC' },
+              { label: 'NIT', count: nit, icon: '🏢', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', filtro: 'NIT' },
+              { label: 'CE', count: ce, icon: '🛂', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-600', filtro: 'CE' },
+              { label: 'TI', count: ti, icon: '🧒', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'TI' },
+            ];
+            return (
+              <div className="grid grid-cols-5 gap-2 px-6 pt-4 pb-2">
+                {cards.map((c, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setFiltroTipoDocCliente(c.filtro)}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${c.color} transition-all hover:shadow-md ${filtroTipoDocCliente === c.filtro ? 'ring-2 ring-blue-400 scale-[1.03]' : ''}`}
+                  >
+                    <span className="text-lg">{c.icon}</span>
+                    <div className="text-left">
+                      <div className={`text-base font-black ${c.text}`}>{c.count}</div>
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
