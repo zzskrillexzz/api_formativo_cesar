@@ -42,9 +42,9 @@ CREATE TABLE `t_alerta_vencimiento` (
 
 insert  into `t_alerta_vencimiento`(`alv_id`,`alv_pro_id_fk`,`alv_lot_id_fk`,`alv_fecha_generacion`,`alv_fecha_vencimiento`,`alv_dias_restantes`,`alv_estado`,`alv_usu_id_fk`) values 
 ('ALV001','PRO002','LOT002','2025-03-19','2026-06-30',468,'Pendiente',NULL),
-('ALV050','PRO050','LOT050','2026-04-09','2027-06-30',447,'Pendiente',NULL),
-('ALV051','PRO051','LOT051','2026-04-09','2027-09-15',524,'Pendiente',NULL),
-('ALV052','PRO052','LOT052','2026-04-09','2028-01-20',651,'Gestionada',NULL),
+('ALV050','PRO050','LOT006','2026-04-09','2027-06-30',447,'Pendiente',NULL),
+('ALV051','PRO051','LOT007','2026-04-09','2027-09-15',524,'Pendiente',NULL),
+('ALV052','PRO052','LOT008','2026-04-09','2028-01-20',651,'Gestionada',NULL),
 ('ALV099','PRO001','LOT001','2026-04-09','2026-08-31',144,'Pendiente',NULL);
 
 /*Table structure for table `t_anulacion_venta` */
@@ -90,12 +90,12 @@ CREATE TABLE `t_cliente` (
 /*Data for the table `t_cliente` */
 
 insert  into `t_cliente`(`cli_id`,`cli_tipo_documento`,`cli_nombre`,`cli_apellido`,`cli_telefono`,`cli_direccion`,`cli_correo`) values 
+(900123456,'NIT','Farmacia','El Descuento SAS','6014567890','Av 68 #23-45 Cali','farmacia.descuento@empresa.co'),
 (1023456789,'CC','Carlos','Gomez','3157894561','Cl 80 #20-35','cgomez@hotmail.com'),
 (1065432198,'CC','Maria','Salcedo','3143216547','Cl 45 #8-15','msalcedo@gmail.com'),
 (1076543219,'CC','Jhon','Rios','3209876543','Cra 7 #12-50','jhonrios@gmail.com'),
 (1087654321,'CC','Ana','Torres','3012345678','Av 68 #55-20','ana.torres@yahoo.com'),
 (1098765432,'CC','Laura','Martinez','3104567890','Cra 15 #42-10','l.martinez@gmail.com'),
-(900123456,'NIT','Farmacia','El Descuento SAS','6014567890','Av 68 #23-45 Cali','farmacia.descuento@empresa.co'),
 (9999999999,'CC','Test','Usuario','3001234567','Calle 1 #2-3','test@test.com');
 
 /*Table structure for table `t_compra` */
@@ -110,6 +110,8 @@ CREATE TABLE `t_compra` (
   `com_total` decimal(12,2) DEFAULT NULL COMMENT 'Total de la compra',
   `com_estado` varchar(20) DEFAULT 'Recibida' COMMENT 'Estado: Pendiente / Recibida / Cancelada',
   `com_observacion` varchar(255) DEFAULT NULL COMMENT 'Observaciones de la compra',
+  `com_comprobante` longblob DEFAULT NULL,
+  `com_comprobante_tipo` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`com_id`),
   KEY `com_prov_id_fk` (`com_prov_id_fk`),
   KEY `com_usu_id_fk` (`com_usu_id_fk`),
@@ -119,12 +121,12 @@ CREATE TABLE `t_compra` (
 
 /*Data for the table `t_compra` */
 
-insert  into `t_compra`(`com_id`,`com_fecha`,`com_prov_id_fk`,`com_usu_id_fk`,`com_total`,`com_estado`,`com_observacion`) values 
-('COM001','2025-03-10','PROV002','USU004',85000.00,'Recibida','Compra mensual Acetaminofen'),
-('COM002','2025-03-12','PROV003','USU004',49000.00,'Recibida','Reposición Loratadina'),
-('COM050','2026-04-09','PROV050','USU051',850000.00,'Recibida','Compra de Ibuprofeno'),
-('COM051','2026-04-09','PROV051','USU051',450000.00,'Pendiente','Compra de Amoxicilina'),
-('COM052','2026-04-09','PROV052','USU052',260000.00,'Recibida','Compra de Loratadina');
+insert  into `t_compra`(`com_id`,`com_fecha`,`com_prov_id_fk`,`com_usu_id_fk`,`com_total`,`com_estado`,`com_observacion`,`com_comprobante`,`com_comprobante_tipo`) values 
+('COM001','2025-03-10','PROV002','USU004',85000.00,'Recibida','Compra mensual Acetaminofen',NULL,NULL),
+('COM002','2025-03-12','PROV003','USU004',49000.00,'Recibida','Reposición Loratadina',NULL,NULL),
+('COM050','2026-04-09','PROV050','USU051',850000.00,'Recibida','Compra de Ibuprofeno',NULL,NULL),
+('COM051','2026-04-09','PROV051','USU051',450000.00,'Pendiente','Compra de Amoxicilina',NULL,NULL),
+('COM052','2026-04-09','PROV052','USU052',260000.00,'Recibida','Compra de Loratadina',NULL,NULL);
 
 /*Table structure for table `t_detalle_compra` */
 
@@ -152,9 +154,9 @@ CREATE TABLE `t_detalle_compra` (
 insert  into `t_detalle_compra`(`dco_id`,`dco_com_id_fk`,`dco_pro_id_fk`,`dco_lot_id_fk`,`dco_cantidad`,`dco_precio_compra`,`dco_subtotal`) values 
 ('DCO001','COM001','PRO001','LOT001',100,850.00,85000.00),
 ('DCO002','COM002','PRO003','LOT003',50,980.00,49000.00),
-('DCO050','COM050','PRO050','LOT050',100,8500.00,850000.00),
-('DCO051','COM051','PRO051','LOT051',30,15000.00,450000.00),
-('DCO052','COM052','PRO052','LOT052',50,5200.00,260000.00);
+('DCO050','COM050','PRO050','LOT006',100,8500.00,850000.00),
+('DCO051','COM051','PRO051','LOT007',30,15000.00,450000.00),
+('DCO052','COM052','PRO052','LOT008',50,5200.00,260000.00);
 
 /*Table structure for table `t_detalle_pedido` */
 
@@ -164,6 +166,7 @@ CREATE TABLE `t_detalle_pedido` (
   `det_id` varchar(20) NOT NULL COMMENT 'ID del detalle',
   `det_ped_id_fk` varchar(20) DEFAULT NULL COMMENT 'ID del pedido al que pertenece',
   `det_pro_id_fk` varchar(20) DEFAULT NULL COMMENT 'ID del producto vendido',
+  `det_lot_id_fk` varchar(20) DEFAULT NULL,
   `det_cantidad` int(11) DEFAULT NULL COMMENT 'Cantidad de unidades',
   `det_precio_unitario` decimal(12,2) DEFAULT NULL COMMENT 'Precio unitario al momento de la venta',
   `det_subtotal` decimal(12,2) DEFAULT NULL COMMENT 'Subtotal (cantidad × precio_unitario)',
@@ -176,15 +179,37 @@ CREATE TABLE `t_detalle_pedido` (
 
 /*Data for the table `t_detalle_pedido` */
 
-insert  into `t_detalle_pedido`(`det_id`,`det_ped_id_fk`,`det_pro_id_fk`,`det_cantidad`,`det_precio_unitario`,`det_subtotal`) values 
-('DET001','PED001','PRO001',5,850.00,4250.00),
-('DET002','PED002','PRO002',3,1200.00,3600.00),
-('DET003','PED003','PRO003',4,980.00,3920.00),
-('DET004','PED004','PRO004',2,3500.00,7000.00),
-('DET005','PED005','PRO005',1,4200.00,4200.00),
-('DET050','PED050','PRO050',2,8500.00,17000.00),
-('DET051','PED051','PRO051',2,15000.00,30000.00),
-('DET052','PED052','PRO052',1,5200.00,5200.00);
+insert  into `t_detalle_pedido`(`det_id`,`det_ped_id_fk`,`det_pro_id_fk`,`det_lot_id_fk`,`det_cantidad`,`det_precio_unitario`,`det_subtotal`) values 
+('DET001','PED001','PRO001',NULL,5,850.00,4250.00),
+('DET002','PED002','PRO002',NULL,3,1200.00,3600.00),
+('DET003','PED003','PRO003',NULL,4,980.00,3920.00),
+('DET004','PED004','PRO004',NULL,2,3500.00,7000.00),
+('DET005','PED005','PRO005',NULL,1,4200.00,4200.00),
+('DET050','PED050','PRO050',NULL,2,8500.00,17000.00),
+('DET051','PED051','PRO051',NULL,2,15000.00,30000.00),
+('DET052','PED052','PRO052',NULL,1,5200.00,5200.00);
+
+/*Table structure for table `t_devolucion` */
+
+DROP TABLE IF EXISTS `t_devolucion`;
+
+CREATE TABLE `t_devolucion` (
+  `dev_id` varchar(20) NOT NULL,
+  `dev_ped_id_fk` varchar(20) DEFAULT NULL,
+  `dev_pro_id_fk` varchar(20) DEFAULT NULL,
+  `dev_lot_id_fk` varchar(20) DEFAULT NULL,
+  `dev_cantidad` int(11) DEFAULT NULL,
+  `dev_motivo` text DEFAULT NULL,
+  `dev_fecha` date DEFAULT NULL,
+  `dev_usu_id_fk` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`dev_id`),
+  KEY `dev_ped_id_fk` (`dev_ped_id_fk`),
+  KEY `dev_pro_id_fk` (`dev_pro_id_fk`),
+  KEY `dev_lot_id_fk` (`dev_lot_id_fk`),
+  KEY `dev_usu_id_fk` (`dev_usu_id_fk`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/*Data for the table `t_devolucion` */
 
 /*Table structure for table `t_factura` */
 
@@ -207,15 +232,15 @@ CREATE TABLE `t_factura` (
 
 /*Data for the table `t_factura` */
 
-insert  into `t_factura`(`fac_id`,`fac_fecha_emision`,`fac_email_enviado`,`fac_forma_pago`,`fac_total`,`fac_estado`,`fac_usu_id_fk`) values 
-('PED001','2025-03-15',1,'Efectivo',8450.00,'Vigente','USU002'),
-('PED002','2025-03-16',1,'Tarjeta',12700.00,'Vigente','USU003'),
-('PED003','2025-03-17',0,'Nequi',5880.00,'Vigente','USU002'),
-('PED004','2025-03-18',0,'Efectivo',4200.00,'Vigente','USU003'),
-('PED005','2025-03-19',1,'Daviplata',9800.00,'Vigente','USU002'),
-('PED050','2026-04-09',1,'Efectivo',17000.00,'Vigente','USU050'),
-('PED051','2026-04-09',0,'Tarjeta',30000.00,'Vigente','USU051'),
-('PED052','2026-04-09',1,'Transferencia',5200.00,'Vigente','USU052');
+insert  into `t_factura`(`fac_id`,`fac_fecha_emision`,`fac_email_enviado`,`fac_forma_pago`,`fac_cuenta_bancaria`,`fac_total`,`fac_estado`,`fac_usu_id_fk`) values 
+('PED001','2025-03-15',1,'Efectivo',NULL,8450.00,'Vigente','USU002'),
+('PED002','2025-03-16',1,'Tarjeta',NULL,12700.00,'Vigente','USU003'),
+('PED003','2025-03-17',0,'Nequi',NULL,5880.00,'Vigente','USU002'),
+('PED004','2025-03-18',0,'Efectivo',NULL,4200.00,'Vigente','USU003'),
+('PED005','2025-03-19',1,'Daviplata',NULL,9800.00,'Vigente','USU002'),
+('PED050','2026-04-09',1,'Efectivo',NULL,17000.00,'Vigente','USU050'),
+('PED051','2026-04-09',0,'Tarjeta',NULL,30000.00,'Vigente','USU051'),
+('PED052','2026-04-09',1,'Transferencia',NULL,5200.00,'Vigente','USU052');
 
 /*Table structure for table `t_inventario_movimiento` */
 
@@ -247,10 +272,10 @@ insert  into `t_inventario_movimiento`(`inm_id`,`inm_tipo_movimiento`,`inm_pro_i
 ('INM003','Salida','PRO002','LOT002',3,'2025-03-16','Venta PED002','USU003'),
 ('INM004','Entrada','PRO003','LOT003',50,'2025-03-12','Compra proveedor COM002','USU004'),
 ('INM005','Salida','PRO005','LOT005',1,'2025-03-18','Venta PED004','USU003'),
-('INM050','Entrada','PRO050','LOT050',100,'2026-04-09','Compra COM050','USU051'),
-('INM051','Entrada','PRO051','LOT051',150,'2026-04-09','Compra COM051','USU051'),
-('INM052','Salida','PRO052','LOT052',10,'2026-04-09','Venta PED052','USU052'),
-('INM053','Salida ','PRO052','LOT099',1,'2026-04-09','Venta PED052','USU052');
+('INM050','Entrada','PRO050','LOT006',100,'2026-04-09','Compra COM050','USU051'),
+('INM051','Entrada','PRO051','LOT007',150,'2026-04-09','Compra COM051','USU051'),
+('INM052','Salida','PRO052','LOT008',10,'2026-04-09','Venta PED052','USU052'),
+('INM053','Salida ','PRO052','LOT009',1,'2026-04-09','Venta PED052','USU052');
 
 /*Table structure for table `t_lote` */
 
@@ -276,15 +301,15 @@ CREATE TABLE `t_lote` (
 /*Data for the table `t_lote` */
 
 insert  into `t_lote`(`lot_id`,`lot_numero`,`lot_fecha_fabricacion`,`lot_fecha_vencimiento`,`lot_cantidad_inicial`,`lot_cantidad_actual`,`lot_pro_id_fk`,`lot_prov_id_fk`,`lot_estado`) values 
-('LOT001','LT-ACE-2025-001','2025-01-10','2026-08-31',200,195,'PRO001','PROV002','Activo'),
-('LOT002','LT-IBU-2025-001','2025-02-05','2026-06-30',150,147,'PRO002','PROV001','Activo'),
-('LOT003','LT-LOR-2025-001','2025-01-20','2027-01-31',80,80,'PRO003','PROV003','Activo'),
-('LOT004','LT-SUE-2025-001','2025-03-01','2026-12-15',60,60,'PRO004','PROV004','Activo'),
-('LOT005','LT-ALC-2025-001','2025-02-15','2027-05-20',45,44,'PRO005','PROV005','Activo'),
-('LOT050','LT-IBU-2026-050','2026-01-15','2027-06-30',100,100,'PRO050','PROV050','Activo'),
-('LOT051','LT-AMO-2026-051','2026-02-01','2027-09-15',150,150,'PRO051','PROV051','Activo'),
-('LOT052','LT-LOR-2026-052','2026-03-10','2028-01-20',300,300,'PRO052','PROV052','Activo'),
-('LOT099','LT-TEST-2026','2026-01-01','2027-06-30',100,100,'PRO001','PROV002','Activo');
+('LOT001','LT-ACE-2026-001','2025-01-10','2026-08-31',200,195,'PRO001','PROV002','Activo'),
+('LOT002','LT-IBU-2026-001','2025-02-05','2026-06-30',150,147,'PRO002','PROV001','Activo'),
+('LOT003','LT-LOR-2027-001','2025-01-20','2027-01-31',80,80,'PRO003','PROV003','Activo'),
+('LOT004','LT-SUE-2026-001','2025-03-01','2026-12-15',60,60,'PRO004','PROV004','Activo'),
+('LOT005','LT-ALC-2027-001','2025-02-15','2027-05-20',45,44,'PRO005','PROV005','Activo'),
+('LOT006','LT-IBU-2027-001','2026-01-15','2027-06-30',100,100,'PRO050','PROV050','Activo'),
+('LOT007','LT-AMO-2027-001','2026-02-01','2027-09-15',150,150,'PRO051','PROV051','Activo'),
+('LOT008','LT-LOR-2028-001','2026-03-10','2028-01-20',300,300,'PRO052','PROV052','Activo'),
+('LOT009','LT-ACE-2027-001','2026-01-01','2027-06-30',100,100,'PRO001','PROV002','Activo');
 
 /*Table structure for table `t_monitoria` */
 
@@ -319,9 +344,9 @@ insert  into `t_monitoria`(`mon_id`,`mon_pro_id_fk`,`mon_lot_id_fk`,`mon_inm_id_
 ('MON003','PRO002','LOT002','INM003','2025-03-16','Salida',3,150,147,1200.00,3600.00),
 ('MON004','PRO003','LOT003','INM004','2025-03-12','Entrada',50,30,80,980.00,49000.00),
 ('MON005','PRO005','LOT005','INM005','2025-03-18','Salida',1,45,44,4200.00,4200.00),
-('MON050','PRO050','LOT050','INM050','2026-04-09','Entrada',100,200,300,8500.00,850000.00),
-('MON051','PRO051','LOT051','INM051','2026-04-09','Entrada',150,150,300,15000.00,2250000.00),
-('MON052','PRO052','LOT052','INM052','2026-04-09','Salida',10,300,290,5200.00,52000.00);
+('MON050','PRO050','LOT006','INM050','2026-04-09','Entrada',100,200,300,8500.00,850000.00),
+('MON051','PRO051','LOT007','INM051','2026-04-09','Entrada',150,150,300,15000.00,2250000.00),
+('MON052','PRO052','LOT008','INM052','2026-04-09','Salida',10,300,290,5200.00,52000.00);
 
 /*Table structure for table `t_pedido` */
 
@@ -332,6 +357,8 @@ CREATE TABLE `t_pedido` (
   `ped_fecha` date DEFAULT NULL COMMENT 'Fecha del pedido',
   `ped_metodo_pago` varchar(50) DEFAULT NULL COMMENT 'Método de pago',
   `ped_cuenta_bancaria` varchar(50) DEFAULT NULL COMMENT 'Cuenta bancaria para transferencia',
+  `ped_comprobante` longblob DEFAULT NULL,
+  `ped_comprobante_tipo` varchar(50) DEFAULT NULL,
   `ped_estado_entrega` varchar(50) DEFAULT NULL COMMENT 'Estado: Entregado / En camino / No entregado / Anulado',
   `ped_estado_pago` varchar(20) DEFAULT 'Pendiente' COMMENT 'Estado del pago: Pendiente / Verificado / Rechazado',
   `ped_total` decimal(12,2) DEFAULT NULL COMMENT 'Total del pedido',
@@ -346,15 +373,15 @@ CREATE TABLE `t_pedido` (
 
 /*Data for the table `t_pedido` */
 
-insert  into `t_pedido`(`ped_id`,`ped_fecha`,`ped_metodo_pago`,`ped_estado_entrega`,`ped_total`,`ped_cli_id_fk`,`ped_usu_id_fk`) values 
-('PED001','2025-03-15','Efectivo','Entregado',8450.00,1098765432,'USU002'),
-('PED002','2025-03-16','Tarjeta','En camino',12700.00,1023456789,'USU003'),
-('PED003','2025-03-17','Nequi','Entregado',5880.00,1087654321,'USU002'),
-('PED004','2025-03-18','Efectivo','No entregado',4200.00,1076543219,'USU003'),
-('PED005','2025-03-19','Daviplata','En camino',9800.00,1065432198,'USU002'),
-('PED050','2026-04-09','Efectivo','Entregado',17000.00,1098765432,'USU050'),
-('PED051','2026-04-09','Tarjeta','En camino',30000.00,1087654321,'USU051'),
-('PED052','2026-04-09','Transferencia','En camino',5200.00,900123456,'USU052');
+insert  into `t_pedido`(`ped_id`,`ped_fecha`,`ped_metodo_pago`,`ped_cuenta_bancaria`,`ped_comprobante`,`ped_comprobante_tipo`,`ped_estado_entrega`,`ped_estado_pago`,`ped_total`,`ped_cli_id_fk`,`ped_usu_id_fk`) values 
+('PED001','2025-03-15','Efectivo',NULL,NULL,NULL,'Entregado','Pendiente',8450.00,1098765432,'USU002'),
+('PED002','2025-03-16','Tarjeta',NULL,NULL,NULL,'En camino','Pendiente',12700.00,1023456789,'USU003'),
+('PED003','2025-03-17','Nequi',NULL,NULL,NULL,'Entregado','Pendiente',5880.00,1087654321,'USU002'),
+('PED004','2025-03-18','Efectivo',NULL,NULL,NULL,'No entregado','Pendiente',4200.00,1076543219,'USU003'),
+('PED005','2025-03-19','Daviplata',NULL,NULL,NULL,'En camino','Pendiente',9800.00,1065432198,'USU002'),
+('PED050','2026-04-09','Efectivo',NULL,NULL,NULL,'Entregado','Pendiente',17000.00,1098765432,'USU050'),
+('PED051','2026-04-09','Tarjeta',NULL,NULL,NULL,'En camino','Pendiente',30000.00,1087654321,'USU051'),
+('PED052','2026-04-09','Transferencia',NULL,NULL,NULL,'En camino','Pendiente',5200.00,900123456,'USU052');
 
 /*Table structure for table `t_producto` */
 
@@ -369,6 +396,10 @@ CREATE TABLE `t_producto` (
   `pro_cantidad_disponible` int(11) DEFAULT 0 COMMENT 'Stock total disponible (suma de lotes activos)',
   `pro_stock_minimo` int(11) DEFAULT 10 COMMENT 'Stock mínimo para alertas de reposición',
   `pro_fecha_caducidad` date DEFAULT NULL COMMENT 'Fecha de vencimiento del lote activo más próximo',
+  `pro_registro_invima` varchar(50) DEFAULT NULL,
+  `pro_fecha_vencimiento_registro` date DEFAULT NULL,
+  `pro_control_especial` tinyint(1) DEFAULT 0,
+  `pro_tipo_control` varchar(50) DEFAULT NULL,
   `pro_estado` varchar(20) DEFAULT 'Activo' COMMENT 'Estado: Activo / Descontinuado / Suspendido',
   `pro_prov_id_fk` varchar(20) DEFAULT NULL COMMENT 'ID del proveedor principal',
   PRIMARY KEY (`pro_id`),
@@ -378,17 +409,17 @@ CREATE TABLE `t_producto` (
 
 /*Data for the table `t_producto` */
 
-insert  into `t_producto`(`pro_id`,`pro_nombre`,`pro_categoria`,`pro_descripcion`,`pro_precio`,`pro_cantidad_disponible`,`pro_stock_minimo`,`pro_fecha_caducidad`,`pro_estado`,`pro_prov_id_fk`) values 
-('PRO001','Acetaminofen 500','Analgesico','Caja x 10 tab',850.00,200,20,'2026-08-31','Activo','PROV002'),
-('PRO002','Ibuprofeno 400','Antiinflamatorio','Caja x 10 tab',1200.00,150,15,'2026-06-30','Activo','PROV001'),
-('PRO003','Loratadina 10mg','Antihistaminico','Caja x 10 tab',980.00,80,10,'2027-01-31','Activo','PROV003'),
-('PRO004','Suero oral 500ml','Hidratacion','Electrolitos',3500.00,60,10,'2026-12-15','Activo','PROV004'),
-('PRO005','Alcohol 70% 250ml','Antiseptico','Uso externo',4200.00,45,8,'2027-05-20','Activo','PROV005'),
-('PRO050','Ibuprofeno 400mg','Analgesico','Tabletas x 20 unidades',8500.00,200,20,'2027-06-30','Activo','PROV050'),
-('PRO051','Amoxicilina 500mg','Antibiotico','Capsulas x 30 unidades',15000.00,150,15,'2027-09-15','Activo','PROV051'),
-('PRO052','Loratadina 10mg','Antialergico','Tabletas x 10 unidades',5200.00,300,25,'2028-01-20','Activo','PROV052'),
-('PRO099','Producto Test','Analgesico','Test desc',500.00,50,5,'2027-12-31','Activo','PROV099'),
-('PROV099','Proveedor Test',NULL,NULL,NULL,NULL,10,NULL,'Activo',NULL);
+insert  into `t_producto`(`pro_id`,`pro_nombre`,`pro_categoria`,`pro_descripcion`,`pro_precio`,`pro_cantidad_disponible`,`pro_stock_minimo`,`pro_fecha_caducidad`,`pro_registro_invima`,`pro_fecha_vencimiento_registro`,`pro_control_especial`,`pro_tipo_control`,`pro_estado`,`pro_prov_id_fk`) values 
+('PRO001','Acetaminofen 500','Analgesico','Caja x 10 tab',850.00,200,20,'2026-08-31',NULL,NULL,0,NULL,'Activo','PROV002'),
+('PRO002','Ibuprofeno 400','Antiinflamatorio','Caja x 10 tab',1200.00,150,15,'2026-06-30',NULL,NULL,0,NULL,'Activo','PROV001'),
+('PRO003','Loratadina 10mg','Antihistaminico','Caja x 10 tab',980.00,80,10,'2027-01-31',NULL,NULL,0,NULL,'Activo','PROV003'),
+('PRO004','Suero oral 500ml','Hidratacion','Electrolitos',3500.00,60,10,'2026-12-15',NULL,NULL,0,NULL,'Activo','PROV004'),
+('PRO005','Alcohol 70% 250ml','Antiseptico','Uso externo',4200.00,45,8,'2027-05-20',NULL,NULL,0,NULL,'Activo','PROV005'),
+('PRO050','Ibuprofeno 400mg','Analgesico','Tabletas x 20 unidades',8500.00,200,20,'2027-06-30',NULL,NULL,0,NULL,'Activo','PROV050'),
+('PRO051','Amoxicilina 500mg','Antibiotico','Capsulas x 30 unidades',15000.00,150,15,'2027-09-15',NULL,NULL,0,NULL,'Activo','PROV051'),
+('PRO052','Loratadina 10mg','Antialergico','Tabletas x 10 unidades',5200.00,300,25,'2028-01-20',NULL,NULL,0,NULL,'Activo','PROV052'),
+('PRO099','Producto Test','Analgesico','Test desc',500.00,50,5,'2027-12-31',NULL,NULL,0,NULL,'Activo','PROV099'),
+('PROV099','Proveedor Test',NULL,NULL,NULL,NULL,10,NULL,NULL,NULL,0,NULL,'Activo',NULL);
 
 /*Table structure for table `t_proveedor` */
 
@@ -514,6 +545,22 @@ insert  into `t_sesion`(`ses_id`,`ses_usu_id_fk`,`ses_fecha_inicio`,`ses_fecha_f
 ('SES-051','USU051','2026-04-09 09:30:00',NULL,'192.168.1.51',1),
 ('SES-052','USU052','2026-04-09 07:45:00',NULL,'10.0.0.52',0);
 
+/*Table structure for table `t_token_revocado` */
+
+DROP TABLE IF EXISTS `t_token_revocado`;
+
+CREATE TABLE `t_token_revocado` (
+  `tre_id` int(11) NOT NULL AUTO_INCREMENT,
+  `tre_token_hash` varchar(64) NOT NULL COMMENT 'SHA-256 del token JWT',
+  `tre_fecha_revocacion` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha y hora de revocación',
+  `tre_usu_id_fk` varchar(20) DEFAULT NULL COMMENT 'Usuario que cerró sesión',
+  PRIMARY KEY (`tre_id`),
+  KEY `tre_token_hash` (`tre_token_hash`),
+  KEY `tre_usu_id_fk` (`tre_usu_id_fk`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/*Data for the table `t_token_revocado` */
+
 /*Table structure for table `t_usuario` */
 
 DROP TABLE IF EXISTS `t_usuario`;
@@ -565,20 +612,6 @@ insert  into `t_usuario_factura`(`usa_usu_id_fk`,`usa_fac_id_fk`) values
 ('USU002','PED003'),
 ('USU003','PED004'),
 ('USU002','PED005');
-
-/*Table structure for table `t_token_revocado` */
-
-DROP TABLE IF EXISTS `t_token_revocado`;
-
-CREATE TABLE `t_token_revocado` (
-  `tre_id` int(11) NOT NULL AUTO_INCREMENT,
-  `tre_token_hash` varchar(64) NOT NULL COMMENT 'SHA-256 del token JWT',
-  `tre_fecha_revocacion` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha y hora de revocación',
-  `tre_usu_id_fk` varchar(20) DEFAULT NULL COMMENT 'Usuario que cerró sesión',
-  PRIMARY KEY (`tre_id`),
-  KEY `tre_token_hash` (`tre_token_hash`),
-  KEY `tre_usu_id_fk` (`tre_usu_id_fk`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 /* Trigger structure for table `t_inventario_movimiento` */
 
@@ -646,7 +679,7 @@ DROP TABLE IF EXISTS `v_historial_ventas`;
 /*!50001 DROP TABLE IF EXISTS `v_historial_ventas` */;
 
 /*!50001 CREATE TABLE  `v_historial_ventas`(
- `cli_id` varchar(20) ,
+ `cli_id` bigint(20) ,
  `cliente` varchar(101) ,
  `ped_id` varchar(20) ,
  `ped_fecha` date ,
@@ -737,44 +770,3 @@ DROP TABLE IF EXISTS `v_stock_minimo`;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
-/* Nuevas columnas y tablas agregadas durante el desarrollo */
-
--- Columnas para comprobante de pago en pedidos
-ALTER TABLE t_pedido ADD COLUMN IF NOT EXISTS ped_comprobante LONGBLOB DEFAULT NULL AFTER ped_cuenta_bancaria;
-ALTER TABLE t_pedido ADD COLUMN IF NOT EXISTS ped_comprobante_tipo VARCHAR(50) DEFAULT NULL AFTER ped_comprobante;
-
--- Columnas para comprobante de pago en compras
-ALTER TABLE t_compra ADD COLUMN IF NOT EXISTS com_comprobante LONGBLOB DEFAULT NULL AFTER com_observacion;
-ALTER TABLE t_compra ADD COLUMN IF NOT EXISTS com_comprobante_tipo VARCHAR(50) DEFAULT NULL AFTER com_comprobante;
-
--- Columna para trazabilidad por lote en detalle de pedido
-ALTER TABLE t_detalle_pedido ADD COLUMN IF NOT EXISTS det_lot_id_fk VARCHAR(20) DEFAULT NULL AFTER det_pro_id_fk;
-
--- Columnas para control sanitario (INVIMA y control especial) en productos
-ALTER TABLE t_producto ADD COLUMN IF NOT EXISTS pro_registro_invima VARCHAR(50) DEFAULT NULL AFTER pro_fecha_caducidad;
-ALTER TABLE t_producto ADD COLUMN IF NOT EXISTS pro_fecha_vencimiento_registro DATE DEFAULT NULL AFTER pro_registro_invima;
-ALTER TABLE t_producto ADD COLUMN IF NOT EXISTS pro_control_especial TINYINT(1) DEFAULT 0 AFTER pro_fecha_vencimiento_registro;
-ALTER TABLE t_producto ADD COLUMN IF NOT EXISTS pro_tipo_control VARCHAR(50) DEFAULT NULL AFTER pro_control_especial;
-
--- Columna para cuenta bancaria en facturas
-ALTER TABLE t_factura ADD COLUMN IF NOT EXISTS fac_cuenta_bancaria VARCHAR(100) DEFAULT NULL AFTER fac_forma_pago;
-
--- Tabla de devoluciones
-CREATE TABLE IF NOT EXISTS t_devolucion (
-  dev_id VARCHAR(20) NOT NULL PRIMARY KEY,
-  dev_ped_id_fk VARCHAR(20) DEFAULT NULL,
-  dev_pro_id_fk VARCHAR(20) DEFAULT NULL,
-  dev_lot_id_fk VARCHAR(20) DEFAULT NULL,
-  dev_cantidad INT DEFAULT NULL,
-  dev_motivo TEXT DEFAULT NULL,
-  dev_fecha DATE DEFAULT NULL,
-  dev_usu_id_fk VARCHAR(20) DEFAULT NULL,
-  KEY dev_ped_id_fk (dev_ped_id_fk),
-  KEY dev_pro_id_fk (dev_pro_id_fk),
-  KEY dev_lot_id_fk (dev_lot_id_fk),
-  KEY dev_usu_id_fk (dev_usu_id_fk)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Columna para estado de pago en pedidos
-ALTER TABLE t_pedido ADD COLUMN IF NOT EXISTS ped_estado_pago VARCHAR(20) DEFAULT 'Pendiente' COMMENT 'Estado del pago: Pendiente / Verificado / Rechazado' AFTER ped_estado_entrega;

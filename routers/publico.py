@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from controllers.pedidos_controllers import cnconfirmarentrega
 import time
 from collections import defaultdict
@@ -29,6 +29,17 @@ def _check_rate_limit(ip: str) -> bool:
 @publico_bp.route('/')
 def index():
     return jsonify({"mensaje": "API San Diego Distribuidora - Sistema de Pedidos", "estado": "online"}), 200
+
+@publico_bp.route('/health')
+def health_check():
+    """Verifica que MySQL (XAMPP) esté accesible."""
+    try:
+        c = current_app.mysql.connection.cursor()
+        c.execute("SELECT 1")
+        c.close()
+        return jsonify({"db": "conectada", "estado": "online"}), 200
+    except Exception as e:
+        return jsonify({"db": "desconectada", "error": str(e), "estado": "degradado"}), 503
 
 @publico_bp.route('/verificar/<pedido_id>')
 def verificar_estado(pedido_id):
