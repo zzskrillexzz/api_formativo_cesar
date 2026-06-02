@@ -224,23 +224,25 @@ CREATE TABLE `t_factura` (
   `fac_total` decimal(12,2) DEFAULT NULL COMMENT 'Total de la factura',
   `fac_estado` varchar(20) DEFAULT 'Vigente' COMMENT 'Estado: Vigente / Anulada',
   `fac_usu_id_fk` varchar(20) DEFAULT NULL COMMENT 'ID del usuario que generó la factura',
+  `fac_cli_id_fk` bigint(20) DEFAULT NULL COMMENT 'ID del cliente asociado a la factura',
   PRIMARY KEY (`fac_id`),
   KEY `fac_usu_id_fk` (`fac_usu_id_fk`),
+  KEY `fac_cli_id_fk` (`fac_cli_id_fk`),
   CONSTRAINT `factura_ibfk_1` FOREIGN KEY (`fac_id`) REFERENCES `t_pedido` (`ped_id`),
   CONSTRAINT `factura_ibfk_2` FOREIGN KEY (`fac_usu_id_fk`) REFERENCES `t_usuario` (`usu_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 /*Data for the table `t_factura` */
 
-insert  into `t_factura`(`fac_id`,`fac_fecha_emision`,`fac_email_enviado`,`fac_forma_pago`,`fac_cuenta_bancaria`,`fac_total`,`fac_estado`,`fac_usu_id_fk`) values 
-('PED001','2025-03-15',1,'Efectivo',NULL,8450.00,'Vigente','USU002'),
-('PED002','2025-03-16',1,'Tarjeta',NULL,12700.00,'Vigente','USU003'),
-('PED003','2025-03-17',0,'Nequi',NULL,5880.00,'Vigente','USU002'),
-('PED004','2025-03-18',0,'Efectivo',NULL,4200.00,'Vigente','USU003'),
-('PED005','2025-03-19',1,'Daviplata',NULL,9800.00,'Vigente','USU002'),
-('PED050','2026-04-09',1,'Efectivo',NULL,17000.00,'Vigente','USU050'),
-('PED051','2026-04-09',0,'Tarjeta',NULL,30000.00,'Vigente','USU051'),
-('PED052','2026-04-09',1,'Transferencia',NULL,5200.00,'Vigente','USU052');
+insert  into `t_factura`(`fac_id`,`fac_fecha_emision`,`fac_email_enviado`,`fac_forma_pago`,`fac_cuenta_bancaria`,`fac_total`,`fac_estado`,`fac_usu_id_fk`,`fac_cli_id_fk`) values 
+('PED001','2025-03-15',1,'Efectivo',NULL,8450.00,'Vigente','USU002',NULL),
+('PED002','2025-03-16',1,'Tarjeta',NULL,12700.00,'Vigente','USU003',NULL),
+('PED003','2025-03-17',0,'Nequi',NULL,5880.00,'Vigente','USU002',NULL),
+('PED004','2025-03-18',0,'Efectivo',NULL,4200.00,'Vigente','USU003',NULL),
+('PED005','2025-03-19',1,'Daviplata',NULL,9800.00,'Vigente','USU002',NULL),
+('PED050','2026-04-09',1,'Efectivo',NULL,17000.00,'Vigente','USU050',NULL),
+('PED051','2026-04-09',0,'Tarjeta',NULL,30000.00,'Vigente','USU051',NULL),
+('PED052','2026-04-09',1,'Transferencia',NULL,5200.00,'Vigente','USU052',NULL);
 
 /*Table structure for table `t_inventario_movimiento` */
 
@@ -364,6 +366,9 @@ CREATE TABLE `t_pedido` (
   `ped_total` decimal(12,2) DEFAULT NULL COMMENT 'Total del pedido',
   `ped_cli_id_fk` bigint(20) DEFAULT NULL COMMENT 'ID del cliente',
   `ped_usu_id_fk` varchar(20) DEFAULT NULL COMMENT 'ID del vendedor que registró el pedido',
+  `ped_token_entrega` varchar(100) DEFAULT NULL COMMENT 'Token único para confirmación de entrega QR',
+  `ped_notificado` tinyint(1) DEFAULT 0 COMMENT '1=Cliente notificado / 0=No notificado',
+  `ped_factura_enviada` tinyint(1) DEFAULT 0 COMMENT '1=Factura enviada / 0=No enviada',
   PRIMARY KEY (`ped_id`),
   KEY `ped_cli_id_fk` (`ped_cli_id_fk`),
   KEY `ped_usu_id_fk` (`ped_usu_id_fk`),
@@ -373,15 +378,15 @@ CREATE TABLE `t_pedido` (
 
 /*Data for the table `t_pedido` */
 
-insert  into `t_pedido`(`ped_id`,`ped_fecha`,`ped_metodo_pago`,`ped_cuenta_bancaria`,`ped_comprobante`,`ped_comprobante_tipo`,`ped_estado_entrega`,`ped_estado_pago`,`ped_total`,`ped_cli_id_fk`,`ped_usu_id_fk`) values 
-('PED001','2025-03-15','Efectivo',NULL,NULL,NULL,'Entregado','Pendiente',8450.00,1098765432,'USU002'),
-('PED002','2025-03-16','Tarjeta',NULL,NULL,NULL,'En camino','Pendiente',12700.00,1023456789,'USU003'),
-('PED003','2025-03-17','Nequi',NULL,NULL,NULL,'Entregado','Pendiente',5880.00,1087654321,'USU002'),
-('PED004','2025-03-18','Efectivo',NULL,NULL,NULL,'No entregado','Pendiente',4200.00,1076543219,'USU003'),
-('PED005','2025-03-19','Daviplata',NULL,NULL,NULL,'En camino','Pendiente',9800.00,1065432198,'USU002'),
-('PED050','2026-04-09','Efectivo',NULL,NULL,NULL,'Entregado','Pendiente',17000.00,1098765432,'USU050'),
-('PED051','2026-04-09','Tarjeta',NULL,NULL,NULL,'En camino','Pendiente',30000.00,1087654321,'USU051'),
-('PED052','2026-04-09','Transferencia',NULL,NULL,NULL,'En camino','Pendiente',5200.00,900123456,'USU052');
+insert  into `t_pedido`(`ped_id`,`ped_fecha`,`ped_metodo_pago`,`ped_cuenta_bancaria`,`ped_comprobante`,`ped_comprobante_tipo`,`ped_estado_entrega`,`ped_estado_pago`,`ped_total`,`ped_cli_id_fk`,`ped_usu_id_fk`,`ped_token_entrega`,`ped_notificado`,`ped_factura_enviada`) values 
+('PED001','2025-03-15','Efectivo',NULL,NULL,NULL,'Entregado','Pendiente',8450.00,1098765432,'USU002',NULL,0,0),
+('PED002','2025-03-16','Tarjeta',NULL,NULL,NULL,'En camino','Pendiente',12700.00,1023456789,'USU003',NULL,0,0),
+('PED003','2025-03-17','Nequi',NULL,NULL,NULL,'Entregado','Pendiente',5880.00,1087654321,'USU002',NULL,0,0),
+('PED004','2025-03-18','Efectivo',NULL,NULL,NULL,'No entregado','Pendiente',4200.00,1076543219,'USU003',NULL,0,0),
+('PED005','2025-03-19','Daviplata',NULL,NULL,NULL,'En camino','Pendiente',9800.00,1065432198,'USU002',NULL,0,0),
+('PED050','2026-04-09','Efectivo',NULL,NULL,NULL,'Entregado','Pendiente',17000.00,1098765432,'USU050',NULL,0,0),
+('PED051','2026-04-09','Tarjeta',NULL,NULL,NULL,'En camino','Pendiente',30000.00,1087654321,'USU051',NULL,0,0),
+('PED052','2026-04-09','Transferencia',NULL,NULL,NULL,'En camino','Pendiente',5200.00,900123456,'USU052',NULL,0,0);
 
 /*Table structure for table `t_producto` */
 
@@ -419,6 +424,8 @@ insert  into `t_producto`(`pro_id`,`pro_nombre`,`pro_categoria`,`pro_descripcion
 ('PRO051','Amoxicilina 500mg','Antibiotico','Capsulas x 30 unidades',15000.00,150,15,'2027-09-15',NULL,NULL,0,NULL,'Activo','PROV051'),
 ('PRO052','Loratadina 10mg','Antialergico','Tabletas x 10 unidades',5200.00,300,25,'2028-01-20',NULL,NULL,0,NULL,'Activo','PROV052'),
 ('PRO099','Producto Test','Analgesico','Test desc',500.00,50,5,'2027-12-31',NULL,NULL,0,NULL,'Activo','PROV099'),
+('PRO100','idig','olmdbodmbdbq','skfmvdmvmk',10.00,400,30,NULL,NULL,NULL,0,NULL,'Activo','PROV001'),
+('PRO101','DGGGG','JJJ','JJJ',10.00,400,30,NULL,NULL,NULL,0,NULL,'Activo','PROV001'),
 ('PROV099','Proveedor Test',NULL,NULL,NULL,NULL,10,NULL,NULL,NULL,0,NULL,'Activo',NULL);
 
 /*Table structure for table `t_proveedor` */
@@ -612,64 +619,6 @@ insert  into `t_usuario_factura`(`usa_usu_id_fk`,`usa_fac_id_fk`) values
 ('USU002','PED003'),
 ('USU003','PED004'),
 ('USU002','PED005');
-
-/* Trigger structure for table `t_inventario_movimiento` */
-
-DELIMITER $$
-
-/*!50003 DROP TRIGGER*//*!50032 IF EXISTS */ /*!50003 `trg_monitoria_after_movimiento` */$$
-
-/*!50003 CREATE */ /*!50017 DEFINER = 'root'@'localhost' */ /*!50003 TRIGGER `trg_monitoria_after_movimiento` AFTER INSERT ON `t_inventario_movimiento` FOR EACH ROW 
-BEGIN
-    DECLARE v_saldo_anterior INT;
-    DECLARE v_saldo_actual INT;
-    DECLARE v_costo DECIMAL(12,2);
-    DECLARE v_nuevo_id VARCHAR(20);
-
-    -- Generar ID basado en timestamp
-    SET v_nuevo_id = CONCAT('MON', DATE_FORMAT(NOW(), '%y%m%d%H%i%s'), FLOOR(RAND() * 99));
-
-    -- Obtener stock actual del producto
-    SELECT pro_cantidad_disponible, pro_precio 
-    INTO v_saldo_anterior, v_costo
-    FROM t_producto WHERE pro_id = NEW.inm_pro_id_fk;
-
-    -- Calcular nuevo saldo
-    IF NEW.inm_tipo_movimiento = 'Entrada' THEN
-        SET v_saldo_actual = v_saldo_anterior + NEW.inm_cantidad;
-    ELSEIF NEW.inm_tipo_movimiento = 'Salida' THEN
-        SET v_saldo_actual = v_saldo_anterior - NEW.inm_cantidad;
-    ELSE
-        SET v_saldo_actual = v_saldo_anterior + NEW.inm_cantidad;
-    END IF;
-
-    -- Insertar en monitoria
-    INSERT INTO t_monitoria (mon_id, mon_pro_id_fk, mon_lot_id_fk, mon_inm_id_fk, 
-                          mon_fecha, mon_tipo, mon_cantidad, mon_saldo_anterior, 
-                          mon_saldo_actual, mon_costo_unitario, mon_costo_total)
-    VALUES (
-        v_nuevo_id,
-        NEW.inm_pro_id_fk,
-        NEW.inm_lot_id_fk,
-        NEW.inm_id,
-        NEW.inm_fecha,
-        NEW.inm_tipo_movimiento,
-        NEW.inm_cantidad,
-        v_saldo_anterior,
-        v_saldo_actual,
-        v_costo,
-        NEW.inm_cantidad * v_costo
-    );
-
-    -- Actualizar stock del producto
-    UPDATE t_producto 
-    SET pro_cantidad_disponible = v_saldo_actual 
-    WHERE pro_id = NEW.inm_pro_id_fk;
-
-END */$$
-
-
-DELIMITER ;
 
 /*Table structure for table `v_historial_ventas` */
 
