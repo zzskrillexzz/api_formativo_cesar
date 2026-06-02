@@ -184,11 +184,8 @@ const Dashboard = () => {
           {/* ── Toggle Gráficos / Tablas ── */}
           <button
             onClick={() => setShowCharts(v => !v)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
-              showCharts
-                ? 'bg-white/20 text-white hover:bg-white/30'
-                : 'bg-white/40 text-white shadow-sm hover:bg-white/50'
-            }`}
+            style={{ backgroundColor: '#C47A0D' }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 text-white hover:opacity-90`}
           >
             {showCharts ? <BarChart3 size={14} /> : <Table2 size={14} />}
             {showCharts ? 'Ver Tablas' : 'Ver Gráficos'}
