@@ -216,10 +216,11 @@ const Dashboard = () => {
       </div>
 
       {/* ── Fila 2: Alertas + Mas Vendidos + Stock Bajo ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* En vista gráficos: alertas ancho completo y tarjetas debajo */}
+      <div className={showCharts ? "space-y-6" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
 
         {/* ── ALERTAS (BarChart / Tabla) ── */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden transition-shadow hover:shadow-md">
+        <div className={`${showCharts ? '' : 'lg:col-span-2'} bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden transition-shadow hover:shadow-md`}>
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
               <Activity className="text-emerald-500" size={18} />
@@ -235,13 +236,13 @@ const Dashboard = () => {
             /* ── VISTA GRÁFICO ── */
             <div className="p-4">
               {todasLasAlertas.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-14 text-slate-400">
+                <div className="flex flex-col items-center gap-2 py-8 text-slate-400">
                   <Clock size={28} strokeWidth={1.5} />
                   <p className="text-sm font-medium">No hay alertas registradas</p>
                   <p className="text-[11px]">Los vencimientos aparecerán aquí automáticamente</p>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={280}>
+                <ResponsiveContainer width="100%" height={showCharts ? 200 : 280}>
                   <BarChart data={alertasChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis
@@ -364,8 +365,8 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* ── COLUMNA DERECHA ── */}
-        <div className="space-y-4">
+        {/* ── MÁS VENDIDOS + STOCK BAJO ── */}
+        <div className={showCharts ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-4"}>
 
           {/* ── MÁS VENDIDOS (HorizontalBarChart / Lista) ── */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden transition-shadow hover:shadow-md">
