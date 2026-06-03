@@ -1039,7 +1039,7 @@ const Inventario = () => {
                       <div className="flex gap-2 mt-1">
                         <select name="categoria" value={formData.categoria || ''} onChange={handleChange} className="flex-1 p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium">
                           <option value="">Seleccionar categoría...</option>
-                          {[...new Set(productos.map(p => p.categoria).filter(Boolean))].sort().map(cat => (
+                          {[...new Set([...productos.map(p => p.categoria), formData.categoria].filter(Boolean))].sort().map(cat => (
                             <option key={cat} value={cat}>{cat}</option>
                           ))}
                         </select>
