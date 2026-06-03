@@ -441,12 +441,13 @@ const Inventario = () => {
       page: pagina,
       limit: POR_PAGINA_MOV
     };
+    if (filtroProducto) params.mon_pro_id_fk = filtroProducto;
     if (filtroTipo) params.tipo = filtroTipo;
     if (filtroFechaDesde) params.fecha_desde = filtroFechaDesde;
     if (filtroFechaHasta) params.fecha_hasta = filtroFechaHasta;
     if (searchTerm) params.q = searchTerm;
     fetchData(params);
-  }, [tab, pagina, filtroTipo, filtroFechaDesde, filtroFechaHasta, searchTerm]);
+  }, [tab, pagina, filtroProducto, filtroTipo, filtroFechaDesde, filtroFechaHasta, searchTerm]);
 
   // Resetear paginación cuando cambian filtros de productos o lotes
   useEffect(() => { setPaginaProductos(1); }, [searchTerm, filtroEstadoProducto, filtroCategoriaProducto]);
@@ -707,65 +708,7 @@ const Inventario = () => {
       {/* TAB: Lotes */}
       {tab === 'lotes' && (
         <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
-            <select
-              value={filtroProducto}
-              onChange={(e) => setFiltroProducto(e.target.value)}
-              className="text-xs border border-slate-300 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm font-medium text-slate-600"
-            >
-              <option value="">Todos los productos</option>
-              {productos.map(p => (
-                <option key={p.id} value={p.id}>{p.nombre}</option>
-              ))}
-            </select>
-            {(filtroEstado || filtroProducto) && (
-              <button
-                onClick={() => { setFiltroEstado(''); setFiltroProducto(''); }}
-                className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-500 transition-colors px-2"
-              >
-                ✕ Limpiar filtros
-              </button>
-            )}
-          </div>
-          {/* ── Tarjetas resumen ── */}
-          {(() => {
-            const hoy = new Date(); hoy.setHours(0,0,0,0);
-            const en30 = new Date(hoy); en30.setDate(en30.getDate() + 30);
-            const activos = lotes.filter(l => l.lot_estado === 'Activo').length;
-            const proximos = lotes.filter(l => {
-              if (l.lot_estado !== 'Activo' || !l.lot_fecha_vencimiento) return false;
-              const dr = getDiasRestantes(l.lot_fecha_vencimiento);
-              return dr !== null && dr >= 0 && dr <= 30;
-            }).length;
-            const vencidos = lotes.filter(l => l.lot_estado === 'Vencido').length;
-            const agotados = lotes.filter(l => l.lot_estado === 'Agotado').length;
-            const cuarentena = lotes.filter(l => l.lot_estado === 'Cuarentena').length;
-            const cards = [
-              { label: 'Todos', count: lotes.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
-              { label: 'Activos', count: activos, icon: '✅', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Activo' },
-              { label: 'Próximos', count: proximos, icon: '⚠️', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', sub: '≤ 30 días', filtro: '__proximos__' },
-              { label: 'Vencidos', count: vencidos, icon: '🗑️', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Vencido' },
-              { label: 'Agotados', count: agotados, icon: '📦', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'Agotado' },
-              { label: 'Cuarentena', count: cuarentena, icon: '🧪', color: 'border-yellow-200 bg-yellow-50/50', text: 'text-yellow-700', filtro: 'Cuarentena' },
-            ];
-            return (
-              <div className="grid grid-cols-6 gap-2 px-6 pt-4 pb-2">
-                {cards.map((c, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setFiltroEstado(c.filtro)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${c.color} transition-all hover:shadow-md ${filtroEstado === c.filtro ? 'ring-2 ring-blue-400 scale-[1.03]' : ''}`}
-                  >
-                    <span className="text-lg">{c.icon}</span>
-                    <div className="text-left">
-                      <div className={`text-base font-black ${c.text}`}>{c.count}</div>
-                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}{c.sub ? <span className="text-slate-400 ml-0.5">{c.sub}</span> : ''}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            );
-          })()}
+
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
@@ -903,19 +846,16 @@ const Inventario = () => {
         <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           {/* ── Filtros ── */}
           <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
-            {['', 'Entrada', 'Salida', 'Ajuste'].map(tipo => (
-              <button
-                key={tipo}
-                onClick={() => { setFiltroTipo(tipo); setPagina(1); }}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${
-                  filtroTipo === tipo
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
-                }`}
-              >
-                {tipo || 'Todos'}
-              </button>
-            ))}
+            <select
+              value={filtroProducto}
+              onChange={(e) => { setFiltroProducto(e.target.value); setPagina(1); }}
+              className="text-xs border border-slate-300 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm font-medium text-slate-600"
+            >
+              <option value="">Todos los productos</option>
+              {productos.map(p => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
+            </select>
             <input
               type="date"
               value={filtroFechaDesde}
@@ -931,20 +871,51 @@ const Inventario = () => {
               className="text-xs border border-slate-400 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm"
               title="Hasta"
             />
-            {(filtroTipo || filtroFechaDesde || filtroFechaHasta) && (
+            {(filtroProducto || filtroTipo || filtroFechaDesde || filtroFechaHasta) && (
               <button
                 onClick={() => {
+                  setFiltroProducto('');
                   setFiltroTipo('');
                   setFiltroFechaDesde('');
                   setFiltroFechaHasta('');
                   setPagina(1);
                 }}
-                className="text-xs text-red-500 font-medium hover:text-red-700 ml-auto"
+                className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-500 transition-colors px-2"
               >
-                Limpiar filtros
+                ✕ Limpiar filtros
               </button>
             )}
           </div>
+          {/* ── Tarjetas resumen ── */}
+          {(() => {
+            const totalMovs = monitorias.length;
+            const entradas = monitorias.filter(m => m.mon_tipo === 'Entrada').length;
+            const salidas = monitorias.filter(m => m.mon_tipo === 'Salida').length;
+            const ajustes = monitorias.filter(m => m.mon_tipo === 'Ajuste').length;
+            const cards = [
+              { label: 'Todos', count: totalMovs, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
+              { label: 'Entrada', count: entradas, icon: '📥', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Entrada' },
+              { label: 'Salida', count: salidas, icon: '📤', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Salida' },
+              { label: 'Ajuste', count: ajustes, icon: '⚖️', color: 'border-yellow-200 bg-yellow-50/50', text: 'text-yellow-700', filtro: 'Ajuste' },
+            ];
+            return (
+              <div className="grid grid-cols-4 gap-2 px-6 pt-4 pb-2">
+                {cards.map((c, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => { setFiltroTipo(c.filtro); setPagina(1); }}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${c.color} transition-all hover:shadow-md ${filtroTipo === c.filtro ? 'ring-2 ring-blue-400 scale-[1.03]' : ''}`}
+                  >
+                    <span className="text-lg">{c.icon}</span>
+                    <div className="text-left">
+                      <div className={`text-base font-black ${c.text}`}>{c.count}</div>
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
 
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
