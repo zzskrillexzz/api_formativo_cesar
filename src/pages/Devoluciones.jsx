@@ -13,6 +13,8 @@ const Devoluciones = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
+  const POR_PAGINA = 10;
+  const [pagina, setPagina] = useState(1);
 
   const fetchData = async () => {
     setLoading(true);
@@ -29,6 +31,9 @@ const Devoluciones = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // Resetear paginación cuando cambian filtros
+  useEffect(() => { setPagina(1); }, [searchTerm, fechaDesde, fechaHasta]);
 
   const getProductoNombre = (prodId) => {
     const prod = productos.find(p => p.id === prodId);
@@ -49,6 +54,10 @@ const Devoluciones = () => {
     const porFechaHasta = !fechaHasta || (d.fecha && d.fecha <= fechaHasta);
     return busca && porFechaDesde && porFechaHasta;
   });
+
+  const paginatedDevoluciones = filteredDevoluciones.slice(
+    (pagina - 1) * POR_PAGINA, pagina * POR_PAGINA
+  );
 
   if (loading) return <ThemeLoader module="Devoluciones" />;
 
@@ -117,7 +126,7 @@ const Devoluciones = () => {
                 {searchTerm || fechaDesde || fechaHasta ? 'Sin resultados para estos filtros' : 'No hay devoluciones registradas'}
               </td></tr>
             ) : (
-              filteredDevoluciones.map((d, i) => (
+              paginatedDevoluciones.map((d, i) => (
                 <tr key={i} className="hover:bg-slate-50">
                   <td className="px-5 py-3 text-slate-400 text-xs">{d.id}</td>
                   <td className="px-5 py-3 text-xs" title={d.pedido_id}>{getPedidoInfo(d.pedido_id)}</td>
@@ -134,8 +143,18 @@ const Devoluciones = () => {
         </table>
       </div>
 
-      <div className="text-xs text-slate-400 font-medium">
-        {filteredDevoluciones.length} de {devoluciones.length} devoluciones
+      <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+        <span>{filteredDevoluciones.length > 0
+          ? `${(pagina - 1) * POR_PAGINA + 1}–${Math.min(pagina * POR_PAGINA, filteredDevoluciones.length)} de ${filteredDevoluciones.length}`
+          : `${filteredDevoluciones.length} devoluciones`
+        }</span>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina <= 1}
+            className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Anterior</button>
+          <span className="text-slate-500">{pagina} / {Math.max(1, Math.ceil(filteredDevoluciones.length / POR_PAGINA))}</span>
+          <button onClick={() => setPagina(p => p + 1)} disabled={pagina >= Math.ceil(filteredDevoluciones.length / POR_PAGINA)}
+            className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Siguiente</button>
+        </div>
       </div>
     </div>
   );

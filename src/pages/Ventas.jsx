@@ -43,6 +43,10 @@ const Ventas = () => {
   const [filtroEstadoPedido, setFiltroEstadoPedido] = useState('');
   const [filtroEstadoFactura, setFiltroEstadoFactura] = useState('');
   const [filtroTipoDocCliente, setFiltroTipoDocCliente] = useState('');
+  const POR_PAGINA = 10;
+  const [paginaPedidos, setPaginaPedidos] = useState(1);
+  const [paginaFacturas, setPaginaFacturas] = useState(1);
+  const [paginaClientes, setPaginaClientes] = useState(1);
   const formSnapshotRef = useRef({});
   const [showSubirComprobanteModal, setShowSubirComprobanteModal] = useState(false);
   const [pedidoSubirComprobante, setPedidoSubirComprobante] = useState(null);
@@ -321,6 +325,11 @@ const Ventas = () => {
     fetchData();
   }, []);
 
+  // Resetear paginación cuando cambian filtros
+  useEffect(() => { setPaginaPedidos(1); }, [searchTerm, filtroEstadoPedido]);
+  useEffect(() => { setPaginaFacturas(1); }, [searchTerm, filtroEstadoFactura]);
+  useEffect(() => { setPaginaClientes(1); }, [searchTerm, filtroTipoDocCliente]);
+
   const tabs = [
     { id: 'pedidos', label: 'Pedidos', icon: ShoppingCart },
     { id: 'facturas', label: 'Facturas', icon: FileText },
@@ -341,6 +350,14 @@ const Ventas = () => {
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     return porEstado && busca;
   });
+
+  const paginatedPedidos = filteredPedidos.slice(
+    (paginaPedidos - 1) * POR_PAGINA, paginaPedidos * POR_PAGINA
+  );
+  const paginatedFacturas = filteredFacturas.slice(
+    (paginaFacturas - 1) * POR_PAGINA, paginaFacturas * POR_PAGINA
+  );
+
   const filteredClientes = clientes.filter(c => {
     const busca = [c.cli_id, c.cli_nombre, c.cli_apellido, c.cli_tipo_documento, c.cli_correo,
       c.cli_telefono, c.cli_direccion, c.cli_nit
@@ -348,6 +365,10 @@ const Ventas = () => {
     const porTipoDoc = !filtroTipoDocCliente || c.cli_tipo_documento === filtroTipoDocCliente;
     return busca && porTipoDoc;
   });
+
+  const paginatedClientes = filteredClientes.slice(
+    (paginaClientes - 1) * POR_PAGINA, paginaClientes * POR_PAGINA
+  );
 
   const getEstadoEntregaBadge = (estado) => {
     const map = {
@@ -824,7 +845,7 @@ const Ventas = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredPedidos.map((p, i) => (
+                  paginatedPedidos.map((p, i) => (
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-6 py-4 text-slate-400 text-xs">{p.ped_id}</td>
                       <td className="px-6 py-4">{p.ped_cli_id_fk || '-'}</td>
@@ -1016,7 +1037,7 @@ const Ventas = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredFacturas.map((f, i) => (
+                  paginatedFacturas.map((f, i) => (
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-6 py-4 text-slate-400 text-xs">{f.id}</td>
                       <td className="px-6 py-4">
@@ -1051,8 +1072,18 @@ const Ventas = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
-            {filteredFacturas.length} de {facturas.length} facturas
+          <div className="flex items-center justify-between px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
+            <span>{filteredFacturas.length > 0
+              ? `${(paginaFacturas - 1) * POR_PAGINA + 1}–${Math.min(paginaFacturas * POR_PAGINA, filteredFacturas.length)} de ${filteredFacturas.length}`
+              : `${filteredFacturas.length} facturas`
+            }</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPaginaFacturas(p => Math.max(1, p - 1))} disabled={paginaFacturas <= 1}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Anterior</button>
+              <span className="text-slate-500">{paginaFacturas} / {Math.max(1, Math.ceil(filteredFacturas.length / POR_PAGINA))}</span>
+              <button onClick={() => setPaginaFacturas(p => p + 1)} disabled={paginaFacturas >= Math.ceil(filteredFacturas.length / POR_PAGINA)}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Siguiente</button>
+            </div>
           </div>
         </div>
       )}
@@ -1132,7 +1163,7 @@ const Ventas = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredClientes.map((c, i) => (
+                  paginatedClientes.map((c, i) => (
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-6 py-4 text-slate-400 text-xs">{c.cli_id}</td>
                       <td className="px-6 py-4">{c.cli_nombre}</td>
@@ -1153,8 +1184,18 @@ const Ventas = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
-            {filteredClientes.length} de {clientes.length} clientes
+          <div className="flex items-center justify-between px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
+            <span>{filteredClientes.length > 0
+              ? `${(paginaClientes - 1) * POR_PAGINA + 1}–${Math.min(paginaClientes * POR_PAGINA, filteredClientes.length)} de ${filteredClientes.length}`
+              : `${filteredClientes.length} clientes`
+            }</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPaginaClientes(p => Math.max(1, p - 1))} disabled={paginaClientes <= 1}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Anterior</button>
+              <span className="text-slate-500">{paginaClientes} / {Math.max(1, Math.ceil(filteredClientes.length / POR_PAGINA))}</span>
+              <button onClick={() => setPaginaClientes(p => p + 1)} disabled={paginaClientes >= Math.ceil(filteredClientes.length / POR_PAGINA)}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Siguiente</button>
+            </div>
           </div>
         </div>
       )}

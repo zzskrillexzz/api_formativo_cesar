@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Wifi, WifiOff, Database, Loader2 } from 'lucide-react';
 import { Notificaciones } from './components/Notificaciones';
-import logoSuperior from './assets/image/logosuperior.png';
 
 // ── Lazy-loading de páginas (code-splitting por ruta) ──
 const DashboardPage = React.lazy(() => import('./pages/Dashboard'));
@@ -79,7 +78,6 @@ const Layout = () => {
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-20 flex items-center justify-between px-8">
           <div className="flex items-center gap-4 text-white/70 text-sm font-medium">
-            <img src={logoSuperior} alt="Logo" className="h-10 w-auto rounded-md" />
             <span className="text-white/50 select-none">
               {new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </span>

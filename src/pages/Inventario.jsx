@@ -38,7 +38,10 @@ const Inventario = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [pagina, setPagina] = useState(1);
   const [totalMovimientos, setTotalMovimientos] = useState(0);
-  const POR_PAGINA = 15;
+  const [paginaProductos, setPaginaProductos] = useState(1);
+  const [paginaLotes, setPaginaLotes] = useState(1);
+  const POR_PAGINA = 10;
+  const POR_PAGINA_MOV = 15;
   const isEditing = !!editingId;
   const formSnapshotRef = useRef({});
 
@@ -436,7 +439,7 @@ const Inventario = () => {
     if (tab !== 'movimientos') return;
     const params = {
       page: pagina,
-      limit: POR_PAGINA
+      limit: POR_PAGINA_MOV
     };
     if (filtroTipo) params.tipo = filtroTipo;
     if (filtroFechaDesde) params.fecha_desde = filtroFechaDesde;
@@ -444,6 +447,10 @@ const Inventario = () => {
     if (searchTerm) params.q = searchTerm;
     fetchData(params);
   }, [tab, pagina, filtroTipo, filtroFechaDesde, filtroFechaHasta, searchTerm]);
+
+  // Resetear paginación cuando cambian filtros de productos o lotes
+  useEffect(() => { setPaginaProductos(1); }, [searchTerm, filtroEstadoProducto, filtroCategoriaProducto]);
+  useEffect(() => { setPaginaLotes(1); }, [searchTerm, filtroEstado, filtroProducto]);
 
   const tabs = [
     { id: 'productos', label: 'Productos', icon: Package },
@@ -467,6 +474,11 @@ const Inventario = () => {
     return Math.ceil((ven - hoy) / (1000 * 60 * 60 * 24));
   };
 
+  const paginatedProductos = filteredProductos.slice(
+    (paginaProductos - 1) * POR_PAGINA,
+    paginaProductos * POR_PAGINA
+  );
+
   const filteredLotes = lotes.filter(l => {
     const busca = [l.lot_id, l.lot_numero, l.lot_fecha_fabricacion, l.lot_fecha_vencimiento,
       l.lot_cantidad_inicial, l.lot_cantidad_actual, l.lot_pro_id_fk, l.lot_prov_id_fk, l.lot_estado
@@ -479,6 +491,11 @@ const Inventario = () => {
     const porProducto = !filtroProducto || l.lot_pro_id_fk === filtroProducto;
     return busca && porEstado && porProducto;
   });
+
+  const paginatedLotes = filteredLotes.slice(
+    (paginaLotes - 1) * POR_PAGINA,
+    paginaLotes * POR_PAGINA
+  );
 
   const focusTrapRef = useFocusTrap(showModal);
 
@@ -632,7 +649,7 @@ const Inventario = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredProductos.map((p, i) => (
+                  paginatedProductos.map((p, i) => (
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-6 py-4 text-slate-400 text-xs">{p.id}</td>
                       <td className="px-6 py-4">{p.nombre}</td>
@@ -671,8 +688,18 @@ const Inventario = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
-            {filteredProductos.length} de {productos.length} productos
+          <div className="flex items-center justify-between px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
+            <span>{filteredProductos.length > 0
+              ? `${(paginaProductos - 1) * POR_PAGINA + 1}–${Math.min(paginaProductos * POR_PAGINA, filteredProductos.length)} de ${filteredProductos.length}`
+              : `${filteredProductos.length} productos`
+            }</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPaginaProductos(p => Math.max(1, p - 1))} disabled={paginaProductos <= 1}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Anterior</button>
+              <span className="text-slate-500">{paginaProductos} / {Math.max(1, Math.ceil(filteredProductos.length / POR_PAGINA))}</span>
+              <button onClick={() => setPaginaProductos(p => p + 1)} disabled={paginaProductos >= Math.ceil(filteredProductos.length / POR_PAGINA)}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Siguiente</button>
+            </div>
           </div>
         </div>
       )}
@@ -770,7 +797,7 @@ const Inventario = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredLotes.map((l, i) => {
+                  paginatedLotes.map((l, i) => {
                     const consumido = l.lot_cantidad_inicial - (l.lot_cantidad_actual || 0);
                     const pctConsumo = l.lot_cantidad_inicial > 0 ? Math.round((consumido / l.lot_cantidad_inicial) * 100) : 0;
                     const barColor = pctConsumo >= 90 ? 'bg-red-400' : pctConsumo >= 50 ? 'bg-amber-400' : 'bg-emerald-400';
@@ -855,8 +882,18 @@ const Inventario = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
-            {filteredLotes.length} de {lotes.length} lotes
+          <div className="flex items-center justify-between px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
+            <span>{filteredLotes.length > 0
+              ? `${(paginaLotes - 1) * POR_PAGINA + 1}–${Math.min(paginaLotes * POR_PAGINA, filteredLotes.length)} de ${filteredLotes.length}`
+              : `${filteredLotes.length} lotes`
+            }</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPaginaLotes(p => Math.max(1, p - 1))} disabled={paginaLotes <= 1}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Anterior</button>
+              <span className="text-slate-500">{paginaLotes} / {Math.max(1, Math.ceil(filteredLotes.length / POR_PAGINA))}</span>
+              <button onClick={() => setPaginaLotes(p => p + 1)} disabled={paginaLotes >= Math.ceil(filteredLotes.length / POR_PAGINA)}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Siguiente</button>
+            </div>
           </div>
         </div>
       )}
@@ -971,7 +1008,7 @@ const Inventario = () => {
           <div className="flex items-center justify-between px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
             <span>
               {monitorias.length > 0
-                ? `${(pagina - 1) * POR_PAGINA + 1}–${Math.min(pagina * POR_PAGINA, totalMovimientos)} de ${totalMovimientos} movimientos`
+                ? `${(pagina - 1) * POR_PAGINA_MOV + 1}–${Math.min(pagina * POR_PAGINA_MOV, totalMovimientos)} de ${totalMovimientos} movimientos`
                 : `${totalMovimientos} movimientos`
               }
             </span>
@@ -984,11 +1021,11 @@ const Inventario = () => {
                 Anterior
               </button>
               <span className="text-slate-500">
-                {pagina} / {Math.max(1, Math.ceil(totalMovimientos / POR_PAGINA))}
+                {pagina} / {Math.max(1, Math.ceil(totalMovimientos / POR_PAGINA_MOV))}
               </span>
               <button
                 onClick={() => setPagina(p => p + 1)}
-                disabled={pagina >= Math.ceil(totalMovimientos / POR_PAGINA)}
+                disabled={pagina >= Math.ceil(totalMovimientos / POR_PAGINA_MOV)}
                 className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider"
               >
                 Siguiente

@@ -18,6 +18,9 @@ const Compras = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroEstadoCompra, setFiltroEstadoCompra] = useState('');
   const [filtroProveedorCompra, setFiltroProveedorCompra] = useState('');
+  const POR_PAGINA = 10;
+  const [paginaCompras, setPaginaCompras] = useState(1);
+  const [paginaProveedores, setPaginaProveedores] = useState(1);
   const [filtroTipoProveedor, setFiltroTipoProveedor] = useState('');
   const formSnapshotRef = useRef({});
 
@@ -49,6 +52,10 @@ const Compras = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // Resetear paginación cuando cambian filtros
+  useEffect(() => { setPaginaCompras(1); }, [searchTerm, filtroEstadoCompra, filtroProveedorCompra]);
+  useEffect(() => { setPaginaProveedores(1); }, [searchTerm, filtroTipoProveedor]);
 
   const openModal = () => {
     if (tab === 'compras') {
@@ -299,12 +306,20 @@ const Compras = () => {
   });
   const focusTrapRef = useFocusTrap(showModal || showEditModal);
 
+  const paginatedCompras = filteredCompras.slice(
+    (paginaCompras - 1) * POR_PAGINA, paginaCompras * POR_PAGINA
+  );
+
   const filteredProveedores = proveedores.filter(p => {
     const busca = [p.prov_id, p.prov_nombre, p.prov_nit, p.prov_tipo, p.prov_contacto, p.prov_email, p.prov_direccion
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     const porTipo = !filtroTipoProveedor || p.prov_tipo === filtroTipoProveedor;
     return busca && porTipo;
   });
+
+  const paginatedProveedores = filteredProveedores.slice(
+    (paginaProveedores - 1) * POR_PAGINA, paginaProveedores * POR_PAGINA
+  );
 
   const estadoBadge = (estado) => {
     const cls = estado === 'Recibida' ? 'text-emerald-600 bg-emerald-50' :
@@ -413,7 +428,7 @@ const Compras = () => {
                 {filteredCompras.length === 0 ? (
                   <tr><td colSpan="7" className="px-5 py-12 text-center text-slate-400">{searchTerm ? 'Sin resultados' : 'No hay compras registradas'}</td></tr>
                 ) : (
-                  filteredCompras.map((c, i) => (
+                  paginatedCompras.map((c, i) => (
                     <tr key={i} className="hover:bg-slate-50 group">
                       <td className="px-5 py-3 text-slate-400 text-xs">{c.comp_id}</td>
                       <td className="px-5 py-3">{c.comp_fecha || '-'}</td>
@@ -464,7 +479,19 @@ const Compras = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-400 font-medium">{filteredCompras.length} de {compras.length} compras</div>
+          <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-400 font-medium">
+            <span>{filteredCompras.length > 0
+              ? `${(paginaCompras - 1) * POR_PAGINA + 1}–${Math.min(paginaCompras * POR_PAGINA, filteredCompras.length)} de ${filteredCompras.length}`
+              : `${filteredCompras.length} compras`
+            }</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPaginaCompras(p => Math.max(1, p - 1))} disabled={paginaCompras <= 1}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Anterior</button>
+              <span className="text-slate-500">{paginaCompras} / {Math.max(1, Math.ceil(filteredCompras.length / POR_PAGINA))}</span>
+              <button onClick={() => setPaginaCompras(p => p + 1)} disabled={paginaCompras >= Math.ceil(filteredCompras.length / POR_PAGINA)}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Siguiente</button>
+            </div>
+          </div>
         </div>
       </>
       )}
@@ -538,7 +565,7 @@ const Compras = () => {
                 {filteredProveedores.length === 0 ? (
                   <tr><td colSpan="6" className="px-5 py-12 text-center text-slate-400">{searchTerm ? 'Sin resultados' : 'No hay proveedores registrados'}</td></tr>
                 ) : (
-                  filteredProveedores.map((p, i) => (
+                  paginatedProveedores.map((p, i) => (
                     <tr key={i} className="hover:bg-slate-50">
                       <td className="px-5 py-3 text-slate-400 text-xs">{p.prov_id}</td>
                       <td className="px-5 py-3">{p.prov_nombre}</td>
@@ -552,7 +579,19 @@ const Compras = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-400 font-medium">{filteredProveedores.length} de {proveedores.length} proveedores</div>
+          <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-400 font-medium">
+            <span>{filteredProveedores.length > 0
+              ? `${(paginaProveedores - 1) * POR_PAGINA + 1}–${Math.min(paginaProveedores * POR_PAGINA, filteredProveedores.length)} de ${filteredProveedores.length}`
+              : `${filteredProveedores.length} proveedores`
+            }</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPaginaProveedores(p => Math.max(1, p - 1))} disabled={paginaProveedores <= 1}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Anterior</button>
+              <span className="text-slate-500">{paginaProveedores} / {Math.max(1, Math.ceil(filteredProveedores.length / POR_PAGINA))}</span>
+              <button onClick={() => setPaginaProveedores(p => p + 1)} disabled={paginaProveedores >= Math.ceil(filteredProveedores.length / POR_PAGINA)}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Siguiente</button>
+            </div>
+          </div>
         </div>
       )}
 
