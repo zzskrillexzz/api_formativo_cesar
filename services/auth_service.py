@@ -59,6 +59,14 @@ def crearRefreshToken(usu_id, usu_correo, usu_rol):
     }
     return jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm="HS256")
 
+def obtenerNombreRol(rol_id):
+    """Resuelve el nombre legible del rol a partir de su ID."""
+    c = current_app.mysql.connection.cursor()
+    c.execute("SELECT rol_nombre FROM t_rol WHERE rol_id = %s", (rol_id,))
+    row = c.fetchone()
+    c.close()
+    return row[0] if row else rol_id
+
 def login(USU_CORREO, USU_CONTRASENA):
     usuario = buscarPorCorreo(USU_CORREO)
     if not usuario:
@@ -67,8 +75,10 @@ def login(USU_CORREO, USU_CONTRASENA):
         return None
     if usuario['usu_estado'] != 1:
         return None
-    access_token = crearToken(usuario['usu_id'], usuario['usu_correo'], usuario['usu_rol_id_fk'])
-    refresh_token = crearRefreshToken(usuario['usu_id'], usuario['usu_correo'], usuario['usu_rol_id_fk'])
+    # Resolver el nombre del rol (Ej: 'ROL001' → 'Administrador')
+    rol_nombre = obtenerNombreRol(usuario['usu_rol_id_fk'])
+    access_token = crearToken(usuario['usu_id'], usuario['usu_correo'], rol_nombre)
+    refresh_token = crearRefreshToken(usuario['usu_id'], usuario['usu_correo'], rol_nombre)
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
