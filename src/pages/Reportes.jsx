@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, FileText, RefreshCw, Package, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { BarChart3, TrendingUp, FileText, RefreshCw, Package, AlertCircle, Download, FileDown, Calendar, Clock } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell
 } from 'recharts';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { masVendidosService } from '../api/services/masVendidosService';
 import { reportesService } from '../api/services/reportesService';
 import { anulacionesService } from '../api/services/anulacionesService';
+import { useAuth } from '../context/AuthContext';
 
 const COLORS = ['#059669', '#0d9488', '#0284c7', '#7c3aed', '#db2777', '#ea580c', '#ca8a04', '#4f46e5'];
 
@@ -30,12 +31,25 @@ const EmptyState = ({ message }) => (
   </div>
 );
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const Reportes = () => {
-  const [tab, setTab] = useState('masVendidos');
+  const { user } = useAuth();
+  const [tab, setTab] = useState('generar');
   const [masVendidos, setMasVendidos] = useState([]);
   const [reportes, setReportes] = useState([]);
   const [anulaciones, setAnulaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Reportes reales ──
+  const [reporteTipo, setReporteTipo] = useState('ventas');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  const [diasVencer, setDiasVencer] = useState(30);
+  const [datosReporte, setDatosReporte] = useState(null);
+  const [cargandoReporte, setCargandoReporte] = useState(false);
+  const [reporteError, setReporteError] = useState('');
+  const [exportando, setExportando] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -57,13 +71,67 @@ const Reportes = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  // ── Generar reporte real ──
+  const generarReporte = async () => {
+    setCargandoReporte(true);
+    setReporteError('');
+    setDatosReporte(null);
+    try {
+      const token = sessionStorage.getItem('access_token');
+      let url = `${API_URL}/reportes/generar/${reporteTipo}`;
+      const params = new URLSearchParams();
+      if (fechaDesde) params.append('fecha_desde', fechaDesde);
+      if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+      if (reporteTipo === 'por_vencer') params.append('dias', diasVencer);
+      if (params.toString()) url += '?' + params.toString();
+
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error((await res.json()).mensaje || 'Error al generar reporte');
+      const data = await res.json();
+      setDatosReporte(data);
+    } catch (err) {
+      setReporteError(err.message);
+    } finally {
+      setCargandoReporte(false);
+    }
+  };
+
+  // ── Exportar PDF/Excel ──
+  const exportarReporte = async (formato) => {
+    setExportando(true);
+    try {
+      const token = sessionStorage.getItem('access_token');
+      let url = `${API_URL}/reportes/exportar/${reporteTipo}/${formato}`;
+      const params = new URLSearchParams();
+      if (fechaDesde) params.append('fecha_desde', fechaDesde);
+      if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+      if (reporteTipo === 'por_vencer') params.append('dias', diasVencer);
+      if (params.toString()) url += '?' + params.toString();
+
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Error al exportar');
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `reporte_${reporteTipo}_${new Date().toISOString().slice(0, 10)}.${formato}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      setReporteError('Error al exportar: ' + err.message);
+    } finally {
+      setExportando(false);
+    }
+  };
+
   // ── Datos procesados para graficos ──
   const masVendidosChart = masVendidos
     .map(m => ({ name: m.nombre || m.producto_id, value: Number(m.total_vendido) || 0 }))
     .filter(m => m.value > 0).sort((a, b) => b.value - a.value)
     .slice(0, 10);
 
-  // Agrupar reportes por tipo
   const reportesPorTipo = reportes.reduce((acc, r) => {
     const tipo = r.tipo || 'Sin tipo';
     acc[tipo] = (acc[tipo] || 0) + 1;
@@ -71,7 +139,6 @@ const Reportes = () => {
   }, {});
   const reportesChart = Object.entries(reportesPorTipo).map(([name, value]) => ({ name, value }));
 
-  // Agrupar anulaciones por motivo
   const anulacionesPorMotivo = anulaciones.reduce((acc, a) => {
     const motivo = a.motivo || 'Sin motivo';
     acc[motivo] = (acc[motivo] || 0) + 1;
@@ -79,14 +146,19 @@ const Reportes = () => {
   }, {});
   const anulacionesChart = Object.entries(anulacionesPorMotivo).map(([name, value]) => ({ name, value }));
 
-  const tabs = [
-    { id: 'masVendidos', label: 'Mas Vendidos', icon: TrendingUp },
-    { id: 'reportes', label: 'Reportes', icon: BarChart3 },
-    { id: 'anulaciones', label: 'Anulaciones', icon: FileText },
+  const tiposReporte = [
+    { id: 'ventas', label: 'Ventas', icon: TrendingUp },
+    { id: 'inventario', label: 'Inventario', icon: Package },
+    { id: 'mas_vendidos', label: 'Más Vendidos', icon: BarChart3 },
+    { id: 'por_vencer', label: 'Por Vencer', icon: Clock },
   ];
 
-  
-
+  const tabs = [
+    { id: 'generar', label: 'Generar Reportes', icon: BarChart3 },
+    { id: 'masVendidos', label: 'Top Ventas', icon: TrendingUp },
+    { id: 'reportes', label: 'Historial', icon: FileText },
+    { id: 'anulaciones', label: 'Anulaciones', icon: AlertCircle },
+  ];
 
   if (loading) return <ThemeLoader module="Reportes" />;
 
@@ -94,7 +166,7 @@ const Reportes = () => {
     <div className="space-y-6 animate-in fade-in duration-700">
       {/* Tabs */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 bg-white rounded-lg p-1.5 shadow-sm border border-slate-200 w-fit">
+        <div className="flex items-center gap-2 bg-white rounded-lg p-1.5 shadow-sm border border-slate-200 w-fit flex-wrap">
           {tabs.map(t => (
             <button
               key={t.id}
@@ -112,11 +184,187 @@ const Reportes = () => {
         </button>
       </div>
 
-      {/* TAB: Mas Vendidos */}
+      {/* ═════════════════════ TAB: GENERAR REPORTES ═════════════════════ */}
+      {tab === 'generar' && (
+        <div className="space-y-6">
+          {/* Selector de tipo + filtros */}
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 card-hover">
+            <h3 className="font-bold text-slate-800 tracking-tight mb-1">Generar Reporte</h3>
+            <p className="text-xs text-slate-400 font-medium mb-4">Selecciona el tipo de reporte, aplica filtros y genera o descarga</p>
+
+            {/* Tipo de reporte */}
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              {tiposReporte.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => { setReporteTipo(t.id); setDatosReporte(null); }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                    reporteTipo === t.id
+                      ? 'bg-emerald-600 text-white shadow-md'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  <t.icon size={14} /> {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Filtros de fecha (excepto para inventario que no los usa) */}
+            {reporteTipo !== 'inventario' && reporteTipo !== 'por_vencer' && (
+              <div className="flex items-center gap-3 mb-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} className="text-slate-400" />
+                  <input
+                    type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)}
+                    className="text-xs border border-slate-300 rounded-md px-2.5 py-2 bg-white outline-none font-medium text-slate-600"
+                  />
+                </div>
+                <span className="text-slate-300 text-xs">→</span>
+                <input
+                  type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)}
+                  className="text-xs border border-slate-300 rounded-md px-2.5 py-2 bg-white outline-none font-medium text-slate-600"
+                />
+                {(fechaDesde || fechaHasta) && (
+                  <button onClick={() => { setFechaDesde(''); setFechaHasta(''); }}
+                    className="text-[10px] font-bold uppercase text-slate-400 hover:text-red-500">
+                    ✕ Limpiar
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Días para por_vencer */}
+            {reporteTipo === 'por_vencer' && (
+              <div className="flex items-center gap-2 mb-4">
+                <Clock size={14} className="text-slate-400" />
+                <label className="text-xs font-medium text-slate-500">Alertar productos que vencen en los próximos</label>
+                <input
+                  type="number" min="1" max="365" value={diasVencer}
+                  onChange={(e) => setDiasVencer(parseInt(e.target.value) || 30)}
+                  className="w-20 text-xs border border-slate-300 rounded-md px-2.5 py-2 bg-white outline-none font-bold text-slate-600 text-center"
+                />
+                <span className="text-xs text-slate-500">días</span>
+              </div>
+            )}
+
+            {/* Botones */}
+            <div className="flex items-center gap-3">
+              <button onClick={generarReporte} disabled={cargandoReporte}
+                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-md disabled:opacity-50">
+                {cargandoReporte ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  <BarChart3 size={14} />
+                )}
+                Generar
+              </button>
+              {datosReporte && datosReporte.datos && datosReporte.datos.length > 0 && (
+                <>
+                  <button onClick={() => exportarReporte('pdf')} disabled={exportando}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-red-700 transition-all shadow-md disabled:opacity-50">
+                    <FileDown size={14} /> PDF
+                  </button>
+                  <button onClick={() => exportarReporte('excel')} disabled={exportando}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-green-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-green-800 transition-all shadow-md disabled:opacity-50">
+                    <Download size={14} /> Excel
+                  </button>
+                </>
+              )}
+            </div>
+
+            {reporteError && (
+              <div className="mt-4 p-3 bg-red-50 text-red-700 text-xs font-bold rounded-lg border border-red-200">{reporteError}</div>
+            )}
+          </div>
+
+          {/* Resultados */}
+          {datosReporte && (
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden card-hover">
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h4 className="font-bold text-sm text-slate-800">
+                  {reporteTipo === 'ventas' && 'Reporte de Ventas'}
+                  {reporteTipo === 'inventario' && 'Reporte de Inventario'}
+                  {reporteTipo === 'mas_vendidos' && 'Productos Más Vendidos'}
+                  {reporteTipo === 'por_vencer' && 'Medicamentos por Vencer'}
+                </h4>
+                <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-1 rounded-md">
+                  {datosReporte.total} resultados
+                </span>
+              </div>
+
+              {(!datosReporte.datos || datosReporte.datos.length === 0) ? (
+                <EmptyState message="No hay datos para el período seleccionado" />
+              ) : (
+                <>
+                  {/* Gráfico para mas_vendidos */}
+                  {reporteTipo === 'mas_vendidos' && (
+                    <div className="p-4">
+                      <ResponsiveContainer width="100%" height={350}>
+                        <BarChart
+                          data={datosReporte.datos.slice(0, 10).map(d => ({ name: d.nombre, value: d.total_vendido }))}
+                          layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                          <XAxis type="number" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#94a3b8' }} />
+                          <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11, fontWeight: 'bold', fill: '#475569' }} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar dataKey="value" fill="#059669" radius={[0, 8, 8, 0]} barSize={28} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {/* Tabla de datos */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider">
+                        <tr>
+                          {reporteTipo === 'ventas' && (
+                            <><th className="px-6 py-3">Fecha</th><th className="px-6 py-3 text-right">Pedidos</th><th className="px-6 py-3 text-right">Total Vendido</th></>
+                          )}
+                          {reporteTipo === 'inventario' && (
+                            <><th className="px-6 py-3">Producto</th><th className="px-6 py-3">Categoría</th><th className="px-6 py-3 text-right">Stock</th><th className="px-6 py-3 text-right">Stock Mín</th><th className="px-6 py-3 text-right">Precio</th><th className="px-6 py-3">Lote</th><th className="px-6 py-3">Vencimiento</th></>
+                          )}
+                          {reporteTipo === 'mas_vendidos' && (
+                            <><th className="px-6 py-3">Producto</th><th className="px-6 py-3 text-right">Unidades</th><th className="px-6 py-3 text-right">Total</th></>
+                          )}
+                          {reporteTipo === 'por_vencer' && (
+                            <><th className="px-6 py-3">Producto</th><th className="px-6 py-3">Categoría</th><th className="px-6 py-3">Lote</th><th className="px-6 py-3">Vencimiento</th><th className="px-6 py-3 text-right">Stock</th><th className="px-6 py-3 text-right">Días</th></>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50 font-bold text-slate-600">
+                        {datosReporte.datos.map((d, i) => (
+                          <tr key={i} className="hover:bg-orange-100/70">
+                            {reporteTipo === 'ventas' && (
+                              <><td className="px-6 py-3 text-slate-400 text-xs">{d.fecha}</td><td className="px-6 py-3 text-right">{d.cantidad_pedidos}</td><td className="px-6 py-3 text-right text-emerald-600">${Number(d.total_vendido).toLocaleString()}</td></>
+                            )}
+                            {reporteTipo === 'inventario' && (
+                              <><td className="px-6 py-3">{d.pro_nombre}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.pro_categoria}</td><td className="px-6 py-3 text-right">{d.pro_cantidad_disponible}</td><td className="px-6 py-3 text-right text-slate-400">{d.pro_stock_minimo}</td><td className="px-6 py-3 text-right text-emerald-600">${Number(d.pro_precio).toLocaleString()}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.lot_numero || d.lot_id || '-'}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.lot_fecha_vencimiento || '-'}</td></>
+                            )}
+                            {reporteTipo === 'mas_vendidos' && (
+                              <><td className="px-6 py-3">{d.nombre}</td><td className="px-6 py-3 text-right">{d.total_unidades}</td><td className="px-6 py-3 text-right text-emerald-600">${Number(d.total_vendido).toLocaleString()}</td></>
+                            )}
+                            {reporteTipo === 'por_vencer' && (
+                              <><td className="px-6 py-3">{d.pro_nombre}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.pro_categoria}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.lot_numero || d.lot_id}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.lot_fecha_vencimiento}</td><td className="px-6 py-3 text-right">{d.lot_cantidad_actual}</td><td className={`px-6 py-3 text-right font-bold ${d.dias_restantes <= 30 ? 'text-red-600' : d.dias_restantes <= 60 ? 'text-orange-600' : 'text-emerald-600'}`}>{d.dias_restantes}</td></>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═════════════════════ TAB: TOP VENTAS ═════════════════════ */}
       {tab === 'masVendidos' && (
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 card-hover">
-            <h3 className="font-bold text-slate-800 tracking-tight mb-1">Productos Mas Vendidos</h3>
+            <h3 className="font-bold text-slate-800 tracking-tight mb-1">Productos Más Vendidos</h3>
             <p className="text-xs text-slate-400 font-medium mb-6">Top {masVendidosChart.length} productos por volumen de ventas</p>
             {masVendidosChart.length === 0 ? (
               <EmptyState message="Sin datos de ventas disponibles" />
@@ -132,7 +380,6 @@ const Reportes = () => {
               </ResponsiveContainer>
             )}
           </div>
-          {/* Tabla resumen */}
           {masVendidos.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden card-hover">
               <div className="p-4 border-b border-slate-100">
@@ -159,12 +406,12 @@ const Reportes = () => {
         </div>
       )}
 
-      {/* TAB: Reportes */}
+      {/* ═════════════════════ TAB: HISTORIAL ═════════════════════ */}
       {tab === 'reportes' && (
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 card-hover">
             <h3 className="font-bold text-slate-800 tracking-tight mb-1">Reportes por Tipo</h3>
-            <p className="text-xs text-slate-400 font-medium mb-6">Distribucion de reportes generados</p>
+            <p className="text-xs text-slate-400 font-medium mb-6">Distribución de reportes generados</p>
             {reportesChart.length === 0 ? (
               <EmptyState message="No hay reportes generados" />
             ) : (
@@ -179,11 +426,10 @@ const Reportes = () => {
               </ResponsiveContainer>
             )}
           </div>
-          {/* Tabla detalle */}
           {reportes.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden card-hover">
               <div className="p-4 border-b border-slate-100">
-                <h4 className="font-bold text-xs text-slate-500 uppercase tracking-wider">Ultimos reportes</h4>
+                <h4 className="font-bold text-xs text-slate-500 uppercase tracking-wider">Últimos reportes</h4>
               </div>
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider">
@@ -191,7 +437,7 @@ const Reportes = () => {
                     <th className="px-6 py-3">Tipo</th>
                     <th className="px-6 py-3">Usuario</th>
                     <th className="px-6 py-3">Fecha</th>
-                    <th className="px-6 py-3">Parametros</th>
+                    <th className="px-6 py-3">Parámetros</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 font-bold text-slate-600">
@@ -212,13 +458,13 @@ const Reportes = () => {
         </div>
       )}
 
-      {/* TAB: Anulaciones */}
+      {/* ═════════════════════ TAB: ANULACIONES ═════════════════════ */}
       {tab === 'anulaciones' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 card-hover">
               <h3 className="font-bold text-slate-800 tracking-tight mb-1">Anulaciones por Motivo</h3>
-              <p className="text-xs text-slate-400 font-medium mb-6">Distribucion de motivos de anulacion</p>
+              <p className="text-xs text-slate-400 font-medium mb-6">Distribución de motivos de anulación</p>
               {anulacionesChart.length === 0 ? (
                 <EmptyState message="No hay anulaciones registradas" />
               ) : (
@@ -269,7 +515,6 @@ const Reportes = () => {
               )}
             </div>
           </div>
-          {/* Tabla detalle */}
           {anulaciones.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden card-hover">
               <div className="p-4 border-b border-slate-100">
@@ -304,8 +549,3 @@ const Reportes = () => {
 };
 
 export default Reportes;
-
-
-
-
-

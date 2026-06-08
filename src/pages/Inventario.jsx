@@ -296,7 +296,9 @@ const Inventario = () => {
         stock_minimo: stockMin,
         fecha_caducidad: formData.fecha_caducidad || null,
         estado: formData.estado || 'Activo',
-        proveedor_id: formData.proveedor_id || null
+        proveedor_id: formData.proveedor_id || null,
+        presentacion: formData.presentacion || null,
+        laboratorio: formData.laboratorio || null
       };
       if (isEditing) {
         await productosService.editar(payload.id, payload);
@@ -1195,6 +1197,22 @@ const Inventario = () => {
                         <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
                       ))}
                     </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Presentación</label>
+                      <select name="presentacion" value={formData.presentacion || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                        <option value="">Seleccionar...</option>
+                        {['Tableta', 'Cápsula', 'Jarabe', 'Inyectable', 'Crema', 'Ungüento', 'Suspensión', 'Solución', 'Polvo', 'Supositorio', 'Parche', 'Aerosol', 'Gotas', 'Emulsión', 'Granulado', 'Otro'].map(pres => (
+                          <option key={pres} value={pres}>{pres}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Laboratorio</label>
+                      <input name="laboratorio" value={formData.laboratorio || ''} onChange={handleChange} placeholder="Ej: Bayer, Genfar, La Santé..."
+                        className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                    </div>
                   </div>
                 </>
               )}

@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { 
   Wifi, WifiOff, Database, Loader2,
-  LayoutDashboard, Package, ShoppingCart, Truck, BarChart3, RotateCcw 
+  LayoutDashboard, Package, ShoppingCart, Truck, BarChart3, RotateCcw, Users
 } from 'lucide-react';
 import { Notificaciones } from './components/Notificaciones';
 
@@ -14,6 +14,7 @@ const VentasPage = React.lazy(() => import('./pages/Ventas'));
 const ComprasPage = React.lazy(() => import('./pages/Compras'));
 const ReportesPage = React.lazy(() => import('./pages/Reportes'));
 const DevolucionesPage = React.lazy(() => import('./pages/Devoluciones'));
+const UsuariosPage = React.lazy(() => import('./pages/Usuarios'));
 const LoginPage = React.lazy(() => import('./pages/Login'));
 
 const PageLoader = () => (
@@ -42,6 +43,7 @@ const Layout = () => {
     Compras: Truck,
     Reportes: BarChart3,
     Devoluciones: RotateCcw,
+    Usuarios: Users,
   };
   const IconoActivo = iconosModulos[activeTab] || LayoutDashboard;
 
@@ -146,6 +148,7 @@ const Layout = () => {
               {currentTab === 'Compras' && <ComprasPage />}
               {currentTab === 'Reportes' && <ReportesPage />}
               {currentTab === 'Devoluciones' && <DevolucionesPage />}
+              {currentTab === 'Usuarios' && <UsuariosPage />}
             </Suspense>
           </div>
         </section>

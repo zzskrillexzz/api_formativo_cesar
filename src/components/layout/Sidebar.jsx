@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Package, ShoppingCart, Truck, BarChart3, RotateCcw, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, BarChart3, RotateCcw, Users, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import logoSrc from '../../assets/image/mi-logo.png';
 
@@ -13,6 +13,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
     { id: 'Compras', label: 'Gestión Compras', icon: Truck, roles: ['ROL001', 'ROL003'] },
     { id: 'Reportes', label: 'Analítica', icon: BarChart3, roles: ['ROL001', 'ROL004'] },
     { id: 'Devoluciones', label: 'Devoluciones', icon: RotateCcw, roles: ['ROL001', 'ROL002', 'ROL003'] },
+    { id: 'Usuarios', label: 'Usuarios', icon: Users, roles: ['ROL001'] },
   ];
 
   return (

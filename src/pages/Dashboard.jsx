@@ -34,24 +34,53 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [prods, provs, alts, top, mons, lots, peds, comps] = await Promise.all([
-          productosService.listar().catch(() => []),
-          proveedoresService.listar().catch(() => []),
-          alertasService.listar().catch(() => []),
-          masVendidosService.listar().catch(() => []),
-          monitoriasService.listar().catch(() => ({ data: [], total: 0 })),
-          lotesService.listar().catch(() => []),
-          pedidosService.listar().catch(() => []),
-          comprasService.listar().catch(() => [])
-        ]);
-        setProductos(prods);
-        setProveedores(provs);
-        setAlertas(alts);
-        setMasVendidos(top);
-        setMonitorias(Array.isArray(mons) ? mons : (mons.data || []));
-        setLotes(lots);
-        setPedidos(peds);
-        setCompras(comps);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const token = sessionStorage.getItem('access_token');
+
+        // Intentar endpoint agregado primero
+        const res = await fetch(`${apiUrl}/dashboard/resumen`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+
+          // Poblar estados desde la respuesta agregada
+          setProductos(Array(data.productos.total).fill({})); // solo necesitamos counts
+          setProveedores(Array(data.proveedores.total).fill({}));
+          setAlertas(Array(data.alertas_pendientes).fill({}));
+          setMasVendidos(data.top_vendidos || []);
+          setMonitorias(data.ultimos_movimientos || []);
+          setLotes([]);
+          setPedidos(Array(data.pedidos.activos).fill({ ped_estado_entrega: 'Pendiente' }));
+          setCompras([
+            ...Array(data.compras.pendientes || 0).fill({ comp_estado: 'Pendiente' }),
+            ...Array(data.compras.recibidas || 0).fill({ comp_estado: 'Recibida' })
+          ]);
+
+          // Guardar métricas extra
+          window.__dashboardCache = data;
+        } else {
+          // Fallback: cargar individualmente (8 llamadas)
+          const [prods, provs, alts, top, mons, lots, peds, comps] = await Promise.all([
+            productosService.listar().catch(() => []),
+            proveedoresService.listar().catch(() => []),
+            alertasService.listar().catch(() => []),
+            masVendidosService.listar().catch(() => []),
+            monitoriasService.listar().catch(() => ({ data: [], total: 0 })),
+            lotesService.listar().catch(() => []),
+            pedidosService.listar().catch(() => []),
+            comprasService.listar().catch(() => [])
+          ]);
+          setProductos(prods);
+          setProveedores(provs);
+          setAlertas(alts);
+          setMasVendidos(top);
+          setMonitorias(Array.isArray(mons) ? mons : (mons.data || []));
+          setLotes(lots);
+          setPedidos(peds);
+          setCompras(comps);
+        }
       } catch (_) {
       } finally {
         setLoading(false);
