@@ -4,6 +4,9 @@ flask-mysqldb
 python-dotenv
 PyJWT
 bcrypt
+APScheduler
+reportlab
+openpyxl
 
 
 # pip install -r requirements.txt

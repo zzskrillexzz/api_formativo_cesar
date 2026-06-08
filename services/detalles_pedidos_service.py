@@ -58,19 +58,35 @@ def _descontarInventario(c, det_pro_id_fk, det_lot_id_fk, det_cantidad, det_ped_
     # Si no se especifica lote, auto-asignar el más antiguo con stock disponible (FIFO)
     lotes_a_descontar = []
     if det_lot_id_fk:
-        # Lote específico
-        c.execute("SELECT lot_id, lot_cantidad_actual FROM t_lote WHERE lot_id = %s", (det_lot_id_fk,))
+        # Lote específico — verificar que no esté vencido
+        c.execute("""
+            SELECT lot_id, lot_cantidad_actual, lot_estado,
+                   lot_fecha_vencimiento, DATEDIFF(lot_fecha_vencimiento, CURDATE()) AS dias
+            FROM t_lote WHERE lot_id = %s
+        """, (det_lot_id_fk,))
         row_lote = c.fetchone()
         if row_lote:
+            if row_lote[2] == 'Vencido' or (row_lote[4] is not None and row_lote[4] < 0):
+                raise ValueError(
+                    f"Lote {det_lot_id_fk} vencido (fecha: {row_lote[3]}). "
+                    "No se puede vender un producto vencido."
+                )
             lotes_a_descontar = [(row_lote[0], row_lote[1] or 0)]
     else:
         # Auto-asignar lotes disponibles para este producto (FIFO por fecha de vencimiento)
+        # Solo lotes NO vencidos
         c.execute("""
             SELECT lot_id, lot_cantidad_actual FROM t_lote
             WHERE lot_pro_id_fk = %s AND lot_estado = 'Activo' AND lot_cantidad_actual > 0
+              AND lot_fecha_vencimiento >= CURDATE()
             ORDER BY lot_fecha_vencimiento ASC, lot_fecha_fabricacion ASC
         """, (det_pro_id_fk,))
         lotes_a_descontar = [(r[0], r[1] or 0) for r in c.fetchall()]
+
+    if not lotes_a_descontar:
+        raise ValueError(
+            f"No hay stock disponible (no vencido) para el producto {det_pro_id_fk}"
+        )
 
     cantidad_restante = det_cantidad
     lotes_usados = []
@@ -84,6 +100,12 @@ def _descontarInventario(c, det_pro_id_fk, det_lot_id_fk, det_cantidad, det_ped_
             c.execute("UPDATE t_lote SET lot_estado = 'Agotado' WHERE lot_id = %s", (lot_id,))
         cantidad_restante -= a_descontar
         lotes_usados.append(lot_id)
+
+    if cantidad_restante > 0:
+        raise ValueError(
+            f"Stock insuficiente (no vencido) para el producto {det_pro_id_fk}: "
+            f"faltan {cantidad_restante} unidades"
+        )
     # Actualizar det_lot_id_fk con el primer lote usado (para el movimiento)
     if lotes_usados:
         det_lot_id_fk = lotes_usados[0]

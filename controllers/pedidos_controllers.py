@@ -112,6 +112,16 @@ def cnregistrarpedidos():
                 return jsonify({"mensaje": f"No existe un usuario con el ID {fk_usuario}"}), 404
         c.close()
 
+        # Calcular IVA (19%) si no se envía explícitamente
+        total = float(data["ped_total"])
+        ped_subtotal = data.get("ped_subtotal")
+        ped_iva = data.get("ped_iva")
+        if ped_subtotal is not None and ped_iva is None:
+            ped_iva = round(float(ped_subtotal) * 0.19, 2)
+        elif ped_subtotal is None and ped_iva is None:
+            ped_subtotal = round(total / 1.19, 2)
+            ped_iva = round(total - ped_subtotal, 2)
+
         resultado = registrarPedidos(
             ped_id, data["ped_fecha"], data["ped_metodo_pago"],
             data["ped_estado_entrega"], data["ped_total"], data["ped_cli_id_fk"],
@@ -120,7 +130,20 @@ def cnregistrarpedidos():
             data.get("ped_comprobante_tipo"),
             fk_usuario
         )
-        return jsonify({"mensaje": "Pedido realizado correctamente", "datos": resultado}), 201
+        # Agregar desglose de IVA en la respuesta
+        if isinstance(resultado, dict):
+            resultado["ped_subtotal"] = ped_subtotal
+            resultado["ped_iva"] = ped_iva
+            resultado["ped_iva_porcentaje"] = 19
+        return jsonify({
+            "mensaje": "Pedido realizado correctamente",
+            "datos": resultado,
+            "desglose_iva": {
+                "subtotal": ped_subtotal,
+                "iva_19pct": ped_iva,
+                "total": total
+            }
+        }), 201
 
     except Exception as e:
         log.error(f"Error en registrarPedidos: {e}", exc_info=True)

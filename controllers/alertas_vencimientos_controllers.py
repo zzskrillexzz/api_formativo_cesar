@@ -1,5 +1,8 @@
 from flask import jsonify, request, current_app
-from services.alertas_vencimientos_service import listarAlertasVencimientos, registrarAlertasVencimientos
+from services.alertas_vencimientos_service import (
+    listarAlertasVencimientos, registrarAlertasVencimientos,
+    buscarAlertasVencimientos, editarAlertasVencimientos, eliminarAlertasVencimientos
+)
 from utils.error_handler import safe_controller
 
 @safe_controller
@@ -70,3 +73,37 @@ def cnregistraralertasvencimientos():
         data["alv_dias_restantes"], data["alv_estado"], usuario_id
     )
     return jsonify({"mensaje": "Alerta registrada correctamente", "datos": resultado}), 201
+
+
+@safe_controller
+def cnbuscaralertasvencimientos(ALV_ID):
+    resultado = buscarAlertasVencimientos(ALV_ID)
+    if resultado is None:
+        return jsonify({"mensaje": f"No se encontró la alerta con ID {ALV_ID}"}), 404
+    return jsonify(resultado), 200
+
+
+@safe_controller
+def cneditaralertasvencimientos(ALV_ID):
+    data = request.get_json()
+    if not data:
+        return jsonify({"mensaje": "No se enviaron datos JSON"}), 400
+
+    if not buscarAlertasVencimientos(ALV_ID):
+        return jsonify({"mensaje": f"No se encontró la alerta con ID {ALV_ID}"}), 404
+
+    if data.get("alv_estado"):
+        estados_validos = ["Pendiente", "Gestionada", "Ignorada"]
+        if data["alv_estado"] not in estados_validos:
+            return jsonify({"mensaje": f"Estado inválido. Valores permitidos: {estados_validos}"}), 400
+
+    resultado = editarAlertasVencimientos(ALV_ID, data)
+    return jsonify(resultado), 200
+
+
+@safe_controller
+def cneliminaralertasvencimientos(ALV_ID):
+    if not buscarAlertasVencimientos(ALV_ID):
+        return jsonify({"mensaje": f"No se encontró la alerta con ID {ALV_ID}"}), 404
+    resultado = eliminarAlertasVencimientos(ALV_ID)
+    return jsonify(resultado), 200

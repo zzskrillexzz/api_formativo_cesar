@@ -7,9 +7,11 @@ def listarUsuarios(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
     sb = SearchBuilder(
         table='t_usuario',
-        search_fields=['usu_id', 'usu_nombre', 'usu_correo'],
-        exact_fields=['usu_rol_id_fk', 'usu_estado'],
-        default_order='usu_nombre ASC'
+        search_fields=['usu_id', 'usu_nombre', 'usu_correo', 't_rol.rol_nombre'],
+        exact_fields=['usu_estado'],
+        default_order='usu_nombre ASC',
+        join_clause='LEFT JOIN t_rol ON t_usuario.usu_rol_id_fk = t_rol.rol_id',
+        select_columns='t_usuario.*, t_rol.rol_nombre'
     )
     result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
     c.close()
@@ -19,7 +21,7 @@ def listarUsuarios(page=1, limit=50, q=None, order_by=None, **filters):
         u = usuarios(
             usu_id=item['usu_id'],
             usu_nombre=item['usu_nombre'],
-            usu_rol=item.get('usu_rol_id_fk', item.get('usu_rol')),
+            usu_rol=item.get('rol_nombre') or item.get('usu_rol_id_fk', ''),
             usu_correo=item['usu_correo'],
             usu_contrasena=item['usu_contrasena'],
             usu_estado=item['usu_estado'],
@@ -31,18 +33,32 @@ def listarUsuarios(page=1, limit=50, q=None, order_by=None, **filters):
     return result
 
 
+def _resolver_rol(nombre_rol):
+    """Convierte nombre de rol ('Administrador') a código ('ROL001')."""
+    c = current_app.mysql.connection.cursor()
+    c.execute("SELECT rol_id FROM t_rol WHERE rol_nombre = %s", (nombre_rol,))
+    row = c.fetchone()
+    c.close()
+    if row:
+        return row[0]
+    # Si no se encuentra, retornar el nombre tal cual (fallback para roles no mapeados)
+    return nombre_rol
+
+
 def registrarUsuarios(USU_ID, USU_NOMBRE, USU_ROL, USU_CORREO, USU_CONTRASENA, USU_ESTADO, USU_ULTIMO_ACCESO):
     # BUG-003: Hashear contraseña antes de guardar
     contrasena_hash = bcrypt.hashpw(
         USU_CONTRASENA.encode('utf-8'),
         bcrypt.gensalt()
     ).decode('utf-8')
+    # Resolver nombre de rol a código (ej: 'Administrador' → 'ROL001')
+    rol_codigo = _resolver_rol(USU_ROL)
     c = current_app.mysql.connection.cursor()
     sql = """
         INSERT INTO t_usuario (usu_id, usu_nombre, usu_rol_id_fk, usu_correo, usu_contrasena, usu_estado, usu_ultimo_acceso) 
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
-    c.execute(sql, (USU_ID, USU_NOMBRE, USU_ROL, USU_CORREO, contrasena_hash, USU_ESTADO, USU_ULTIMO_ACCESO))
+    c.execute(sql, (USU_ID, USU_NOMBRE, rol_codigo, USU_CORREO, contrasena_hash, USU_ESTADO, USU_ULTIMO_ACCESO))
     current_app.mysql.connection.commit()
     id = c.lastrowid
     c.close()
@@ -58,13 +74,15 @@ def editarUsuarios(USU_ID, USU_NOMBRE, USU_ROL, USU_CORREO, USU_CONTRASENA, USU_
         ).decode('utf-8')
     else:
         contrasena_hash = USU_CONTRASENA
+    # Resolver nombre de rol a código (ej: 'Administrador' → 'ROL001')
+    rol_codigo = _resolver_rol(USU_ROL)
     c = current_app.mysql.connection.cursor()
     sql = """
         UPDATE t_usuario 
         SET usu_nombre=%s, usu_rol_id_fk=%s, usu_correo=%s, usu_contrasena=%s, usu_estado=%s, usu_ultimo_acceso=%s
         WHERE usu_id=%s
     """
-    c.execute(sql, (USU_NOMBRE, USU_ROL, USU_CORREO, contrasena_hash, USU_ESTADO, USU_ULTIMO_ACCESO, USU_ID))
+    c.execute(sql, (USU_NOMBRE, rol_codigo, USU_CORREO, contrasena_hash, USU_ESTADO, USU_ULTIMO_ACCESO, USU_ID))
     current_app.mysql.connection.commit()
     c.close()
     return usuarios(USU_ID, USU_NOMBRE, USU_ROL, USU_CORREO, USU_CONTRASENA, USU_ESTADO, USU_ULTIMO_ACCESO).todic()
@@ -82,19 +100,21 @@ def eliminarUsuarios(USU_ID):
 def buscarUsuarios(USU_ID):
     c = current_app.mysql.connection.cursor()
     sql = """
-        SELECT usu_id, usu_nombre, usu_rol_id_fk, usu_correo, usu_contrasena, usu_estado, usu_ultimo_acceso 
-        FROM t_usuario 
-        WHERE usu_id = %s
+        SELECT t_usuario.*, t_rol.rol_nombre
+        FROM t_usuario
+        LEFT JOIN t_rol ON t_usuario.usu_rol_id_fk = t_rol.rol_id
+        WHERE t_usuario.usu_id = %s
     """
     c.execute(sql, (USU_ID,))
     p = c.fetchone()
     c.close()
     
     if p:
+        # t_usuario.* = 7 columnas (0-6), t_rol.rol_nombre = índice 7
         u = usuarios(
             usu_id = p[0],
             usu_nombre = p[1],
-            usu_rol = p[2],
+            usu_rol = p[7] or p[2],  # rol_nombre, fallback a código
             usu_correo = p[3],
             usu_contrasena = p[4],
             usu_estado = p[5],

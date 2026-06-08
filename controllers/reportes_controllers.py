@@ -1,6 +1,12 @@
-from flask import jsonify, request
-from services.reportes_service import listarReportes, registrarReportes, editarReportes, eliminarReportes, buscarReportes
+from flask import jsonify, request, send_file
+from services.reportes_service import (
+    listarReportes, registrarReportes, editarReportes, eliminarReportes, buscarReportes,
+    reporte_ventas, reporte_inventario, reporte_mas_vendidos, reporte_por_vencer,
+    exportar_reporte_pdf, exportar_reporte_excel
+)
 from utils.error_handler import safe_controller
+from io import BytesIO
+from datetime import date
 
 @safe_controller
 def cnlistarreportes():
@@ -54,3 +60,61 @@ def cnbuscarreportes():
     if resultado:
         return jsonify(resultado), 200
     return jsonify({"mensaje": "Reporte no encontrado"}), 404
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  REPORTES REALES (agregaciones de negocio)
+# ═══════════════════════════════════════════════════════════════════
+
+@safe_controller
+def cngenerar_reporte(tipo):
+    """Endpoint unificado: GET /reportes/generar/<tipo>?fecha_desde=...&fecha_hasta=..."""
+    fecha_desde = request.args.get('fecha_desde')
+    fecha_hasta = request.args.get('fecha_hasta')
+
+    if tipo == 'ventas':
+        datos = reporte_ventas(fecha_desde, fecha_hasta)
+    elif tipo == 'inventario':
+        datos = reporte_inventario()
+    elif tipo == 'mas_vendidos':
+        datos = reporte_mas_vendidos(fecha_desde, fecha_hasta)
+    elif tipo == 'por_vencer':
+        dias = request.args.get('dias', 30, type=int)
+        datos = reporte_por_vencer(dias)
+    else:
+        return jsonify({"mensaje": f"Tipo de reporte desconocido: {tipo}"}), 400
+
+    return jsonify({"tipo": tipo, "total": len(datos), "datos": datos}), 200
+
+
+@safe_controller
+def cnexportar_reporte(tipo, formato):
+    """
+    Exporta un reporte en PDF o Excel.
+    GET /reportes/exportar/<tipo>/<formato>?fecha_desde=...&fecha_hasta=...
+    """
+    fecha_desde = request.args.get('fecha_desde')
+    fecha_hasta = request.args.get('fecha_hasta')
+
+    if formato == 'pdf':
+        pdf_bytes = exportar_reporte_pdf(tipo, fecha_desde, fecha_hasta)
+        if pdf_bytes is None:
+            return jsonify({"mensaje": f"Tipo de reporte desconocido: {tipo}"}), 400
+        return send_file(
+            BytesIO(pdf_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f"reporte_{tipo}_{date.today().isoformat()}.pdf"
+        )
+    elif formato == 'excel':
+        xlsx_bytes = exportar_reporte_excel(tipo, fecha_desde, fecha_hasta)
+        if xlsx_bytes is None:
+            return jsonify({"mensaje": f"Tipo de reporte desconocido: {tipo}"}), 400
+        return send_file(
+            BytesIO(xlsx_bytes),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f"reporte_{tipo}_{date.today().isoformat()}.xlsx"
+        )
+    else:
+        return jsonify({"mensaje": f"Formato desconocido: {formato}. Use 'pdf' o 'excel'"}), 400

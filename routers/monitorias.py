@@ -1,5 +1,5 @@
 from flask import Blueprint
-from services.auth_service import token_requerido
+from services.auth_service import token_requerido, rol_requerido
 from controllers.monitorias_controllers import (
     cnlistarMonitoria,
     cnregistrarMonitoria,
@@ -17,16 +17,19 @@ def listar():
 
 @monitoria_bp.route('/', methods=['POST'])
 @token_requerido
+@rol_requerido('Administrador', 'Bodeguero')
 def registrar():
     return cnregistrarMonitoria()
 
 @monitoria_bp.route('/<id>', methods=['PUT'])
 @token_requerido
+@rol_requerido('Administrador', 'Bodeguero')
 def editar(id):
     return cneditarMonitoria(id)
 
 @monitoria_bp.route('/<id>', methods=['DELETE'])
 @token_requerido
+@rol_requerido('Administrador')
 def eliminar(id):
     return cneliminarMonitoria(id)
 

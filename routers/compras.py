@@ -1,5 +1,5 @@
 from flask import Blueprint
-from services.auth_service import token_requerido
+from services.auth_service import token_requerido, rol_requerido
 from controllers.compras_controllers import cnlistadocompras, cnregistrarcompras, cnbuscarcompras, cneditarcompras, cneliminarcompras
 
 compras_bp = Blueprint('compras', __name__)
@@ -11,6 +11,7 @@ def listado():
 
 @compras_bp.route('/', methods=["POST"])
 @token_requerido
+@rol_requerido('Administrador', 'Bodeguero')
 def registrar():
     return cnregistrarcompras()
 
@@ -21,10 +22,12 @@ def buscar(COM_ID):
 
 @compras_bp.route('/<COM_ID>', methods=["PUT"])
 @token_requerido
+@rol_requerido('Administrador', 'Bodeguero')
 def editar(COM_ID):
     return cneditarcompras(COM_ID)
 
 @compras_bp.route('/<COM_ID>', methods=["DELETE"])
 @token_requerido
+@rol_requerido('Administrador')
 def eliminar(COM_ID):
     return cneliminarcompras(COM_ID)

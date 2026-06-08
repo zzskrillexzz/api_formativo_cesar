@@ -1,6 +1,123 @@
 from flask import current_app
 from models.detalles_compras_model import detalles_compras
 from utils.search_builder import SearchBuilder
+from utils.id_generator import generarIdSiguiente
+
+# ── Helpers de inventario para compras ──
+
+def _ingresarInventarioDesdeCompra(c, dco_pro_id_fk, dco_lot_id_fk, dco_cantidad,
+                                     dco_com_id_fk, dco_precio_compra, dco_subtotal):
+    """
+    Incrementa stock del producto y lote tras una compra,
+    y registra movimiento + monitoria. Recibe cursor abierto.
+    Hace commit internamente.
+    """
+    # ── 1. Incrementar producto (atómico) ──
+    c.execute(
+        "UPDATE t_producto SET pro_cantidad_disponible = pro_cantidad_disponible + %s "
+        "WHERE pro_id = %s",
+        (dco_cantidad, dco_pro_id_fk)
+    )
+    if c.rowcount == 0:
+        raise ValueError(f"Producto {dco_pro_id_fk} no encontrado")
+
+    # Obtener stock anterior para monitoria
+    c.execute("SELECT pro_cantidad_disponible FROM t_producto WHERE pro_id = %s", (dco_pro_id_fk,))
+    nuevo_stock = c.fetchone()[0] or 0
+    stock_anterior = nuevo_stock - dco_cantidad
+
+    # ── 2. Incrementar lote ──
+    stock_lote_anterior = 0
+    if dco_lot_id_fk:
+        c.execute("SELECT lot_cantidad_actual, lot_estado FROM t_lote WHERE lot_id = %s", (dco_lot_id_fk,))
+        row_lote = c.fetchone()
+        if row_lote:
+            stock_lote_anterior = row_lote[0] or 0
+            nuevo_stock_lote = stock_lote_anterior + dco_cantidad
+            c.execute("UPDATE t_lote SET lot_cantidad_actual = %s WHERE lot_id = %s",
+                      (nuevo_stock_lote, dco_lot_id_fk))
+            # Reactivar lote si estaba agotado
+            if row_lote[1] == 'Agotado' and nuevo_stock_lote > 0:
+                c.execute("UPDATE t_lote SET lot_estado = 'Activo' WHERE lot_id = %s", (dco_lot_id_fk,))
+
+    # ── 3. Insertar movimiento de inventario (Entrada) ──
+    inm_id = generarIdSiguiente('t_inventario_movimiento', 'inm_id', 'INM', 3)
+    c.execute("""
+        INSERT INTO t_inventario_movimiento
+            (inm_id, inm_tipo_movimiento, inm_pro_id_fk, inm_lot_id_fk, inm_cantidad,
+             inm_fecha, inm_motivo, inm_usu_id_fk)
+        VALUES (%s, 'Entrada', %s, %s, %s, CURDATE(), %s, NULL)
+    """, (inm_id, dco_pro_id_fk, dco_lot_id_fk, dco_cantidad, f"Compra {dco_com_id_fk}"))
+
+    # ── 4. Insertar monitoria ──
+    mon_id = generarIdSiguiente('t_monitoria', 'mon_id', 'MON', 3)
+    c.execute("""
+        INSERT INTO t_monitoria
+            (mon_id, mon_pro_id_fk, mon_lot_id_fk, mon_inm_id_fk, mon_fecha, mon_tipo,
+             mon_cantidad, mon_saldo_anterior, mon_saldo_actual, mon_costo_unitario, mon_costo_total)
+        VALUES (%s, %s, %s, %s, CURDATE(), 'Entrada', %s, %s, %s, %s, %s)
+    """, (mon_id, dco_pro_id_fk, dco_lot_id_fk, inm_id, dco_cantidad,
+          stock_anterior, nuevo_stock, dco_precio_compra, dco_subtotal))
+
+
+def _revertirIngresoInventario(c, dco_pro_id_fk, dco_lot_id_fk, dco_cantidad,
+                                 dco_com_id_fk, dco_precio_compra, dco_subtotal):
+    """
+    Revierte el ingreso de inventario de una compra:
+    descuenta stock del producto y lote, y registra movimiento de Salida + monitoria.
+    """
+    # ── 1. Descontar producto (atómico) ──
+    c.execute(
+        "UPDATE t_producto SET pro_cantidad_disponible = pro_cantidad_disponible - %s "
+        "WHERE pro_id = %s AND pro_cantidad_disponible >= %s",
+        (dco_cantidad, dco_pro_id_fk, dco_cantidad)
+    )
+    if c.rowcount == 0:
+        c.execute("SELECT pro_cantidad_disponible FROM t_producto WHERE pro_id = %s", (dco_pro_id_fk,))
+        row = c.fetchone()
+        if not row:
+            raise ValueError(f"Producto {dco_pro_id_fk} no encontrado")
+        raise ValueError(f"Stock insuficiente para revertir compra de {dco_pro_id_fk}: "
+                         f"disponible {row[0] or 0}, solicitado {dco_cantidad}")
+
+    c.execute("SELECT pro_cantidad_disponible FROM t_producto WHERE pro_id = %s", (dco_pro_id_fk,))
+    nuevo_stock = c.fetchone()[0] or 0
+    stock_anterior = nuevo_stock + dco_cantidad
+
+    # ── 2. Descontar lote ──
+    if dco_lot_id_fk:
+        c.execute("SELECT lot_cantidad_actual FROM t_lote WHERE lot_id = %s", (dco_lot_id_fk,))
+        row_lote = c.fetchone()
+        if row_lote:
+            stock_lote_anterior = row_lote[0] or 0
+            nuevo_stock_lote = stock_lote_anterior - dco_cantidad
+            c.execute("UPDATE t_lote SET lot_cantidad_actual = %s WHERE lot_id = %s",
+                      (nuevo_stock_lote, dco_lot_id_fk))
+            if nuevo_stock_lote <= 0:
+                c.execute("UPDATE t_lote SET lot_estado = 'Agotado' WHERE lot_id = %s", (dco_lot_id_fk,))
+
+    # ── 3. Insertar movimiento de inventario (Salida) ──
+    inm_id = generarIdSiguiente('t_inventario_movimiento', 'inm_id', 'INM', 3)
+    c.execute("""
+        INSERT INTO t_inventario_movimiento
+            (inm_id, inm_tipo_movimiento, inm_pro_id_fk, inm_lot_id_fk, inm_cantidad,
+             inm_fecha, inm_motivo, inm_usu_id_fk)
+        VALUES (%s, 'Salida', %s, %s, %s, CURDATE(), %s, NULL)
+    """, (inm_id, dco_pro_id_fk, dco_lot_id_fk, dco_cantidad,
+          f"Reversion compra {dco_com_id_fk}"))
+
+    # ── 4. Insertar monitoria ──
+    mon_id = generarIdSiguiente('t_monitoria', 'mon_id', 'MON', 3)
+    c.execute("""
+        INSERT INTO t_monitoria
+            (mon_id, mon_pro_id_fk, mon_lot_id_fk, mon_inm_id_fk, mon_fecha, mon_tipo,
+             mon_cantidad, mon_saldo_anterior, mon_saldo_actual, mon_costo_unitario, mon_costo_total)
+        VALUES (%s, %s, %s, %s, CURDATE(), 'Salida', %s, %s, %s, %s, %s)
+    """, (mon_id, dco_pro_id_fk, dco_lot_id_fk, inm_id, dco_cantidad,
+          stock_anterior, nuevo_stock, dco_precio_compra, dco_subtotal))
+
+
+# ── CRUD principal ──
 
 def listarDetallesCompras(page=1, limit=50, q=None, order_by=None, **filters):
     c = current_app.mysql.connection.cursor()
@@ -23,23 +140,106 @@ def listarDetallesCompras(page=1, limit=50, q=None, order_by=None, **filters):
     result['data'] = lista
     return result
 
-def registrarDetallesCompras(DCO_ID, DCO_COM_ID_FK, DCO_PRO_ID_FK, DCO_LOT_ID_FK, DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL):
+
+def registrarDetallesCompras(DCO_ID, DCO_COM_ID_FK, DCO_PRO_ID_FK, DCO_LOT_ID_FK,
+                              DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL):
+    c = current_app.mysql.connection.cursor()
+    try:
+        current_app.mysql.connection.begin()
+
+        # 1. Ingresar al inventario (producto + lote + movimiento + monitoria)
+        _ingresarInventarioDesdeCompra(
+            c, DCO_PRO_ID_FK, DCO_LOT_ID_FK, DCO_CANTIDAD,
+            DCO_COM_ID_FK, DCO_PRECIO_COMPRA, DCO_SUBTOTAL
+        )
+
+        # 2. Insertar el detalle de compra
+        sql = """
+            INSERT INTO t_detalle_compra
+                (dco_id, dco_com_id_fk, dco_pro_id_fk, dco_lot_id_fk,
+                 dco_cantidad, dco_precio_compra, dco_subtotal)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        c.execute(sql, (DCO_ID, DCO_COM_ID_FK, DCO_PRO_ID_FK, DCO_LOT_ID_FK,
+                        DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL))
+
+        current_app.mysql.connection.commit()
+        c.close()
+        return detalles_compras(DCO_ID, DCO_COM_ID_FK, DCO_PRO_ID_FK, DCO_LOT_ID_FK,
+                                DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL).todic()
+    except Exception as e:
+        current_app.mysql.connection.rollback()
+        c.close()
+        raise e
+
+
+def editarDetallesCompras(DCO_ID, data):
     c = current_app.mysql.connection.cursor()
     sql = """
-        INSERT INTO t_detalle_compra (dco_id, dco_com_id_fk, dco_pro_id_fk, dco_lot_id_fk, dco_cantidad, dco_precio_compra, dco_subtotal) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        UPDATE t_detalle_compra
+        SET dco_com_id_fk=%s, dco_pro_id_fk=%s, dco_lot_id_fk=%s,
+            dco_cantidad=%s, dco_precio_compra=%s, dco_subtotal=%s
+        WHERE dco_id=%s
     """
-    c.execute(sql, (DCO_ID, DCO_COM_ID_FK, DCO_PRO_ID_FK, DCO_LOT_ID_FK, DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL))
+    c.execute(sql, (
+        data.get('dco_com_id_fk'), data.get('dco_pro_id_fk'), data.get('dco_lot_id_fk'),
+        data.get('dco_cantidad'), data.get('dco_precio_compra'), data.get('dco_subtotal'),
+        DCO_ID
+    ))
     current_app.mysql.connection.commit()
-    id = c.lastrowid
     c.close()
-    return detalles_compras(DCO_ID, DCO_COM_ID_FK, DCO_PRO_ID_FK, DCO_LOT_ID_FK, DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL).todic()
+    return {"mensaje": "Detalle de compra actualizado"}
 
-def editarDetallesCompras():
-    return
 
-def eliminarDetallesCompras():
-    return
+def eliminarDetallesCompras(DCO_ID):
+    c = current_app.mysql.connection.cursor()
+    try:
+        current_app.mysql.connection.begin()
 
-def buscarDetallesCompras():
-    return
+        # Obtener datos del detalle antes de eliminarlo para revertir inventario
+        c.execute("""
+            SELECT dco_com_id_fk, dco_pro_id_fk, dco_lot_id_fk,
+                   dco_cantidad, dco_precio_compra, dco_subtotal
+            FROM t_detalle_compra WHERE dco_id = %s
+        """, (DCO_ID,))
+        detalle = c.fetchone()
+
+        c.execute("DELETE FROM t_detalle_compra WHERE dco_id = %s", (DCO_ID,))
+
+        # Revertir inventario si el detalle existía
+        if detalle:
+            dco_com_id_fk, dco_pro_id_fk, dco_lot_id_fk, dco_cantidad, \
+                dco_precio_compra, dco_subtotal = detalle
+            _revertirIngresoInventario(
+                c, dco_pro_id_fk, dco_lot_id_fk, dco_cantidad,
+                dco_com_id_fk, dco_precio_compra, dco_subtotal
+            )
+
+        current_app.mysql.connection.commit()
+        return c.rowcount > 0
+    except Exception as e:
+        current_app.mysql.connection.rollback()
+        c.close()
+        raise e
+
+
+def buscarDetallesCompras(DCO_ID):
+    c = current_app.mysql.connection.cursor()
+    c.execute("""
+        SELECT dco_id, dco_com_id_fk, dco_pro_id_fk, dco_lot_id_fk,
+               dco_cantidad, dco_precio_compra, dco_subtotal
+        FROM t_detalle_compra WHERE dco_id = %s
+    """, (DCO_ID,))
+    row = c.fetchone()
+    c.close()
+    if row:
+        return {
+            "dco_id": row[0],
+            "dco_com_id_fk": row[1],
+            "dco_pro_id_fk": row[2],
+            "dco_lot_id_fk": row[3],
+            "dco_cantidad": row[4],
+            "dco_precio_compra": float(row[5]) if row[5] else None,
+            "dco_subtotal": float(row[6]) if row[6] else None
+        }
+    return None

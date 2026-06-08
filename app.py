@@ -97,6 +97,10 @@ with app.app_context():
 
 cargarruta(app)
 
+# ── Iniciar scheduler de tareas automáticas ──
+from scheduler import iniciar_scheduler
+iniciar_scheduler(app)
+
 # ── Servir el frontend build desde Flask ──
 FRONTEND_DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Frontend', 'dist')
 if os.path.isdir(FRONTEND_DIST):

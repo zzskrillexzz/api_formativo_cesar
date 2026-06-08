@@ -1,5 +1,8 @@
 from flask import jsonify, request, current_app
-from services.detalles_compras_service import listarDetallesCompras, registrarDetallesCompras
+from services.detalles_compras_service import (
+    listarDetallesCompras, registrarDetallesCompras,
+    buscarDetallesCompras, editarDetallesCompras, eliminarDetallesCompras
+)
 from utils.error_handler import safe_controller
 
 @safe_controller
@@ -69,4 +72,38 @@ def cnregistrardetallescompras():
         data["dco_id"], data["dco_com_id_fk"], data["dco_pro_id_fk"],
         data["dco_lot_id_fk"], data["dco_cantidad"], data["dco_precio_compra"], data["dco_subtotal"]
     )
-    return jsonify({"mensaje": "Detalle de compra registrado correctamente", "datos": resultado}), 201
+    return jsonify({"mensaje": "Detalle de compra registrado correctamente (inventario actualizado)", "datos": resultado}), 201
+
+
+@safe_controller
+def cnbuscadetallescompras(DCO_ID):
+    resultado = buscarDetallesCompras(DCO_ID)
+    if resultado is None:
+        return jsonify({"mensaje": f"No se encontró el detalle de compra con ID {DCO_ID}"}), 404
+    return jsonify(resultado), 200
+
+
+@safe_controller
+def cneditardetallescompras(DCO_ID):
+    data = request.get_json()
+    if not data:
+        return jsonify({"mensaje": "No se enviaron datos JSON"}), 400
+
+    if not buscarDetallesCompras(DCO_ID):
+        return jsonify({"mensaje": f"No se encontró el detalle de compra con ID {DCO_ID}"}), 404
+
+    resultado = editarDetallesCompras(DCO_ID, data)
+    return jsonify(resultado), 200
+
+
+@safe_controller
+def cneliminardetallescompras(DCO_ID):
+    if not buscarDetallesCompras(DCO_ID):
+        return jsonify({"mensaje": f"No se encontró el detalle de compra con ID {DCO_ID}"}), 404
+
+    try:
+        if eliminarDetallesCompras(DCO_ID):
+            return jsonify({"mensaje": f"Detalle de compra {DCO_ID} eliminado (inventario revertido)"}), 200
+        return jsonify({"mensaje": "No se pudo eliminar el detalle de compra"}), 500
+    except ValueError as e:
+        return jsonify({"mensaje": str(e)}), 400

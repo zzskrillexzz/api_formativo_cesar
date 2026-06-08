@@ -36,11 +36,42 @@ def registrarAlertasVencimientos(ALV_ID, ALV_PRO_ID_FK, ALV_LOT_ID_FK, ALV_FECHA
     c.close()
     return alertas_vencimientos(ALV_ID, ALV_PRO_ID_FK, ALV_LOT_ID_FK, ALV_FECHA_GENERACION, ALV_FECHA_VENCIMIENTO, ALV_DIAS_RESTANTES, ALV_ESTADO, ALV_USU_ID_FK).todic()
 
-def editarAlertasVencimientos():
-    return
+def editarAlertasVencimientos(ALV_ID, data):
+    c = current_app.mysql.connection.cursor()
+    sql = """
+        UPDATE t_alerta_vencimiento
+        SET alv_estado=%s, alv_usu_id_fk=%s
+        WHERE alv_id=%s
+    """
+    c.execute(sql, (data.get('alv_estado', 'Pendiente'), data.get('alv_usu_id_fk'), ALV_ID))
+    current_app.mysql.connection.commit()
+    c.close()
+    return {"mensaje": "Alerta actualizada"}
 
-def eliminarAlertasVencimientos():
-    return
 
-def buscarAlertasVencimientos():
-    return
+def eliminarAlertasVencimientos(ALV_ID):
+    c = current_app.mysql.connection.cursor()
+    c.execute("DELETE FROM t_alerta_vencimiento WHERE alv_id = %s", (ALV_ID,))
+    current_app.mysql.connection.commit()
+    c.close()
+    return {"mensaje": "Alerta eliminada"}
+
+
+def buscarAlertasVencimientos(ALV_ID):
+    c = current_app.mysql.connection.cursor()
+    c.execute("""
+        SELECT alv_id, alv_pro_id_fk, alv_lot_id_fk, alv_fecha_generacion,
+               alv_fecha_vencimiento, alv_dias_restantes, alv_estado, alv_usu_id_fk
+        FROM t_alerta_vencimiento WHERE alv_id = %s
+    """, (ALV_ID,))
+    row = c.fetchone()
+    c.close()
+    if row:
+        return {
+            "alv_id": row[0], "alv_pro_id_fk": row[1], "alv_lot_id_fk": row[2],
+            "alv_fecha_generacion": str(row[3]) if row[3] else None,
+            "alv_fecha_vencimiento": str(row[4]) if row[4] else None,
+            "alv_dias_restantes": row[5], "alv_estado": row[6],
+            "alv_usu_id_fk": row[7]
+        }
+    return None

@@ -528,7 +528,8 @@ CREATE TABLE `t_rol` (
 insert  into `t_rol`(`rol_id`,`rol_nombre`,`rol_descripcion`,`rol_estado`) values 
 ('ROL001','Administrador','Acceso total al sistema, gestion de usuarios y configuracion',1),
 ('ROL002','Vendedor','Gestion de ventas, pedidos y facturacion',1),
-('ROL003','Bodeguero','Gestion de inventario, compras y lotes',1);
+('ROL003','Bodeguero','Gestion de inventario, compras y lotes',1),
+('ROL004','Gerente','Visualizacion de reportes e indicadores',1);
 
 /*Table structure for table `t_sesion` */
 
