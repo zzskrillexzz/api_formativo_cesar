@@ -134,7 +134,7 @@ const Reportes = () => {
           </div>
           {/* Tabla resumen */}
           {masVendidos.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden card-hover">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden card-hover">
               <div className="p-4 border-b border-slate-100">
                 <h4 className="font-bold text-xs text-slate-500 uppercase tracking-wider">Detalle</h4>
               </div>
@@ -147,7 +147,7 @@ const Reportes = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-50 font-bold text-slate-600">
                   {masVendidos.map((item, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
+                    <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-6 py-3">{item.nombre || item.producto_id}</td>
                       <td className="px-6 py-3 text-right text-emerald-600">{item.total_vendido}</td>
                     </tr>
@@ -181,7 +181,7 @@ const Reportes = () => {
           </div>
           {/* Tabla detalle */}
           {reportes.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden card-hover">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden card-hover">
               <div className="p-4 border-b border-slate-100">
                 <h4 className="font-bold text-xs text-slate-500 uppercase tracking-wider">Ultimos reportes</h4>
               </div>
@@ -196,7 +196,7 @@ const Reportes = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-50 font-bold text-slate-600">
                   {reportes.slice(0, 20).map((r, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
+                    <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-6 py-3">
                         <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-bold uppercase">{r.tipo || '-'}</span>
                       </td>
@@ -271,7 +271,7 @@ const Reportes = () => {
           </div>
           {/* Tabla detalle */}
           {anulaciones.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden card-hover">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden card-hover">
               <div className="p-4 border-b border-slate-100">
                 <h4 className="font-bold text-xs text-slate-500 uppercase tracking-wider">Registro de anulaciones</h4>
               </div>
@@ -286,7 +286,7 @@ const Reportes = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-50 font-bold text-slate-600">
                   {anulaciones.slice(0, 20).map((a, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
+                    <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-6 py-3 text-slate-400 text-xs">{a.factura_id || a.id}</td>
                       <td className="px-6 py-3">{a.motivo || '-'}</td>
                       <td className="px-6 py-3 text-slate-400 text-xs">{a.fecha || '-'}</td>

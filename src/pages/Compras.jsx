@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Truck, Package, Search, Plus, X, RefreshCw, Loader2, Edit3, Trash2, FileText, Download } from 'lucide-react';
+import { Truck, Package, Search, Plus, X, RefreshCw, Loader2, Edit3, Trash2, FileText, Download, Eye } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { comprasService } from '../api/services/comprasService';
@@ -34,6 +34,11 @@ const Compras = () => {
   const [formData, setFormData] = useState({});
   const [editData, setEditData] = useState({});
   const [comprobanteFile, setComprobanteFile] = useState(null);
+  const [showEditProveedorModal, setShowEditProveedorModal] = useState(false);
+  const [editProveedorData, setEditProveedorData] = useState({});
+  const [showViewProveedorModal, setShowViewProveedorModal] = useState(false);
+  const [viewProveedorData, setViewProveedorData] = useState(null);
+  const [confirmDeleteProveedor, setConfirmDeleteProveedor] = useState(null);
   const { user } = useAuth();
 
   const fetchData = async () => {
@@ -261,6 +266,71 @@ const Compras = () => {
     }
   };
 
+  const openEditProveedorModal = async (prov) => {
+    setFormError('');
+    setEditProveedorData({
+      id: prov.prov_id,
+      nit: prov.prov_nit,
+      nombre: prov.prov_nombre,
+      tipo: prov.prov_tipo,
+      contacto: prov.prov_contacto,
+      direccion: prov.prov_direccion,
+      email: prov.prov_email
+    });
+    formSnapshotRef.current = JSON.parse(JSON.stringify(prov));
+    setShowEditProveedorModal(true);
+  };
+
+  const handleEditProveedorChange = (e) => {
+    const { name, value } = e.target;
+    const max = FIELD_LIMITS[name];
+    if (max && value.length > max) return;
+    setEditProveedorData({ ...editProveedorData, [name]: value });
+  };
+
+  const handleEditProveedor = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    if (!editProveedorData.nit || !editProveedorData.nombre || !editProveedorData.tipo || !editProveedorData.contacto || !editProveedorData.email) {
+      setFormError('Todos los campos son obligatorios');
+      return;
+    }
+    setFormSubmitting(true);
+    try {
+      await proveedoresService.editar(editProveedorData.id, editProveedorData);
+      setShowEditProveedorModal(false);
+      fetchData();
+    } catch (err) {
+      setFormError(err.response?.data?.mensaje || 'Error al actualizar proveedor');
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const handleDeleteProveedor = async () => {
+    if (!confirmDeleteProveedor) return;
+    setFormSubmitting(true);
+    try {
+      await proveedoresService.eliminar(confirmDeleteProveedor);
+      setConfirmDeleteProveedor(null);
+      fetchData();
+    } catch (err) {
+      setFormError(err.response?.data?.mensaje || 'Error al eliminar proveedor');
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const openViewProveedorModal = async (prov) => {
+    try {
+      const detalle = await proveedoresService.buscar(prov.prov_id);
+      setViewProveedorData(detalle);
+      setShowViewProveedorModal(true);
+    } catch (_) {
+      setFormError('Error al cargar datos del proveedor');
+    }
+  };
+
   const handleSubmitProveedor = async (e) => {
     e.preventDefault();
     setFormError('');
@@ -386,7 +456,7 @@ const Compras = () => {
       {/* Compras */}
       {tab === 'compras' && (
         <>
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden card-hover">
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden card-hover">
           {/* ── Tarjetas resumen ── */}
           <div className="grid grid-cols-4 gap-2 px-5 pt-4 pb-2">
             {(() => {
@@ -429,7 +499,7 @@ const Compras = () => {
                   <tr><td colSpan="7" className="px-5 py-12 text-center text-slate-400">{searchTerm ? 'Sin resultados' : 'No hay compras registradas'}</td></tr>
                 ) : (
                   paginatedCompras.map((c, i) => (
-                    <tr key={i} className="hover:bg-slate-50 group">
+                    <tr key={i} className="hover:bg-orange-100/70 group">
                       <td className="px-5 py-3 text-slate-400 text-xs">{c.comp_id}</td>
                       <td className="px-5 py-3">{c.comp_fecha || '-'}</td>
                       <td className="px-5 py-3">
@@ -498,7 +568,7 @@ const Compras = () => {
 
       {/* Proveedores */}
       {tab === 'proveedores' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden card-hover">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden card-hover">
           {/* ── Filtros de proveedores ── */}
           <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
             <select
@@ -559,20 +629,37 @@ const Compras = () => {
                   <th className="px-5 py-3">Tipo</th>
                   <th className="px-5 py-3">Contacto</th>
                   <th className="px-5 py-3">Email</th>
+                  <th className="px-5 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 text-sm font-medium text-slate-600">
                 {filteredProveedores.length === 0 ? (
-                  <tr><td colSpan="6" className="px-5 py-12 text-center text-slate-400">{searchTerm ? 'Sin resultados' : 'No hay proveedores registrados'}</td></tr>
+                  <tr><td colSpan="7" className="px-5 py-12 text-center text-slate-400">{searchTerm ? 'Sin resultados' : 'No hay proveedores registrados'}</td></tr>
                 ) : (
                   paginatedProveedores.map((p, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
+                    <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-5 py-3 text-slate-400 text-xs">{p.prov_id}</td>
                       <td className="px-5 py-3">{p.prov_nombre}</td>
                       <td className="px-5 py-3 text-slate-400">{p.prov_nit || '-'}</td>
                       <td className="px-5 py-3"><span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-500">{p.prov_tipo || '-'}</span></td>
                       <td className="px-5 py-3">{p.prov_contacto || '-'}</td>
                       <td className="px-5 py-3 text-slate-400 text-xs">{p.prov_email || '-'}</td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button onClick={() => openViewProveedorModal(p)} title="Ver detalles"
+                            className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                            <Eye size={15} />
+                          </button>
+                          <button onClick={() => openEditProveedorModal(p)} title="Editar proveedor"
+                            className="p-1.5 rounded-md text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors">
+                            <Edit3 size={15} />
+                          </button>
+                          <button onClick={() => setConfirmDeleteProveedor(p.prov_id)} title="Eliminar proveedor"
+                            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -788,6 +875,120 @@ const Compras = () => {
         </div>
       )}
 
+      {/* Modal Editar Proveedor */}
+      {showEditProveedorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditProveedorModal(false)} />
+          <div ref={focusTrapRef} className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-800">Editar Proveedor {editProveedorData.id}</h3>
+              <button onClick={() => setShowEditProveedorModal(false)} className="p-2 hover:bg-slate-100 rounded-md transition-colors"><X size={18} className="text-slate-400" /></button>
+            </div>
+            <form onSubmit={handleEditProveedor} className="p-5 space-y-4">
+              {formError && <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-md border border-red-100">{formError}</div>}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID</label>
+                  <input name="id" value={editProveedorData.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">NIT</label>
+                  <input name="nit" value={editProveedorData.nit || ''} onChange={handleEditProveedorChange}
+                    className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre</label>
+                <input name="nombre" value={editProveedorData.nombre || ''} onChange={handleEditProveedorChange}
+                  className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo</label>
+                <select name="tipo" value={editProveedorData.tipo || ''} onChange={handleEditProveedorChange}
+                  className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                  <option value="Laboratorio">Laboratorio</option>
+                  <option value="Distribuidor">Distribuidor</option>
+                  <option value="Importador">Importador</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Contacto</label>
+                  <input name="contacto" value={editProveedorData.contacto || ''} onChange={handleEditProveedorChange}
+                    className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección</label>
+                  <input name="direccion" value={editProveedorData.direccion || ''} onChange={handleEditProveedorChange}
+                    className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email</label>
+                <input name="email" type="email" value={editProveedorData.email || ''} onChange={handleEditProveedorChange}
+                  className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+              </div>
+
+              <button type="submit" disabled={formSubmitting || Object.keys(errors).length > 0}
+                className="w-full bg-blue-600 text-white font-bold py-3 rounded-md text-sm uppercase tracking-wider hover:bg-blue-700 disabled:bg-slate-300 transition-all flex items-center justify-center gap-2">
+                {formSubmitting ? <Loader2 className="animate-spin" size={16} /> : null}
+                Guardar Cambios
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ver Proveedor */}
+      {showViewProveedorModal && viewProveedorData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setShowViewProveedorModal(false); setViewProveedorData(null); }} />
+          <div className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-800">Detalle del Proveedor</h3>
+              <button onClick={() => { setShowViewProveedorModal(false); setViewProveedorData(null); }} className="p-2 hover:bg-slate-100 rounded-md transition-colors"><X size={18} className="text-slate-400" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">ID</p>
+                  <p className="text-sm font-bold text-slate-700 mt-0.5">{viewProveedorData.prov_id}</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">NIT</p>
+                  <p className="text-sm font-bold text-slate-700 mt-0.5">{viewProveedorData.prov_nit || '-'}</p>
+                </div>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nombre</p>
+                <p className="text-sm font-bold text-slate-700 mt-0.5">{viewProveedorData.prov_nombre || '-'}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tipo</p>
+                  <p className="text-sm font-bold text-slate-700 mt-0.5">
+                    <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase bg-slate-200 text-slate-600">{viewProveedorData.prov_tipo || '-'}</span>
+                  </p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Contacto</p>
+                  <p className="text-sm font-bold text-slate-700 mt-0.5">{viewProveedorData.prov_contacto || '-'}</p>
+                </div>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dirección</p>
+                <p className="text-sm font-bold text-slate-700 mt-0.5">{viewProveedorData.prov_direccion || '-'}</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Email</p>
+                <p className="text-sm font-bold text-slate-700 mt-0.5">{viewProveedorData.prov_email || '-'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Vista Previa Comprobante */}
       {showComprobanteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -825,13 +1026,24 @@ const Compras = () => {
         </div>
       )}
 
-      {/* Confirmación de eliminación */}
+      {/* Confirmación de eliminación — Compra */}
       <ConfirmModal
         open={!!confirmDelete}
         title="Eliminar Compra"
         message={`¿Está seguro de eliminar la compra ${confirmDelete}? Esta acción no se puede deshacer.`}
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(null)}
+        confirmText="Eliminar"
+        danger
+      />
+
+      {/* Confirmación de eliminación — Proveedor */}
+      <ConfirmModal
+        open={!!confirmDeleteProveedor}
+        title="Eliminar Proveedor"
+        message={`¿Está seguro de eliminar el proveedor ${confirmDeleteProveedor}? Esta acción no se puede deshacer.`}
+        onConfirm={handleDeleteProveedor}
+        onCancel={() => setConfirmDeleteProveedor(null)}
         confirmText="Eliminar"
         danger
       />

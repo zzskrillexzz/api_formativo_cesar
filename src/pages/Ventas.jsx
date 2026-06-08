@@ -796,7 +796,7 @@ const Ventas = () => {
 
       {/* TAB: Pedidos */}
       {tab === 'pedidos' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden">
           {/* ── Tarjetas resumen ── */}
           <div className="grid grid-cols-6 gap-2 px-6 pt-4 pb-2">
             {(() => {
@@ -846,7 +846,7 @@ const Ventas = () => {
                   </tr>
                 ) : (
                   paginatedPedidos.map((p, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
+                    <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-6 py-4 text-slate-400 text-xs">{p.ped_id}</td>
                       <td className="px-6 py-4">{p.ped_cli_id_fk || '-'}</td>
                       <td className="px-6 py-4 text-slate-400">{p.ped_fecha || '-'}</td>
@@ -991,7 +991,7 @@ const Ventas = () => {
 
       {/* TAB: Facturas */}
       {tab === 'facturas' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden">
           {/* ── Tarjetas resumen ── */}
           <div className="grid grid-cols-3 gap-2 px-6 pt-4 pb-2">
             {(() => {
@@ -1038,7 +1038,7 @@ const Ventas = () => {
                   </tr>
                 ) : (
                   paginatedFacturas.map((f, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
+                    <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-6 py-4 text-slate-400 text-xs">{f.id}</td>
                       <td className="px-6 py-4">
                         <div className="text-xs">
@@ -1090,7 +1090,7 @@ const Ventas = () => {
 
       {/* TAB: Clientes */}
       {tab === 'clientes' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden">
           {/* ── Filtros de clientes ── */}
           <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
             <select
@@ -1164,7 +1164,7 @@ const Ventas = () => {
                   </tr>
                 ) : (
                   paginatedClientes.map((c, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
+                    <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-6 py-4 text-slate-400 text-xs">{c.cli_id}</td>
                       <td className="px-6 py-4">{c.cli_nombre}</td>
                       <td className="px-6 py-4">{c.cli_apellido || '-'}</td>

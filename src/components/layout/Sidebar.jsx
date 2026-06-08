@@ -45,7 +45,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                 : 'text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >
-              <item.icon size={16} strokeWidth={2} />
+              <item.icon size={16} strokeWidth={2} className={activeTab === item.id ? 'text-orange-400' : ''} />
               {item.label}
             </button>
           )

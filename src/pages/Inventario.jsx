@@ -568,7 +568,7 @@ const Inventario = () => {
 
       {/* TAB: Productos */}
       {tab === 'productos' && (
-        <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden">
           {/* ── Filtros de productos ── */}
           <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
             <select
@@ -651,7 +651,7 @@ const Inventario = () => {
                   </tr>
                 ) : (
                   paginatedProductos.map((p, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
+                    <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-6 py-4 text-slate-400 text-xs">{p.id}</td>
                       <td className="px-6 py-4">{p.nombre}</td>
                       <td className="px-6 py-4 text-slate-400">{p.categoria || '-'}</td>
@@ -707,8 +707,78 @@ const Inventario = () => {
 
       {/* TAB: Lotes */}
       {tab === 'lotes' && (
-        <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-
+        <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden">
+          {/* ── Filtros de lotes ── */}
+          <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="text-xs border border-slate-300 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm font-medium text-slate-600"
+            >
+              <option value="">Todos los estados</option>
+              <option value="Activo">Activo</option>
+              <option value="Agotado">Agotado</option>
+              <option value="Vencido">Vencido</option>
+              <option value="Cuarentena">Cuarentena</option>
+              <option value="__proximos__">⚠ Próximos a vencer</option>
+            </select>
+            <select
+              value={filtroProducto}
+              onChange={(e) => setFiltroProducto(e.target.value)}
+              className="text-xs border border-slate-300 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm font-medium text-slate-600"
+            >
+              <option value="">Todos los productos</option>
+              {productos.map(p => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
+            </select>
+            {(filtroEstado || filtroProducto) && (
+              <button
+                onClick={() => { setFiltroEstado(''); setFiltroProducto(''); }}
+                className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-500 transition-colors px-2"
+              >
+                ✕ Limpiar filtros
+              </button>
+            )}
+          </div>
+          {/* ── Tarjetas resumen ── */}
+          {(() => {
+            const activos = lotes.filter(l => l.lot_estado === 'Activo').length;
+            const agotados = lotes.filter(l => l.lot_estado === 'Agotado').length;
+            const vencidos = lotes.filter(l => l.lot_estado === 'Vencido').length;
+            const cuarentena = lotes.filter(l => l.lot_estado === 'Cuarentena').length;
+            const proximos = lotes.filter(l =>
+              l.lot_estado === 'Activo' &&
+              getDiasRestantes(l.lot_fecha_vencimiento) !== null &&
+              getDiasRestantes(l.lot_fecha_vencimiento) >= 0 &&
+              getDiasRestantes(l.lot_fecha_vencimiento) <= 30
+            ).length;
+            const cards = [
+              { label: 'Todos', count: lotes.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
+              { label: 'Activos', count: activos, icon: '✅', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Activo' },
+              { label: 'Agotados', count: agotados, icon: '⛔', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'Agotado' },
+              { label: 'Vencidos', count: vencidos, icon: '🚫', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Vencido' },
+              { label: 'Cuarentena', count: cuarentena, icon: '⚠️', color: 'border-orange-200 bg-orange-50/50', text: 'text-orange-700', filtro: 'Cuarentena' },
+              { label: 'Próx. vencer', count: proximos, icon: '⏳', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', filtro: '__proximos__' },
+            ];
+            return (
+              <div className="grid grid-cols-6 gap-2 px-6 pt-4 pb-2">
+                {cards.map((c, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setFiltroEstado(c.filtro)}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${c.color} transition-all hover:shadow-md ${filtroEstado === c.filtro ? 'ring-2 ring-blue-400 scale-[1.03]' : ''}`}
+                  >
+                    <span className="text-lg">{c.icon}</span>
+                    <div className="text-left">
+                      <div className={`text-base font-black ${c.text}`}>{c.count}</div>
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
           <div className="overflow-x-auto">
             <table className="w-full text-left table-animate">
               <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
@@ -745,7 +815,7 @@ const Inventario = () => {
                     const pctConsumo = l.lot_cantidad_inicial > 0 ? Math.round((consumido / l.lot_cantidad_inicial) * 100) : 0;
                     const barColor = pctConsumo >= 90 ? 'bg-red-400' : pctConsumo >= 50 ? 'bg-amber-400' : 'bg-emerald-400';
                     return (
-                    <tr key={i} className="hover:bg-slate-50">
+                    <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-6 py-4 text-slate-400 text-xs">{l.lot_id}</td>
                       <td className="px-6 py-4">{l.lot_numero}</td>
                       <td className="px-6 py-4">
@@ -843,7 +913,7 @@ const Inventario = () => {
 
       {/* TAB: Movimientos */}
       {tab === 'movimientos' && (
-        <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="animate-in fade-in duration-300 bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-orange-400 overflow-hidden">
           {/* ── Filtros ── */}
           <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-100 bg-slate-50/30 flex-wrap">
             <select
@@ -942,7 +1012,7 @@ const Inventario = () => {
                   </tr>
                 ) : (
                   monitorias.map((m, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
+                    <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-6 py-4 text-slate-400 text-xs">{m.mon_id}</td>
                       <td className="px-6 py-4">
                         {(() => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { TrendingUp, Box, Clock, Truck, Activity, Package, AlertTriangle, ArrowUpRight, ArrowDownRight, Users, BarChart3, Table2 } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { MetricCard } from '../components/dashboard/MetricCard';
+import { useAuth } from '../context/AuthContext';
 import { productosService } from '../api/services/productosService';
 import { proveedoresService } from '../api/services/proveedoresService';
 import { alertasService } from '../api/services/alertasService';
@@ -16,6 +17,7 @@ import {
 } from 'recharts';
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [productos, setProductos] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [alertas, setAlertas] = useState([]);
@@ -26,6 +28,8 @@ const Dashboard = () => {
   const [compras, setCompras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCharts, setShowCharts] = useState(true);
+  const [clickCount, setClickCount] = useState(0);
+  const [showEgg, setShowEgg] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -173,9 +177,25 @@ const Dashboard = () => {
       {/* ── Encabezado ── */}
       <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 rounded-xl px-6 py-5 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">
-            {saludo} 👋
+          <h1
+            className="text-2xl font-extrabold text-white tracking-tight cursor-pointer select-none"
+            onClick={() => {
+              const nuevo = clickCount + 1;
+              setClickCount(nuevo);
+              if (nuevo >= 5) {
+                setShowEgg(true);
+                setClickCount(0);
+                setTimeout(() => setShowEgg(false), 3000);
+              }
+            }}
+          >
+            {saludo}, {user?.name || 'Usuario'} 👋
           </h1>
+          {showEgg && (
+            <p className="text-sm text-yellow-200 font-bold animate-bounce mt-1">
+              🥚 ¡Eres un crack de los clicks! Ahora ve a hacer algo productivo 😂
+            </p>
+          )}
           <p className="text-sm text-blue-100 font-medium capitalize first-letter:capitalize">
             {fecha} &middot; Panel de Control
           </p>
@@ -326,7 +346,7 @@ const Dashboard = () => {
                       const barWidth = Math.min((row.dias_restantes / 90) * 100, 100);
 
                       return (
-                        <tr key={i} className="hover:bg-slate-50/80 transition-colors">
+                        <tr key={i} className="hover:bg-orange-100/70 transition-colors">
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-2">
                               <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
@@ -702,7 +722,7 @@ const Dashboard = () => {
                   </tr>
                 ) : (
                   ultimosMovimientos.map((m, i) => (
-                    <tr key={i} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={i} className="hover:bg-orange-100/70 transition-colors">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
@@ -775,7 +795,7 @@ const Dashboard = () => {
                     const color = l.dias <= 0 ? 'text-red-600' : l.dias <= 30 ? 'text-red-500' : l.dias <= 60 ? 'text-amber-500' : 'text-emerald-500';
                     const barColor = l.dias <= 0 ? 'bg-red-400' : l.dias <= 30 ? 'bg-red-400' : l.dias <= 60 ? 'bg-amber-400' : 'bg-emerald-400';
                     return (
-                      <tr key={i} className="hover:bg-slate-50">
+                      <tr key={i} className="hover:bg-orange-100/70">
                         <td className="px-5 py-2.5 text-slate-400">{l.lot_numero || l.lot_id}</td>
                         <td className="px-5 py-2.5">{prod ? prod.nombre : l.lot_pro_id_fk}</td>
                         <td className="px-5 py-2.5 text-right font-bold">{l.lot_cantidad_actual || 0}</td>
