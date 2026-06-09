@@ -131,7 +131,7 @@ const Dashboard = () => {
     todasLasAlertas.slice(0, 10).map(a => {
       const prod = productos.find(p => p.id === a.producto_id);
       return {
-        name: prod ? prod.nombre.split(' ').slice(0, 3).join(' ') : `ID#${a.producto_id}`,
+        name: prod?.nombre ? prod.nombre.split(' ').slice(0, 3).join(' ') : `ID#${a.producto_id}`,
         dias: a.dias_restantes,
         isCritico: a.dias_restantes <= 30,
         isAlerta: a.dias_restantes > 30 && a.dias_restantes <= 60,
