@@ -34,53 +34,24 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const token = sessionStorage.getItem('access_token');
-
-        // Intentar endpoint agregado primero
-        const res = await fetch(`${apiUrl}/dashboard/resumen`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-
-          // Poblar estados desde la respuesta agregada
-          setProductos(Array(data.productos.total).fill({})); // solo necesitamos counts
-          setProveedores(Array(data.proveedores.total).fill({}));
-          setAlertas(Array(data.alertas_pendientes).fill({}));
-          setMasVendidos(data.top_vendidos || []);
-          setMonitorias(data.ultimos_movimientos || []);
-          setLotes([]);
-          setPedidos(Array(data.pedidos.activos).fill({ ped_estado_entrega: 'Pendiente' }));
-          setCompras([
-            ...Array(data.compras.pendientes || 0).fill({ comp_estado: 'Pendiente' }),
-            ...Array(data.compras.recibidas || 0).fill({ comp_estado: 'Recibida' })
-          ]);
-
-          // Guardar métricas extra
-          window.__dashboardCache = data;
-        } else {
-          // Fallback: cargar individualmente (8 llamadas)
-          const [prods, provs, alts, top, mons, lots, peds, comps] = await Promise.all([
-            productosService.listar().catch(() => []),
-            proveedoresService.listar().catch(() => []),
-            alertasService.listar().catch(() => []),
-            masVendidosService.listar().catch(() => []),
-            monitoriasService.listar().catch(() => ({ data: [], total: 0 })),
-            lotesService.listar().catch(() => []),
-            pedidosService.listar().catch(() => []),
-            comprasService.listar().catch(() => [])
-          ]);
-          setProductos(prods);
-          setProveedores(provs);
-          setAlertas(alts);
-          setMasVendidos(top);
-          setMonitorias(Array.isArray(mons) ? mons : (mons.data || []));
-          setLotes(lots);
-          setPedidos(peds);
-          setCompras(comps);
-        }
+        const [prods, provs, alts, top, mons, lots, peds, comps] = await Promise.all([
+          productosService.listar().catch(() => []),
+          proveedoresService.listar().catch(() => []),
+          alertasService.listar().catch(() => []),
+          masVendidosService.listar().catch(() => []),
+          monitoriasService.listar().catch(() => ({ data: [], total: 0 })),
+          lotesService.listar().catch(() => []),
+          pedidosService.listar().catch(() => []),
+          comprasService.listar().catch(() => [])
+        ]);
+        setProductos(prods);
+        setProveedores(provs);
+        setAlertas(alts);
+        setMasVendidos(top);
+        setMonitorias(Array.isArray(mons) ? mons : (mons.data || []));
+        setLotes(lots);
+        setPedidos(peds);
+        setCompras(comps);
       } catch (_) {
       } finally {
         setLoading(false);
@@ -160,9 +131,9 @@ const Dashboard = () => {
   const stockOptimo = totalProductos - stockBajo.length - stockMedio;
 
   const stockPieData = useMemo(() => [
-    { name: 'Stock Bajo', value: Math.max(stockBajo.length, 0), color: '#ef4444' },
-    { name: 'Stock Medio', value: Math.max(stockMedio, 0), color: '#f59e0b' },
-    { name: 'Stock Óptimo', value: Math.max(stockOptimo, 0), color: '#10b981' },
+    { name: 'Stock Bajo', value: Math.max(stockBajo.length, 0), color: 'url(#pieRed)' },
+    { name: 'Stock Medio', value: Math.max(stockMedio, 0), color: 'url(#pieAmber)' },
+    { name: 'Stock Óptimo', value: Math.max(stockOptimo, 0), color: 'url(#pieOrange)' },
   ], [stockBajo, stockMedio, stockOptimo]);
 
   const movimientosChartData = useMemo(() => {
@@ -177,7 +148,7 @@ const Dashboard = () => {
   }, [monitorias]);
 
   // ── Colores pastel para barras del top ──
-  const TOP_COLORS = ['#f59e0b', '#94a3b8', '#d97706', '#60a5fa', '#818cf8'];
+  const TOP_COLORS = ['url(#gradTop1)', 'url(#gradTop2)', 'url(#gradTop3)', 'url(#gradTop4)', 'url(#gradTop5)'];
 
   const today = new Date();
   const fecha = today.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -292,7 +263,22 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={showCharts ? 200 : 280}>
-                  <BarChart data={alertasChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                  <BarChart data={alertasChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }} animationBegin={0} animationDuration={800} animationEasing="ease-out">
+                    <defs>
+                      <linearGradient id="gradEmerald" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34d399" />
+                        <stop offset="50%" stopColor="#10b981" />
+                        <stop offset="100%" stopColor="#059669" />
+                      </linearGradient>
+                      <linearGradient id="gradRed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f87171" />
+                        <stop offset="100%" stopColor="#dc2626" />
+                      </linearGradient>
+                      <linearGradient id="gradAmber" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#fbbf24" />
+                        <stop offset="100%" stopColor="#d97706" />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis
                       dataKey="name"
@@ -315,11 +301,11 @@ const Dashboard = () => {
                       formatter={(value) => [`${value} días`, 'Días restantes']}
                       labelFormatter={(label) => `Producto: ${label}`}
                     />
-                    <Bar dataKey="dias" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                    <Bar dataKey="dias" radius={[4, 4, 0, 0]} maxBarSize={40} isAnimationActive={true}>
                       {alertasChartData.map((entry, idx) => (
                         <Cell
                           key={idx}
-                          fill={entry.isCritico ? '#ef4444' : entry.isAlerta ? '#f59e0b' : '#10b981'}
+                          fill={entry.isCritico ? 'url(#gradRed)' : entry.isAlerta ? 'url(#gradAmber)' : 'url(#gradEmerald)'}
                         />
                       ))}
                     </Bar>
@@ -440,7 +426,32 @@ const Dashboard = () => {
                       data={topVendidosData}
                       layout="vertical"
                       margin={{ top: 5, right: 20, left: 5, bottom: 5 }}
+                      animationBegin={0}
+                      animationDuration={800}
+                      animationEasing="ease-out"
                     >
+                      <defs>
+                        <linearGradient id="gradTop1" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#fbbf24" />
+                          <stop offset="100%" stopColor="#d97706" />
+                        </linearGradient>
+                        <linearGradient id="gradTop2" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#cbd5e1" />
+                          <stop offset="100%" stopColor="#64748b" />
+                        </linearGradient>
+                        <linearGradient id="gradTop3" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#fb923c" />
+                          <stop offset="100%" stopColor="#ea580c" />
+                        </linearGradient>
+                        <linearGradient id="gradTop4" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#60a5fa" />
+                          <stop offset="100%" stopColor="#2563eb" />
+                        </linearGradient>
+                        <linearGradient id="gradTop5" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#a78bfa" />
+                          <stop offset="100%" stopColor="#6d28d9" />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
                       <XAxis type="number" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
                       <YAxis
@@ -455,7 +466,7 @@ const Dashboard = () => {
                         contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
                         formatter={(value) => [`${value} unidades`, 'Vendido']}
                       />
-                      <Bar dataKey="vendido" radius={[0, 4, 4, 0]} maxBarSize={20}>
+                      <Bar dataKey="vendido" radius={[0, 4, 4, 0]} maxBarSize={20} isAnimationActive={true}>
                         {topVendidosData.map((_, idx) => (
                           <Cell key={idx} fill={TOP_COLORS[idx % TOP_COLORS.length]} />
                         ))}
@@ -524,7 +535,22 @@ const Dashboard = () => {
               <div className="p-4">
                 {totalProductos > 0 && (
                   <ResponsiveContainer width="100%" height={140}>
-                    <PieChart>
+                    <PieChart animationBegin={0} animationDuration={800} animationEasing="ease-out">
+                      <defs>
+                        <linearGradient id="pieRed" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#f87171" />
+                          <stop offset="100%" stopColor="#dc2626" />
+                        </linearGradient>
+                        <linearGradient id="pieAmber" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#fbbf24" />
+                          <stop offset="100%" stopColor="#d97706" />
+                        </linearGradient>
+                        <linearGradient id="pieOrange" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#34d399" />
+                          <stop offset="50%" stopColor="#10b981" />
+                          <stop offset="100%" stopColor="#059669" />
+                        </linearGradient>
+                      </defs>
                       <Pie
                         data={stockPieData}
                         cx="50%"
@@ -533,6 +559,7 @@ const Dashboard = () => {
                         outerRadius={60}
                         paddingAngle={3}
                         dataKey="value"
+                        isAnimationActive={true}
                       >
                         {stockPieData.map((entry, idx) => (
                           <Cell key={idx} fill={entry.color} />
@@ -547,12 +574,14 @@ const Dashboard = () => {
                 )}
 
                 <div className="flex justify-center gap-4 mb-3 text-[10px] font-medium">
-                  {stockPieData.map((item, idx) => (
+                  {stockPieData.map((item, idx) => {
+                    const dotColors = { 'Stock Bajo': '#dc2626', 'Stock Medio': '#d97706', 'Stock Óptimo': '#059669' };
+                    return (
                     <span key={idx} className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dotColors[item.name] }} />
                       {item.name}: {item.value}
                     </span>
-                  ))}
+                  )})}
                 </div>
 
                 {stockBajo.length === 0 ? (
@@ -653,15 +682,18 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
-                  <AreaChart data={movimientosChartData} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                  <AreaChart data={movimientosChartData} margin={{ top: 10, right: 10, left: -10, bottom: 5 }} animationBegin={0} animationDuration={800} animationEasing="ease-out">
                     <defs>
                       <linearGradient id="colorEntrada" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        <stop offset="0%" stopColor="#ea580c" stopOpacity={0.5} />
+                        <stop offset="40%" stopColor="#f97316" stopOpacity={0.25} />
+                        <stop offset="70%" stopColor="#fbbf24" stopOpacity={0.08} />
+                        <stop offset="100%" stopColor="#fcd34d" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="colorSalida" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                        <stop offset="0%" stopColor="#dc2626" stopOpacity={0.45} />
+                        <stop offset="50%" stopColor="#ef4444" stopOpacity={0.18} />
+                        <stop offset="100%" stopColor="#f87171" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -688,12 +720,13 @@ const Dashboard = () => {
                     <Area
                       type="monotone"
                       dataKey="Entrada"
-                      stroke="#10b981"
+                      stroke="#f97316"
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#colorEntrada)"
                       dot={false}
-                      activeDot={{ r: 4, fill: '#10b981' }}
+                      activeDot={{ r: 4, fill: '#f97316' }}
+                      isAnimationActive={true}
                     />
                     <Area
                       type="monotone"
@@ -704,6 +737,7 @@ const Dashboard = () => {
                       fill="url(#colorSalida)"
                       dot={false}
                       activeDot={{ r: 4, fill: '#ef4444' }}
+                      isAnimationActive={true}
                     />
                   </AreaChart>
                 </ResponsiveContainer>

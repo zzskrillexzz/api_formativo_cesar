@@ -10,7 +10,11 @@ import { reportesService } from '../api/services/reportesService';
 import { anulacionesService } from '../api/services/anulacionesService';
 import { useAuth } from '../context/AuthContext';
 
-const COLORS = ['#059669', '#0d9488', '#0284c7', '#7c3aed', '#db2777', '#ea580c', '#ca8a04', '#4f46e5'];
+const COLORS = ['#ea580c', '#d97706', '#0284c7', '#7c3aed', '#db2777', '#ea580c', '#ca8a04', '#4f46e5'];
+const GRAD_COLORS = [
+  'url(#anulGrad0)', 'url(#anulGrad1)', 'url(#anulGrad2)', 'url(#anulGrad3)',
+  'url(#anulGrad4)', 'url(#anulGrad5)', 'url(#anulGrad6)', 'url(#anulGrad7)'
+];
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -303,12 +307,20 @@ const Reportes = () => {
                         <BarChart
                           data={datosReporte.datos.slice(0, 10).map(d => ({ name: d.nombre, value: d.total_vendido }))}
                           layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }}
+                          animationBegin={0} animationDuration={800} animationEasing="ease-out"
                         >
+                          <defs>
+                            <linearGradient id="gradEmeraldR" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#fbbf24" />
+                              <stop offset="50%" stopColor="#f97316" />
+                              <stop offset="100%" stopColor="#ea580c" />
+                            </linearGradient>
+                          </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                           <XAxis type="number" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#94a3b8' }} />
                           <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11, fontWeight: 'bold', fill: '#475569' }} />
                           <Tooltip content={<CustomTooltip />} />
-                          <Bar dataKey="value" fill="#059669" radius={[0, 8, 8, 0]} barSize={28} />
+                          <Bar dataKey="value" fill="url(#gradEmeraldR)" radius={[0, 8, 8, 0]} barSize={28} isAnimationActive={true} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -370,12 +382,19 @@ const Reportes = () => {
               <EmptyState message="Sin datos de ventas disponibles" />
             ) : (
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={masVendidosChart} layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }}>
+                <BarChart data={masVendidosChart} layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }} animationBegin={0} animationDuration={800} animationEasing="ease-out">
+                  <defs>
+                    <linearGradient id="gradEmeraldR2" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#fbbf24" />
+                      <stop offset="50%" stopColor="#f97316" />
+                      <stop offset="100%" stopColor="#ea580c" />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis type="number" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#94a3b8' }} />
                   <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fontWeight: 'bold', fill: '#475569' }} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="value" fill="#059669" radius={[0, 8, 8, 0]} barSize={28} />
+                  <Bar dataKey="value" fill="url(#gradEmeraldR2)" radius={[0, 8, 8, 0]} barSize={28} isAnimationActive={true} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -416,12 +435,19 @@ const Reportes = () => {
               <EmptyState message="No hay reportes generados" />
             ) : (
               <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={reportesChart} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+                <BarChart data={reportesChart} margin={{ top: 10, right: 20, left: 10, bottom: 10 }} animationBegin={0} animationDuration={800} animationEasing="ease-out">
+                  <defs>
+                    <linearGradient id="gradTealR" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fcd34d" />
+                      <stop offset="50%" stopColor="#f59e0b" />
+                      <stop offset="100%" stopColor="#d97706" />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#475569' }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11, fontWeight: 'bold', fill: '#94a3b8' }} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="value" fill="#0d9488" radius={[8, 8, 0, 0]} barSize={48} />
+                  <Bar dataKey="value" fill="url(#gradTealR)" radius={[8, 8, 0, 0]} barSize={48} isAnimationActive={true} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -469,7 +495,17 @@ const Reportes = () => {
                 <EmptyState message="No hay anulaciones registradas" />
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
+                  <PieChart animationBegin={0} animationDuration={800} animationEasing="ease-out">
+                    <defs>
+                      <linearGradient id="anulGrad0" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fbbf24" /><stop offset="50%" stopColor="#f97316" /><stop offset="100%" stopColor="#ea580c" /></linearGradient>
+                      <linearGradient id="anulGrad1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fcd34d" /><stop offset="50%" stopColor="#f59e0b" /><stop offset="100%" stopColor="#d97706" /></linearGradient>
+                      <linearGradient id="anulGrad2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#38bdf8" /><stop offset="100%" stopColor="#0284c7" /></linearGradient>
+                      <linearGradient id="anulGrad3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#a78bfa" /><stop offset="100%" stopColor="#6d28d9" /></linearGradient>
+                      <linearGradient id="anulGrad4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fb7185" /><stop offset="100%" stopColor="#be123c" /></linearGradient>
+                      <linearGradient id="anulGrad5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fb923c" /><stop offset="100%" stopColor="#c2410c" /></linearGradient>
+                      <linearGradient id="anulGrad6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fbbf24" /><stop offset="100%" stopColor="#a16207" /></linearGradient>
+                      <linearGradient id="anulGrad7" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#818cf8" /><stop offset="100%" stopColor="#3730a3" /></linearGradient>
+                    </defs>
                     <Pie
                       data={anulacionesChart}
                       dataKey="value"
@@ -479,11 +515,12 @@ const Reportes = () => {
                       outerRadius={100}
                       innerRadius={50}
                       paddingAngle={3}
+                      isAnimationActive={true}
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                       labelLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
                     >
                       {anulacionesChart.map((_, index) => (
-                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={index} fill={GRAD_COLORS[index % GRAD_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
