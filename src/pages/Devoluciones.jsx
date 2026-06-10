@@ -5,14 +5,20 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { devolucionesService } from '../api/services/devolucionesService';
 import { productosService } from '../api/services/productosService';
 import { pedidosService } from '../api/services/pedidosService';
+import { lotesService } from '../api/services/lotesService';
+import { detallesPedidosService } from '../api/services/detallesPedidosService';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const Devoluciones = () => {
   const [devoluciones, setDevoluciones] = useState([]);
   const [productos, setProductos] = useState([]);
   const [pedidos, setPedidos] = useState([]);
+  const [lotes, setLotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filtroResumen, setFiltroResumen] = useState('todas'); // 'todas' | 'este-mes' | 'unidades-devueltas'
+  const [detallesPedido, setDetallesPedido] = useState([]); // detalles del pedido seleccionado en el modal
   const [searchTerm, setSearchTerm] = useState('');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -33,21 +39,24 @@ const Devoluciones = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [devs, prods, peds] = await Promise.all([
+      const [devs, prods, peds, lotsRes] = await Promise.all([
         devolucionesService.listar().catch(() => []),
         productosService.listar().catch(() => []),
-        pedidosService.listar().catch(() => [])
+        pedidosService.listar().catch(() => []),
+        lotesService.listar({ limit: 500 }).catch(() => ({}))
       ]);
       setDevoluciones(devs);
       setProductos(prods);
       setPedidos(peds);
+      // lotesService con params retorna { data: [...], total, page, ... }
+      setLotes(Array.isArray(lotsRes) ? lotsRes : (lotsRes?.data ?? []));
     } catch (_) {} finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
 
   // Resetear paginación cuando cambian filtros
-  useEffect(() => { setPagina(1); }, [searchTerm, fechaDesde, fechaHasta]);
+  useEffect(() => { setPagina(1); }, [searchTerm, fechaDesde, fechaHasta, filtroResumen]);
 
   const getProductoNombre = (prodId) => {
     const prod = productos.find(p => p.id === prodId);
@@ -59,6 +68,11 @@ const Devoluciones = () => {
     return ped ? `${ped.ped_id} (${ped.ped_cli_id_fk || '?'})` : pedId;
   };
 
+  const getLotesPorProducto = (productoId) => {
+    if (!productoId) return [];
+    return lotes.filter(l => l.lot_pro_id_fk === productoId && l.lot_estado === 'Activo');
+  };
+
   const openModal = () => {
     const nums = devoluciones.map(d => { const m = (d.id || '').match(/DEV(\d+)/); return m ? parseInt(m[1]) : 0; });
     const max = nums.length > 0 ? Math.max(...nums) : 0;
@@ -68,6 +82,7 @@ const Devoluciones = () => {
       fecha: hoy
     };
     setFormData(defaultData);
+    setDetallesPedido([]);
     formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     setFormError('');
     setErrors({});
@@ -77,11 +92,15 @@ const Devoluciones = () => {
   const openEditModal = (dev) => {
     setFormError('');
     setErrors({});
+    const loteInicial = dev.lote_id || (() => {
+      const lotesProd = getLotesPorProducto(dev.producto_id);
+      return lotesProd.length === 1 ? lotesProd[0].lot_id : '';
+    })();
     const edit = {
       id: dev.id,
       pedido_id: dev.pedido_id,
       producto_id: dev.producto_id,
-      lote_id: dev.lote_id || '',
+      lote_id: loteInicial,
       cantidad: dev.cantidad,
       motivo: dev.motivo,
       fecha: dev.fecha ? dev.fecha.split('T')[0] : '',
@@ -91,9 +110,40 @@ const Devoluciones = () => {
     setShowEditModal(true);
   };
 
-  const handleChange = (e) => {
+  const handleChange = async (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const updated = { ...formData, [name]: value };
+    // Al cambiar el pedido, buscar sus detalles y auto-completar producto + lote
+    if (name === 'pedido_id' && value) {
+      try {
+        const res = await api.get('/detalles_pedidos/', { params: { det_ped_id_fk: value } });
+        const detalles = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+        setDetallesPedido(detalles);
+        if (detalles.length > 0) {
+          // Auto-completar con el primer detalle
+          const det = detalles[0];
+          updated.producto_id = det.det_pro_id_fk;
+          // Buscar el lote exacto que salió en ese pedido para ese producto
+          if (det.det_lot_id_fk) {
+            updated.lote_id = det.det_lot_id_fk;
+          } else {
+            const lotesProd = getLotesPorProducto(det.det_pro_id_fk);
+            updated.lote_id = lotesProd.length === 1 ? lotesProd[0].lot_id : '';
+          }
+        }
+      } catch (_) { setDetallesPedido([]); }
+    }
+    // Al cambiar el producto, buscar el lote exacto de ese pedido si existe
+    if (name === 'producto_id') {
+      const detalle = detallesPedido.find(d => d.det_pro_id_fk === value);
+      if (detalle?.det_lot_id_fk) {
+        updated.lote_id = detalle.det_lot_id_fk;
+      } else {
+        const lotesFiltrados = getLotesPorProducto(value);
+        updated.lote_id = lotesFiltrados.length === 1 ? lotesFiltrados[0].lot_id : '';
+      }
+    }
+    setFormData(updated);
   };
 
   const handleEditChange = (e) => {
@@ -176,6 +226,12 @@ const Devoluciones = () => {
     }
   };
 
+  // Tarjetas resumen — computado antes del filtro para usarlo allí
+  const hoy = new Date();
+  const mesActualKey = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+  const devEsteMes = devoluciones.filter(d => d.fecha && d.fecha.startsWith(mesActualKey)).length;
+  const unidadesDevueltas = devoluciones.reduce((sum, d) => sum + (parseInt(d.cantidad) || 0), 0);
+
   const filteredDevoluciones = devoluciones.filter(d => {
     const busca = searchTerm
       ? [d.id, d.pedido_id, getProductoNombre(d.producto_id), d.lote_id, d.motivo, d.usuario_id]
@@ -183,18 +239,17 @@ const Devoluciones = () => {
       : true;
     const porFechaDesde = !fechaDesde || (d.fecha && d.fecha >= fechaDesde);
     const porFechaHasta = !fechaHasta || (d.fecha && d.fecha <= fechaHasta);
-    return busca && porFechaDesde && porFechaHasta;
+    // Filtro por tarjeta de resumen
+    const porResumen =
+      filtroResumen === 'todas' ? true :
+      filtroResumen === 'este-mes' ? (d.fecha && d.fecha.startsWith(mesActualKey)) :
+      true;
+    return busca && porFechaDesde && porFechaHasta && porResumen;
   });
 
   const paginatedDevoluciones = filteredDevoluciones.slice(
     (pagina - 1) * POR_PAGINA, pagina * POR_PAGINA
   );
-
-  // Tarjetas resumen
-  const hoy = new Date();
-  const mesActualKey = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
-  const devEsteMes = devoluciones.filter(d => d.fecha && d.fecha.startsWith(mesActualKey)).length;
-  const unidadesDevueltas = devoluciones.reduce((sum, d) => sum + (parseInt(d.cantidad) || 0), 0);
 
   const focusTrapRef = useFocusTrap(showModal || showEditModal);
 
@@ -246,32 +301,37 @@ const Devoluciones = () => {
             className="text-xs border border-slate-300 rounded-md px-2.5 py-1.5 bg-white outline-none shadow-sm font-medium text-slate-600"
             title="Fecha hasta"
           />
-          {(searchTerm || fechaDesde || fechaHasta) && (
+          {(searchTerm || fechaDesde || fechaHasta || filtroResumen !== 'todas') && (
             <button
-              onClick={() => { setSearchTerm(''); setFechaDesde(''); setFechaHasta(''); }}
+              onClick={() => { setSearchTerm(''); setFechaDesde(''); setFechaHasta(''); setFiltroResumen('todas'); }}
               className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-500 transition-colors px-2"
             >
               ✕ Limpiar filtros
             </button>
           )}
         </div>
-        {/* ── Tarjetas resumen ── */}
+        {/* ── Tarjetas resumen (filtros cliqueables) ── */}
         <div className="grid grid-cols-3 gap-2 px-5 pt-4 pb-2">
           {[
-            { label: 'Todas', count: devoluciones.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700' },
-            { label: 'Este mes', count: devEsteMes, icon: '📅', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700' },
-            { label: 'Unidades devueltas', count: unidadesDevueltas, icon: '📦', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700' },
-          ].map((c, idx) => (
-            <div key={idx}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border ${c.color} transition-all`}
-            >
-              <span className="text-lg">{c.icon}</span>
-              <div className="text-left">
-                <div className={`text-base font-black ${c.text}`}>{c.count}</div>
-                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}</div>
-              </div>
-            </div>
-          ))}
+            { key: 'todas', label: 'Todas', count: devoluciones.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', activeColor: 'border-blue-500 bg-blue-100', text: 'text-blue-700' },
+            { key: 'este-mes', label: 'Este mes', count: devEsteMes, icon: '📅', color: 'border-emerald-200 bg-emerald-50/50', activeColor: 'border-emerald-500 bg-emerald-100', text: 'text-emerald-700' },
+            { key: 'unidades-devueltas', label: 'Unidades devueltas', count: unidadesDevueltas, icon: '📦', color: 'border-amber-200 bg-amber-50/50', activeColor: 'border-amber-500 bg-amber-100', text: 'text-amber-700' },
+          ].map((c, idx) => {
+            const isActive = filtroResumen === c.key;
+            return (
+              <button key={idx} type="button" onClick={() => setFiltroResumen(c.key)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all cursor-pointer text-left ${
+                  isActive ? c.activeColor : c.color
+                } hover:shadow-sm`}
+              >
+                <span className="text-lg">{c.icon}</span>
+                <div className="text-left">
+                  <div className={`text-base font-black ${c.text}`}>{c.count}</div>
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{c.label}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left table-animate">
@@ -291,7 +351,7 @@ const Devoluciones = () => {
             <tbody className="divide-y divide-slate-50 text-sm font-medium text-slate-600">
               {filteredDevoluciones.length === 0 ? (
                 <tr><td colSpan="9" className="px-5 py-12 text-center text-slate-400">
-                  {searchTerm || fechaDesde || fechaHasta ? 'Sin resultados para estos filtros' : 'No hay devoluciones registradas'}
+                  {searchTerm || fechaDesde || fechaHasta || filtroResumen !== 'todas' ? 'Sin resultados para estos filtros' : 'No hay devoluciones registradas'}
                 </td></tr>
               ) : (
                 paginatedDevoluciones.map((d, i) => (
@@ -377,9 +437,15 @@ const Devoluciones = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Lote</label>
-                  <input type="text" name="lote_id" value={formData.lote_id || ''} onChange={handleChange}
-                    placeholder="Opcional"
-                    className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium" />
+                  <select name="lote_id" value={formData.lote_id || ''} onChange={handleChange}
+                    className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium">
+                    <option value="">Sin lote</option>
+                    {getLotesPorProducto(formData.producto_id).map(l => (
+                      <option key={l.lot_id} value={l.lot_id}>
+                        {l.lot_numero} ({l.lot_cantidad_actual} uds)
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cantidad *</label>
@@ -449,9 +515,15 @@ const Devoluciones = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Lote</label>
-                  <input type="text" name="lote_id" value={editData.lote_id || ''} onChange={handleEditChange}
-                    placeholder="Opcional"
-                    className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium" />
+                  <select name="lote_id" value={editData.lote_id || ''} onChange={handleEditChange}
+                    className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium">
+                    <option value="">Sin lote</option>
+                    {getLotesPorProducto(editData.producto_id).map(l => (
+                      <option key={l.lot_id} value={l.lot_id}>
+                        {l.lot_numero} ({l.lot_cantidad_actual} uds)
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cantidad *</label>
