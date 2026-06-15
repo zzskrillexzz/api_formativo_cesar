@@ -274,7 +274,7 @@ const Usuarios = () => {
             <Search size={18} className="text-slate-400" />
             <input type="text" placeholder={tab === 'usuarios' ? 'Buscar usuario...' : 'Buscar rol...'}
               className="bg-transparent border-none outline-none text-sm w-full font-medium"
-              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} maxLength={100} />
           </div>
           {tab === 'usuarios' && (
             <>

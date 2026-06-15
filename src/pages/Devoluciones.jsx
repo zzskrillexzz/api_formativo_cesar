@@ -213,6 +213,7 @@ const Devoluciones = () => {
               className="bg-transparent border-none outline-none text-sm w-full font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              maxLength={100}
             />
           </div>
         </div>
@@ -384,7 +385,7 @@ const Devoluciones = () => {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cantidad *</label>
                   <input type="number" name="cantidad" value={formData.cantidad || ''} onChange={handleChange}
-                    min="1" placeholder="0"
+                    min="1" max="999999" placeholder="0"
                     className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium" />
                 </div>
               </div>
@@ -456,7 +457,7 @@ const Devoluciones = () => {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cantidad *</label>
                   <input type="number" name="cantidad" value={editData.cantidad || ''} onChange={handleEditChange}
-                    min="1"
+                    min="1" max={editData.cantidad || 999999}
                     className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium" />
                 </div>
               </div>

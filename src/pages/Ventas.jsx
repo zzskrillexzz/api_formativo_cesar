@@ -7,6 +7,7 @@ import { clientesService } from '../api/services/clientesService';
 import { productosService } from '../api/services/productosService';
 import { detallesPedidosService } from '../api/services/detallesPedidosService';
 import { devolucionesService } from '../api/services/devolucionesService';
+import { anulacionesService } from '../api/services/anulacionesService';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
@@ -628,6 +629,25 @@ const Ventas = () => {
         });
       }
 
+      // 4. Registrar anulación si existe una factura asociada al pedido
+      const facturaAsociada = facturas.find(f => f.id === id);
+      if (facturaAsociada) {
+        const nums = facturas
+          .map(f => { const m = (f.id || '').match(/FAC(\d+)/); return m ? parseInt(m[1]) : 0; })
+          .filter(n => n > 0);
+        const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
+        const anuId = 'ANU' + String(maxNum + 1).padStart(3, '0');
+        await anulacionesService.registrar({
+          anu_id: anuId,
+          anu_fac_id_fk: id,
+          anu_usu_id_fk: user?.id || '',
+          anu_fecha: new Date().toISOString().split('T')[0],
+          anu_motivo: 'Anulación automática por cancelación de pedido'
+        }).catch(err => {
+          console.warn('Error al registrar anulación:', err);
+        });
+      }
+
       setShowConfirmCancel(false);
       setPedidoACancelar(null);
       refreshData();
@@ -774,6 +794,7 @@ const Ventas = () => {
             className="bg-transparent border-none outline-none text-sm w-full font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            maxLength={100}
           />
         </div>
         <div className="flex gap-2">
