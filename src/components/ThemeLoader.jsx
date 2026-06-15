@@ -52,17 +52,21 @@ export const ThemeLoader = ({ module }) => {
 
       {/* Barras de carga tematicas */}
       <div className="flex items-end gap-1.5 h-16">
-        {[...Array(bars)].map((_, i) => (
-          <div
-            key={i}
-            className={`w-4 ${bg} rounded-t-md animate-pulse`}
-            style={{
-              height: `${30 + Math.random() * 100}%`,
-              animationDelay: `${i * 0.15}s`,
-              animationDuration: '0.9s',
-            }}
-          />
-        ))}
+        {[...Array(bars)].map((_, i) => {
+          // Alturas fijas por índice — sin Math.random() para evitar layout thrashing
+          const heights = [60, 85, 45, 95, 55, 70];
+          return (
+            <div
+              key={i}
+              className={`w-4 ${bg} rounded-t-md animate-pulse`}
+              style={{
+                height: `${heights[i % heights.length]}%`,
+                animationDelay: `${i * 0.15}s`,
+                animationDuration: '0.9s',
+              }}
+            />
+          );
+        })}
       </div>
 
       {/* Texto */}

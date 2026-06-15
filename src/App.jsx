@@ -47,28 +47,24 @@ const Layout = () => {
   };
   const IconoActivo = iconosModulos[activeTab] || LayoutDashboard;
 
+  // ── Health check consolidado (server + DB en un solo intervalo) ──
   useEffect(() => {
-    const check = async () => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+    const checkHealth = async () => {
+      // Server check
       try {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 3000);
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const res = await fetch(`${apiUrl}/`, { method: 'GET', signal: ctrl.signal });
         clearTimeout(timer);
         setConectado(res.ok || res.status === 200);
       } catch { setConectado(false); }
-    };
-    check();
-    const interval = setInterval(check, 15000);
-    return () => clearInterval(interval);
-  }, []);
 
-  useEffect(() => {
-    const checkDb = async () => {
+      // DB check
       try {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 3000);
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const res = await fetch(`${apiUrl}/health`, { method: 'GET', signal: ctrl.signal });
         clearTimeout(timer);
         if (res.ok) {
@@ -79,8 +75,9 @@ const Layout = () => {
         }
       } catch { setDbConectado(false); }
     };
-    checkDb();
-    const interval = setInterval(checkDb, 15000);
+
+    checkHealth();
+    const interval = setInterval(checkHealth, 30000); // 30s en vez de 15s
     return () => clearInterval(interval);
   }, []);
 
