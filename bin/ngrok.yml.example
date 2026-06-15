@@ -1,0 +1,10 @@
+version: "3"
+# ⚠️ Para que ngrok funcione necesitas configurar tu authtoken
+#    Consiguelo en: https://dashboard.ngrok.com/get-started/your-authtoken
+#    Luego ejecuta: ngrok config add-authtoken TU_TOKEN
+#
+# tunnels:
+#   backend:
+#     proto: http
+#     addr: 5000
+#     inspect: false

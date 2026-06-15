@@ -51,14 +51,37 @@ class NgrokManager:
         log.info("ngrok no encontrado — modo localhost")
         return None
 
+    def _obtener_url_desde_api(self):
+        """Consulta la API local de ngrok y obtiene la URL pública si existe."""
+        try:
+            resp = urllib.request.urlopen(NGROK_API_URL, timeout=3)
+            data = json.loads(resp.read().decode())
+            for tunel in data.get('tunnels', []):
+                addr = tunel.get('config', {}).get('addr', '')
+                if f'localhost:{BACKEND_PORT}' in addr or f'127.0.0.1:{BACKEND_PORT}' in addr:
+                    self.url_publica = tunel.get('public_url', '').rstrip('/')
+                    return True
+        except Exception:
+            pass
+        return False
+
     def iniciar(self):
         """
-        Busca ngrok.exe y lo inicia como subproceso en background.
-        Espera hasta 10 segundos a que la API local responda.
+        Verifica si ngrok ya está corriendo (como servicio de Windows o proceso manual).
+        Si ya está activo, obtiene la URL pública directamente.
+        Si no, busca ngrok.exe y lo inicia como subproceso.
         """
+        # ── PASO 1: ¿Ya hay ngrok corriendo? ──
+        log.info("Verificando si ngrok ya está corriendo...")
+        if self._obtener_url_desde_api():
+            log.info("ngrok ya está activo — URL: %s", self.url_publica)
+            return True
+
+        # ── PASO 2: Buscar ngrok.exe para iniciarlo ──
         ruta = self.buscar_ngrok()
         if not ruta:
             self.url_publica = f'http://localhost:{BACKEND_PORT}'
+            log.info("ngrok no encontrado — modo localhost")
             return False
 
         try:
@@ -69,26 +92,16 @@ class NgrokManager:
                 stderr=subprocess.DEVNULL,
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
             )
-            log.info("ngrok iniciado (PID: %s)", self.proceso.pid)
+            log.info("ngrok iniciado como subproceso (PID: %s)", self.proceso.pid)
 
             # Esperar a que la API local de ngrok esté disponible
             for intento in range(20):
                 if self._detenido:
                     return False
-                try:
-                    resp = urllib.request.urlopen(NGROK_API_URL, timeout=2)
-                    data = json.loads(resp.read().decode())
-                    túneles = data.get('tunnels', [])
-                    for tunel in túneles:
-                        addr = tunel.get('config', {}).get('addr', '')
-                        if f'localhost:{BACKEND_PORT}' in addr or f'127.0.0.1:{BACKEND_PORT}' in addr:
-                            self.url_publica = tunel.get('public_url', '').rstrip('/')
-                            break
-                    if self.url_publica:
-                        log.info("URL pública ngrok: %s", self.url_publica)
-                        return True
-                except (urllib.error.URLError, json.JSONDecodeError, OSError):
-                    time.sleep(0.5)
+                if self._obtener_url_desde_api():
+                    log.info("URL pública ngrok: %s", self.url_publica)
+                    return True
+                time.sleep(0.5)
 
             log.warning("ngrok iniciado pero no se obtuvo la URL pública en 10s")
             return False
@@ -122,20 +135,9 @@ class NgrokManager:
     def refrescar_url(self):
         """
         Vuelve a consultar la API de ngrok para obtener la URL actual.
-        Útil si ngrok se reinicia o cambia la URL.
+        Funciona tanto si ngrok corre como servicio o como subproceso.
         """
-        if not self.proceso:
-            return self.obtener_url()
-        try:
-            resp = urllib.request.urlopen(NGROK_API_URL, timeout=3)
-            data = json.loads(resp.read().decode())
-            for tunel in data.get('tunnels', []):
-                addr = tunel.get('config', {}).get('addr', '')
-                if f'localhost:{BACKEND_PORT}' in addr or f'127.0.0.1:{BACKEND_PORT}' in addr:
-                    self.url_publica = tunel.get('public_url', '').rstrip('/')
-                    break
-        except Exception:
-            pass
+        self._obtener_url_desde_api()
         return self.obtener_url()
 
 
