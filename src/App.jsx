@@ -110,7 +110,7 @@ const Layout = () => {
         <section className="flex-1 overflow-y-auto px-8 pb-8">
           <div className="max-w-7xl mx-auto">
             <header className="mb-6 flex justify-between items-center">
-              <div className="flex items-center gap-4 px-5 py-3 bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] rounded-2xl shadow-sm hover:bg-white/[0.07] transition-all duration-300 group">
+              <div className="flex items-center gap-4 px-5 py-3 bg-white/10 border border-white/[0.10] rounded-2xl shadow-sm hover:bg-white/15 transition-all duration-300 group">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform duration-300">
                   <IconoActivo size={18} className="text-white drop-shadow-sm" />
                 </div>
