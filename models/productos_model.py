@@ -36,7 +36,5 @@ class productos:
             "control_especial": self.pro_control_especial,
             "tipo_control": self.pro_tipo_control,
             "estado": self.pro_estado,
-            "proveedor_id": self.pro_prov_id_fk,
-            "presentacion": self.pro_presentacion,
-            "laboratorio": self.pro_laboratorio
+            "proveedor_id": self.pro_prov_id_fk
         }
