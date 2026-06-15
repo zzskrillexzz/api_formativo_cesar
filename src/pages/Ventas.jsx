@@ -1869,8 +1869,8 @@ const Ventas = () => {
                 Vas a cancelar el pedido <strong>{pedidoACancelar.ped_id}</strong>.
               </p>
               <p className="text-xs text-slate-400">
-                El pedido se marcará como <strong>Anulado</strong> y se crearán
-                automáticamente las devoluciones de los productos asociados.
+                El pedido se marcará como <strong>Anulado</strong>, se registrará
+                la anulación y se crearán automáticamente las devoluciones de los productos asociados.
               </p>
               <div className="flex gap-3 pt-2">
                 <button

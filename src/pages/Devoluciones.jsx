@@ -4,9 +4,9 @@ import { ThemeLoader } from '../components/ThemeLoader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { devolucionesService } from '../api/services/devolucionesService';
 import { productosService } from '../api/services/productosService';
-import { pedidosService } from '../api/services/pedidosService';
+import { comprasService } from '../api/services/comprasService';
 import { lotesService } from '../api/services/lotesService';
-import { detallesPedidosService } from '../api/services/detallesPedidosService';
+import { detallesComprasService } from '../api/services/detallesComprasService';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -14,11 +14,12 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 const Devoluciones = () => {
   const [devoluciones, setDevoluciones] = useState([]);
   const [productos, setProductos] = useState([]);
-  const [pedidos, setPedidos] = useState([]);
+  const [compras, setCompras] = useState([]);
   const [lotes, setLotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroResumen, setFiltroResumen] = useState('todas'); // 'todas' | 'este-mes' | 'unidades-devueltas'
-  const [detallesPedido, setDetallesPedido] = useState([]); // detalles del pedido seleccionado en el modal
+  const [detallesCompra, setDetallesCompra] = useState([]); // detalles de la compra seleccionada en el modal
+  const [maxCantidad, setMaxCantidad] = useState(0); // cantidad máxima disponible para devolver
   const [searchTerm, setSearchTerm] = useState('');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -39,15 +40,15 @@ const Devoluciones = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [devs, prods, peds, lotsRes] = await Promise.all([
+      const [devs, prods, comps, lotsRes] = await Promise.all([
         devolucionesService.listar().catch(() => []),
         productosService.listar().catch(() => []),
-        pedidosService.listar().catch(() => []),
+        comprasService.listar().catch(() => []),
         lotesService.listar({ limit: 500 }).catch(() => ({}))
       ]);
       setDevoluciones(devs);
       setProductos(prods);
-      setPedidos(peds);
+      setCompras(comps);
       // lotesService con params retorna { data: [...], total, page, ... }
       setLotes(Array.isArray(lotsRes) ? lotsRes : (lotsRes?.data ?? []));
     } catch (_) {} finally { setLoading(false); }
@@ -63,9 +64,9 @@ const Devoluciones = () => {
     return prod ? prod.nombre : prodId;
   };
 
-  const getPedidoInfo = (pedId) => {
-    const ped = pedidos.find(p => p.ped_id === pedId);
-    return ped ? `${ped.ped_id} (${ped.ped_cli_id_fk || '?'})` : pedId;
+  const getCompraInfo = (comId) => {
+    const com = compras.find(c => c.comp_id === comId);
+    return com ? `${com.comp_id}` : comId;
   };
 
   const getLotesPorProducto = (productoId) => {
@@ -82,7 +83,8 @@ const Devoluciones = () => {
       fecha: hoy
     };
     setFormData(defaultData);
-    setDetallesPedido([]);
+    setDetallesCompra([]);
+    setMaxCantidad(0);
     formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     setFormError('');
     setErrors({});
@@ -98,7 +100,7 @@ const Devoluciones = () => {
     })();
     const edit = {
       id: dev.id,
-      pedido_id: dev.pedido_id,
+      compra_id: dev.compra_id,
       producto_id: dev.producto_id,
       lote_id: loteInicial,
       cantidad: dev.cantidad,
@@ -113,34 +115,38 @@ const Devoluciones = () => {
   const handleChange = async (e) => {
     const { name, value } = e.target;
     const updated = { ...formData, [name]: value };
-    // Al cambiar el pedido, buscar sus detalles y auto-completar producto + lote
-    if (name === 'pedido_id' && value) {
+    // Al cambiar la compra, buscar sus detalles y auto-completar producto + lote
+    if (name === 'compra_id' && value) {
       try {
-        const res = await api.get('/detalles_pedidos/', { params: { det_ped_id_fk: value } });
+        const res = await api.get('/detalles_compras/', { params: { dco_com_id_fk: value } });
         const detalles = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
-        setDetallesPedido(detalles);
+        setDetallesCompra(detalles);
+        setMaxCantidad(0);
         if (detalles.length > 0) {
           // Auto-completar con el primer detalle
           const det = detalles[0];
-          updated.producto_id = det.det_pro_id_fk;
-          // Buscar el lote exacto que salió en ese pedido para ese producto
-          if (det.det_lot_id_fk) {
-            updated.lote_id = det.det_lot_id_fk;
+          updated.producto_id = det.producto_id;
+          // Buscar el lote exacto de ese detalle
+          if (det.lote_id) {
+            updated.lote_id = det.lote_id;
           } else {
-            const lotesProd = getLotesPorProducto(det.det_pro_id_fk);
+            const lotesProd = getLotesPorProducto(det.producto_id);
             updated.lote_id = lotesProd.length === 1 ? lotesProd[0].lot_id : '';
           }
+          setMaxCantidad(det.cantidad);
         }
-      } catch (_) { setDetallesPedido([]); }
+      } catch (_) { setDetallesCompra([]); setMaxCantidad(0); }
     }
-    // Al cambiar el producto, buscar el lote exacto de ese pedido si existe
-    if (name === 'producto_id') {
-      const detalle = detallesPedido.find(d => d.det_pro_id_fk === value);
-      if (detalle?.det_lot_id_fk) {
-        updated.lote_id = detalle.det_lot_id_fk;
+    // Al cambiar el producto, buscar el lote exacto de ese detalle de compra
+    if (name === 'producto_id' && formData.compra_id) {
+      const detalle = detallesCompra.find(d => d.producto_id === value);
+      if (detalle?.lote_id) {
+        updated.lote_id = detalle.lote_id;
+        setMaxCantidad(detalle.cantidad);
       } else {
         const lotesFiltrados = getLotesPorProducto(value);
         updated.lote_id = lotesFiltrados.length === 1 ? lotesFiltrados[0].lot_id : '';
+        setMaxCantidad(detalle?.cantidad || 0);
       }
     }
     setFormData(updated);
@@ -154,7 +160,7 @@ const Devoluciones = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (!formData.pedido_id || !formData.producto_id || !formData.cantidad || !formData.motivo || !formData.fecha) {
+    if (!formData.compra_id || !formData.producto_id || !formData.cantidad || !formData.motivo || !formData.fecha) {
       setFormError('Los campos marcados con * son obligatorios');
       return;
     }
@@ -163,10 +169,14 @@ const Devoluciones = () => {
       setFormError('La cantidad debe ser un número mayor a 0');
       return;
     }
+    if (maxCantidad > 0 && cant > maxCantidad) {
+      setFormError(`La cantidad no puede superar el máximo disponible (${maxCantidad} unidades)`);
+      return;
+    }
     setFormSubmitting(true);
     try {
       await devolucionesService.registrar({
-        pedido_id: formData.pedido_id,
+        compra_id: formData.compra_id,
         producto_id: formData.producto_id,
         lote_id: formData.lote_id || null,
         cantidad: cant,
@@ -234,7 +244,7 @@ const Devoluciones = () => {
 
   const filteredDevoluciones = devoluciones.filter(d => {
     const busca = searchTerm
-      ? [d.id, d.pedido_id, getProductoNombre(d.producto_id), d.lote_id, d.motivo, d.usuario_id]
+      ? [d.id, d.compra_id, getProductoNombre(d.producto_id), d.lote_id, d.motivo, d.usuario_id]
           .filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
       : true;
     const porFechaDesde = !fechaDesde || (d.fecha && d.fecha >= fechaDesde);
@@ -339,7 +349,7 @@ const Devoluciones = () => {
             <thead className="bg-slate-50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
               <tr>
                 <th className="px-5 py-3">ID</th>
-                <th className="px-5 py-3">Pedido</th>
+                <th className="px-5 py-3">Compra</th>
                 <th className="px-5 py-3">Producto</th>
                 <th className="px-5 py-3">Lote</th>
                 <th className="px-5 py-3 text-right">Cant.</th>
@@ -358,7 +368,7 @@ const Devoluciones = () => {
                 paginatedDevoluciones.map((d, i) => (
                   <tr key={i} className="hover:bg-orange-100/70 group">
                     <td className="px-5 py-3 text-slate-400 text-xs">{d.id}</td>
-                    <td className="px-5 py-3 text-xs" title={d.pedido_id}>{getPedidoInfo(d.pedido_id)}</td>
+                    <td className="px-5 py-3 text-xs" title={d.compra_id}>{getCompraInfo(d.compra_id)}</td>
                     <td className="px-5 py-3" title={d.producto_id}>{getProductoNombre(d.producto_id)}</td>
                     <td className="px-5 py-3">{d.lote_id || '-'}</td>
                     <td className="px-5 py-3 text-right font-bold">{d.cantidad}</td>
@@ -415,12 +425,12 @@ const Devoluciones = () => {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pedido *</label>
-                  <select name="pedido_id" value={formData.pedido_id || ''} onChange={handleChange}
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Compra *</label>
+                  <select name="compra_id" value={formData.compra_id || ''} onChange={handleChange}
                     className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium">
-                    <option value="">Seleccionar pedido</option>
-                    {pedidos.map(p => (
-                      <option key={p.ped_id} value={p.ped_id}>{p.ped_id} — {p.ped_cli_id_fk || '?'}</option>
+                    <option value="">Seleccionar compra</option>
+                    {compras.map(c => (
+                      <option key={c.comp_id} value={c.comp_id}>{c.comp_id}</option>
                     ))}
                   </select>
                 </div>
@@ -451,8 +461,13 @@ const Devoluciones = () => {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cantidad *</label>
                   <input type="number" name="cantidad" value={formData.cantidad || ''} onChange={handleChange}
-                    min="1" max="999999" placeholder="0"
+                    min="1" max={maxCantidad || 999999} placeholder="0"
                     className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium" />
+                  {maxCantidad > 0 && (
+                    <p className="text-[10px] text-amber-600 font-semibold mt-1">
+                      Máx disponible: {maxCantidad} unidades
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="space-y-1">
@@ -503,8 +518,8 @@ const Devoluciones = () => {
                     className="w-full text-sm border border-slate-200 rounded-md px-3 py-2.5 bg-slate-50 outline-none font-medium text-slate-400" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pedido</label>
-                  <input type="text" value={editData.pedido_id || ''} disabled
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Compra</label>
+                  <input type="text" value={editData.compra_id || ''} disabled
                     className="w-full text-sm border border-slate-200 rounded-md px-3 py-2.5 bg-slate-50 outline-none font-medium text-slate-400" />
                 </div>
               </div>
