@@ -1254,7 +1254,7 @@ const Ventas = () => {
 
       {/* ── Modal: Nuevo ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
           <div ref={focusTrapRef} className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">
@@ -1660,7 +1660,7 @@ const Ventas = () => {
 
       {/* ── Modal: Detalle de Pedido ── */}
       {showDetalle && detalleTipo === 'pedido' && detalleData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowDetalle(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowDetalle(false)}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-black text-slate-800">Pedido {detalleData.ped_id}</h2>
@@ -1747,7 +1747,7 @@ const Ventas = () => {
               #factura-print { position: absolute; left: 0; top: 0; width: 100%; background: white; }
             }
           `}</style>
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowDetalle(false)}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowDetalle(false)}>
             <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
                 <h2 className="text-lg font-black text-slate-800">Factura</h2>
@@ -1854,7 +1854,7 @@ const Ventas = () => {
 
       {/* ── Modal: Confirmar cancelación ── */}
       {showConfirmCancel && pedidoACancelar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowConfirmCancel(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowConfirmCancel(false)}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-red-600 uppercase tracking-wider flex items-center gap-2">
@@ -1898,7 +1898,7 @@ const Ventas = () => {
 
       {/* ── Modal: Verificar pago ── */}
       {showVerificarModal && pedidoAVerificar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={cerrarVerificarPago}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={cerrarVerificarPago}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Verificar pago</h3>
@@ -1968,7 +1968,7 @@ const Ventas = () => {
 
       {/* ── Modal: Notificar cliente ── */}
       {showNotificarModal && pedidoANotificar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => { setShowNotificarModal(false); setNotifResultadoCorreo(null); setNotifResultadoFactura(null); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => { setShowNotificarModal(false); setNotifResultadoCorreo(null); setNotifResultadoFactura(null); }}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Notificar cliente</h3>
@@ -2045,7 +2045,7 @@ const Ventas = () => {
 
       {/* ── Modal: QR de entrega ── */}
       {showQRModal && pedidoQR && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowQRModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowQRModal(false)}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Código QR de entrega</h3>
@@ -2135,7 +2135,7 @@ const Ventas = () => {
 
       {/* ── Modal: Preview comprobante ── */}
       {showPreviewModal && formData.ped_comprobante && formData.ped_comprobante_tipo && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowPreviewModal(false)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4" onClick={() => setShowPreviewModal(false)}>
           <div className="relative bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Comprobante de pago</h3>
@@ -2169,7 +2169,7 @@ const Ventas = () => {
 
       {/* ── Modal: Ficha del cliente (E-card) ── */}
       {showClienteTarjeta && clienteTarjeta && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowClienteTarjeta(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowClienteTarjeta(false)}>
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* Cabecera con color */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-8 text-center">
@@ -2232,7 +2232,7 @@ const Ventas = () => {
 
       {/* ── Modal: Subir comprobante ── */}
       {showSubirComprobanteModal && pedidoSubirComprobante && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowSubirComprobanteModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowSubirComprobanteModal(false)}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Subir comprobante</h3>

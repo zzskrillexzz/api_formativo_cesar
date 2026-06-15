@@ -411,7 +411,7 @@ const Devoluciones = () => {
 
       {/* ── MODAL: Nueva Devolución ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" ref={focusTrapRef}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" ref={focusTrapRef}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-slate-200 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">Nueva Devolución</h2>
@@ -499,7 +499,7 @@ const Devoluciones = () => {
 
       {/* ── MODAL: Editar Devolución ── */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" ref={focusTrapRef}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" ref={focusTrapRef}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-slate-200 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">Editar Devolución</h2>

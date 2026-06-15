@@ -685,7 +685,7 @@ const Compras = () => {
       {/* Modal Registrar */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowModal(false)} />
           <div ref={focusTrapRef} className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">{tab === 'compras' ? 'Registrar Compra' : 'Registrar Proveedor'}</h3>
@@ -811,7 +811,7 @@ const Compras = () => {
       {/* Modal Editar Compra */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowEditModal(false)} />
           <div ref={focusTrapRef} className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Editar Compra {editData.comp_id}</h3>
@@ -878,7 +878,7 @@ const Compras = () => {
       {/* Modal Editar Proveedor */}
       {showEditProveedorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditProveedorModal(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowEditProveedorModal(false)} />
           <div ref={focusTrapRef} className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Editar Proveedor {editProveedorData.id}</h3>
@@ -943,7 +943,7 @@ const Compras = () => {
       {/* Modal Ver Proveedor */}
       {showViewProveedorModal && viewProveedorData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setShowViewProveedorModal(false); setViewProveedorData(null); }} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowViewProveedorModal(false); setViewProveedorData(null); }} />
           <div className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Detalle del Proveedor</h3>
@@ -992,7 +992,7 @@ const Compras = () => {
       {/* Modal Vista Previa Comprobante */}
       {showComprobanteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowComprobanteModal(null)} />
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowComprobanteModal(null)} />
           <div className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Comprobante de pago — {showComprobanteModal.comp_id}</h3>
