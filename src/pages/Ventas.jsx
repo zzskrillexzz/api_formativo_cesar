@@ -81,7 +81,24 @@ const Ventas = () => {
 
   const abrirQR = async (pedido) => {
     setPedidoQR(pedido);
-    // Intentar detectar URL de ngrok automáticamente
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    // Intentar obtener URL pública desde el backend (ngrok gestionado por el servidor)
+    try {
+      const resp = await fetch(`${apiUrl}/public-url`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.url) {
+          const url = data.url.replace(/\/$/, '');
+          setQrBaseUrl(url);
+          localStorage.setItem('qrBaseUrl', url);
+          setShowQRModal(true);
+          return;
+        }
+      }
+    } catch (_) {
+      // backend no disponible o sin ngrok
+    }
+    // Fallback: detectar ngrok localmente
     try {
       const resp = await fetch('http://localhost:4040/api/tunnels');
       if (resp.ok) {
@@ -658,14 +675,29 @@ const Ventas = () => {
     }
   };
 
+  const [comprobanteUrl, setComprobanteUrl] = useState(null);
+
+  const cerrarVerificarPago = () => {
+    if (comprobanteUrl) URL.revokeObjectURL(comprobanteUrl);
+    setComprobanteUrl(null);
+    setShowVerificarModal(false);
+    setPedidoAVerificar(null);
+  };
+
   const abrirVerificarPago = async (pedido) => {
     setPedidoAVerificar(pedido);
     setShowVerificarModal(true);
     setPedidoComprobanteCargando(true);
+    setComprobanteUrl(null);
     try {
-      const detalle = await pedidosService.buscar(pedido.ped_id);
-      if (detalle) {
-        setPedidoAVerificar(detalle);
+      // Cargar el comprobante como blob (con autenticación)
+      const token = sessionStorage.getItem('access_token');
+      const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/pedidos/${pedido.ped_id}/comprobante`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resp.ok) {
+        const blob = await resp.blob();
+        setComprobanteUrl(URL.createObjectURL(blob));
       }
     } catch (e) {
       console.error('Error al cargar comprobante:', e);
@@ -683,8 +715,7 @@ const Ventas = () => {
       setPedidos(prev => prev.map(p =>
         p.ped_id === pedidoAVerificar.ped_id ? { ...p, ped_estado_pago: estado } : p
       ));
-      setShowVerificarModal(false);
-      setPedidoAVerificar(null);
+      cerrarVerificarPago();
       refreshData(); // refuerzo con datos frescos del backend
     } catch (err) {
       alert('Error: ' + (err.response?.data?.mensaje || err.message));
@@ -1867,11 +1898,11 @@ const Ventas = () => {
 
       {/* ── Modal: Verificar pago ── */}
       {showVerificarModal && pedidoAVerificar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowVerificarModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={cerrarVerificarPago}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Verificar pago</h3>
-              <button onClick={() => setShowVerificarModal(false)} className="p-1.5 hover:bg-slate-100 rounded-md">
+              <button onClick={cerrarVerificarPago} className="p-1.5 hover:bg-slate-100 rounded-md">
                 <X size={18} className="text-slate-400" />
               </button>
             </div>
@@ -1884,22 +1915,27 @@ const Ventas = () => {
                   <Loader2 className="animate-spin text-slate-400" size={24} />
                   <span className="ml-2 text-sm text-slate-400">Cargando comprobante...</span>
                 </div>
-              ) : pedidoAVerificar.ped_comprobante && pedidoAVerificar.ped_comprobante_tipo ? (
+              ) : comprobanteUrl ? (
                 <div className="bg-slate-50 rounded-lg p-4 flex justify-center">
-                  {pedidoAVerificar.ped_comprobante_tipo.startsWith('image/') ? (
+                  {pedidoAVerificar?.ped_comprobante_tipo?.startsWith('image/') ? (
                     <img
-                      src={`data:${pedidoAVerificar.ped_comprobante_tipo};base64,${pedidoAVerificar.ped_comprobante}`}
+                      src={comprobanteUrl}
                       alt="Comprobante"
                       className="max-h-96 w-full rounded object-contain"
                     />
                   ) : (
-                    <div className="flex items-center gap-2 text-slate-400">
-                      <FileText size={24} className="text-red-500" />
-                      <span className="text-sm">Comprobante PDF</span>
-                    </div>
+                    <embed
+                      src={comprobanteUrl}
+                      type={pedidoAVerificar?.ped_comprobante_tipo || 'application/octet-stream'}
+                      className="w-full h-96 rounded"
+                    />
                   )}
                 </div>
-              ) : null}
+              ) : (
+                <div className="bg-slate-50 rounded-lg p-6 text-center text-sm text-slate-400">
+                  No se encontró comprobante
+                </div>
+              )}
               {pedidoAVerificar.ped_estado_pago !== 'Verificado' ? (
                 <div className="flex gap-3 pt-2">
                   <button
