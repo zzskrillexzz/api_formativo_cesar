@@ -10,6 +10,8 @@ import { devolucionesService } from '../api/services/devolucionesService';
 import { anulacionesService } from '../api/services/anulacionesService';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { ConfirmModal } from '../components/ConfirmModal';
+import { useToast } from '../components/Toast';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
 
 const Ventas = () => {
@@ -25,6 +27,8 @@ const Ventas = () => {
   const [formError, setFormError] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [confirmAction, setConfirmAction] = useState(null);
+  const { toast } = useToast();
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
   const [productosDisponibles, setProductosDisponibles] = useState([]);
@@ -186,9 +190,28 @@ const Ventas = () => {
     }
   };
 
-  const eliminarPedido = async (id) => { if (!window.confirm('Eliminar pedido ' + id + '?')) return; try { await pedidosService.eliminar(id); refreshData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
-  const eliminarFactura = async (id) => { if (!window.confirm('Eliminar factura ' + id + '?')) return; try { await facturasService.eliminar(id); refreshData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
-  const eliminarCliente = async (id) => { if (!window.confirm('Eliminar cliente ' + id + '?')) return; try { await clientesService.eliminar(id); refreshData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
+  const confirmarEliminar = (type, id, label) => {
+    setConfirmAction({
+      danger: true,
+      title: `Eliminar ${type}`,
+      message: `¿Eliminar ${label} ${id}? Esta acción no se puede deshacer.`,
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          const service = type === 'pedido' ? pedidosService : type === 'factura' ? facturasService : clientesService;
+          await service.eliminar(id);
+          toast({ type: 'success', title: 'Eliminado', description: `${type} ${id} eliminado correctamente` });
+          refreshData();
+        } catch(e) {
+          toast({ type: 'error', title: 'Error', description: e.response?.data?.mensaje || e.message });
+        }
+      },
+      onCancel: () => setConfirmAction(null),
+    });
+  };
+  const eliminarPedido = (id) => confirmarEliminar('pedido', id, 'pedido');
+  const eliminarFactura = (id) => confirmarEliminar('factura', id, 'factura');
+  const eliminarCliente = (id) => confirmarEliminar('cliente', id, 'cliente');
 
   const openModal = async () => {
     setEditingClienteId(null);
@@ -220,7 +243,11 @@ const Ventas = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    // Sanitizar teléfono: solo dígitos, espacios, +, -, (, )
+    if (name === 'cli_telefono') {
+      value = value.replace(/[^\d\s+\-()]/g, '');
+    }
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setFormData({ ...formData, [name]: value });
@@ -600,14 +627,14 @@ const Ventas = () => {
       setProductosSeleccionados(detsConNombres);
       setShowModal(true);
     } catch (err) {
-      alert('Error al cargar pedido: ' + (err.response?.data?.mensaje || err.message));
+      toast({ type: 'error', title: 'Error', description: 'Error al cargar pedido: ' + (err.response?.data?.mensaje || err.message) });
     }
   };
 
   const cancelarPedidoConDevolucion = async () => {
     if (!pedidoACancelar) return;
     if (pedidoACancelar.ped_estado_entrega === 'Anulado') {
-      alert('Este pedido ya fue anulado anteriormente.');
+      toast({ type: 'warning', title: 'Ya anulado', description: 'Este pedido ya fue anulado anteriormente.' });
       setShowConfirmCancel(false);
       setPedidoACancelar(null);
       return;
@@ -669,7 +696,7 @@ const Ventas = () => {
       setPedidoACancelar(null);
       refreshData();
     } catch (err) {
-      alert('Error al cancelar pedido: ' + (err.response?.data?.mensaje || err.message));
+      toast({ type: 'error', title: 'Error', description: 'Error al cancelar pedido: ' + (err.response?.data?.mensaje || err.message) });
     } finally {
       setCancelLoading(false);
     }
@@ -718,7 +745,7 @@ const Ventas = () => {
       cerrarVerificarPago();
       refreshData(); // refuerzo con datos frescos del backend
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.mensaje || err.message));
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || err.message });
     } finally {
       setNotifLoading(false);
     }
@@ -971,7 +998,7 @@ const Ventas = () => {
                                     pd.ped_id === p.ped_id ? { ...pd, ...datos } : pd
                                   ));
                                 } catch (err) {
-                                  alert('Error: ' + (err.response?.data?.mensaje || err.message));
+                                  toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || err.message });
                                 }
                               }}
                               className="p-2 text-indigo-500 hover:text-white hover:bg-indigo-500 transition-colors rounded-md"
@@ -992,7 +1019,7 @@ const Ventas = () => {
                                     ));
                                     setShowQRModal(false);
                                   } catch (err) {
-                                    alert('Error: ' + (err.response?.data?.mensaje || err.message));
+                                    toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || err.message });
                                   }
                                 }}
                                 className="p-2 text-emerald-500 hover:text-white hover:bg-emerald-500 transition-colors rounded-md"
@@ -2099,7 +2126,7 @@ const Ventas = () => {
                       onClick={() => {
                         const url = qrBaseUrl + '/confirmar-entrega/' + pedidoQR.ped_token_entrega;
                         navigator.clipboard.writeText(url);
-                        alert('Enlace copiado al portapapeles');
+                        toast({ type: 'success', title: 'Copiado', description: 'Enlace copiado al portapapeles' });
                       }}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-all"
                     >
@@ -2260,6 +2287,15 @@ const Ventas = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirmAction}
+        title={confirmAction?.title || ''}
+        message={confirmAction?.message || ''}
+        danger={confirmAction?.danger}
+        onConfirm={confirmAction?.onConfirm || (() => {})}
+        onCancel={confirmAction?.onCancel || (() => {})}
+      />
     </div>
   );
 };

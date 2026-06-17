@@ -8,6 +8,8 @@ import { inventariosMovimientosService } from '../api/services/inventariosMovimi
 import { proveedoresService } from '../api/services/proveedoresService';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { ConfirmModal } from '../components/ConfirmModal';
+import { useToast } from '../components/Toast';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
 
 const Inventario = () => {
@@ -24,6 +26,8 @@ const Inventario = () => {
   const [formError, setFormError] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [confirmAction, setConfirmAction] = useState(null);
+  const { toast } = useToast();
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -107,32 +111,62 @@ const Inventario = () => {
   };
 
   const eliminarProducto = async (id) => {
-    if (!window.confirm('Eliminar este producto? Se borrarán todos sus lotes, movimientos y registros asociados.')) return;
-    try {
-      await productosService.eliminar(id, { params: { force: true } });
-      fetchData();
-    } catch(e) {
-      alert('No se pudo eliminar: ' + (e.response?.data?.mensaje || e.message));
-    }
+    setConfirmAction({
+      type: 'delete',
+      danger: true,
+      title: 'Eliminar Producto',
+      message: '¿Eliminar este producto? Se borrarán todos sus lotes, movimientos y registros asociados.',
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          await productosService.eliminar(id, { params: { force: true } });
+          toast({ type: 'success', title: 'Eliminado', description: 'Producto eliminado correctamente' });
+          fetchData();
+        } catch(e) {
+          toast({ type: 'error', title: 'Error', description: e.response?.data?.mensaje || e.message });
+        }
+      },
+      onCancel: () => setConfirmAction(null),
+    });
   };
   const eliminarLote = async (id) => {
-    if (!window.confirm('Eliminar este lote? Se borrarán movimientos, monitoría y registros asociados.')) return;
-    try {
-      await lotesService.eliminar(id, { params: { force: true } });
-      fetchData();
-    } catch(e) {
-      alert('No se pudo eliminar: ' + (e.response?.data?.mensaje || e.message));
-    }
+    setConfirmAction({
+      type: 'delete',
+      danger: true,
+      title: 'Eliminar Lote',
+      message: '¿Eliminar este lote? Se borrarán movimientos, monitoría y registros asociados.',
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          await lotesService.eliminar(id, { params: { force: true } });
+          toast({ type: 'success', title: 'Eliminado', description: 'Lote eliminado correctamente' });
+          fetchData();
+        } catch(e) {
+          toast({ type: 'error', title: 'Error', description: e.response?.data?.mensaje || e.message });
+        }
+      },
+      onCancel: () => setConfirmAction(null),
+    });
   };
 
   const cambiarEstadoLote = async (id, nuevoEstado) => {
-    if (!window.confirm(`¿Cambiar estado del lote ${id} a "${nuevoEstado}"?`)) return;
-    try {
-      await lotesService.editar(id, { lot_estado: nuevoEstado });
-      fetchData();
-    } catch(e) {
-      alert('No se pudo cambiar el estado: ' + (e.response?.data?.mensaje || e.message));
-    }
+    setConfirmAction({
+      type: 'status',
+      danger: false,
+      title: 'Cambiar Estado',
+      message: `¿Cambiar estado del lote ${id} a "${nuevoEstado}"?`,
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          await lotesService.editar(id, { lot_estado: nuevoEstado });
+          toast({ type: 'success', title: 'Estado actualizado', description: `Lote ${id} → ${nuevoEstado}` });
+          fetchData();
+        } catch(e) {
+          toast({ type: 'error', title: 'Error', description: e.response?.data?.mensaje || e.message });
+        }
+      },
+      onCancel: () => setConfirmAction(null),
+    });
   };
 
   const abrirEditarLote = (lote) => {
@@ -209,15 +243,32 @@ const Inventario = () => {
       if (name === 'lot_numero' && !value) newErrors.lot_numero = 'El número de lote es obligatorio';
       else if (name === 'lot_numero' && value && !editingId && lotes.some(l => l.lot_numero === value)) newErrors.lot_numero = 'Este número de lote ya existe';
       else if (name === 'lot_numero') delete newErrors.lot_numero;
+      const VIDA_UTIL_MINIMA = 14; // días mínimos entre fabricación y vencimiento
       if (name === 'lot_fecha_vencimiento' && !value) newErrors.lot_fecha_vencimiento = 'La fecha de vencimiento es obligatoria';
       else if (name === 'lot_fecha_vencimiento') delete newErrors.lot_fecha_vencimiento;
-      if (name === 'lot_fecha_fabricacion' && value && formData.lot_fecha_vencimiento && value >= formData.lot_fecha_vencimiento) {
-        newErrors.lot_fecha_fabricacion = 'Debe ser anterior a la fecha de vencimiento';
+      if (name === 'lot_fecha_fabricacion' && value && formData.lot_fecha_vencimiento) {
+        const diff = (new Date(formData.lot_fecha_vencimiento) - new Date(value)) / (1000 * 60 * 60 * 24);
+        if (value >= formData.lot_fecha_vencimiento) {
+          newErrors.lot_fecha_fabricacion = 'Debe ser anterior a la fecha de vencimiento';
+        } else if (diff < VIDA_UTIL_MINIMA) {
+          newErrors.lot_fecha_fabricacion = `La diferencia mínima debe ser de ${VIDA_UTIL_MINIMA} días (jarabe)`;
+        } else {
+          delete newErrors.lot_fecha_fabricacion;
+        }
       } else if (name === 'lot_fecha_fabricacion') delete newErrors.lot_fecha_fabricacion;
-      if (name === 'lot_fecha_vencimiento' && value && formData.lot_fecha_fabricacion && formData.lot_fecha_fabricacion >= value) {
-        newErrors.lot_fecha_vencimiento = 'Debe ser posterior a la fecha de fabricación';
+      if (name === 'lot_fecha_vencimiento' && value && formData.lot_fecha_fabricacion) {
+        const diff = (new Date(value) - new Date(formData.lot_fecha_fabricacion)) / (1000 * 60 * 60 * 24);
+        if (formData.lot_fecha_fabricacion >= value) {
+          newErrors.lot_fecha_vencimiento = 'Debe ser posterior a la fecha de fabricación';
+        } else if (diff < VIDA_UTIL_MINIMA) {
+          newErrors.lot_fecha_vencimiento = `Debe ser al menos ${VIDA_UTIL_MINIMA} días después de la fabricación`;
+        } else {
+          delete newErrors.lot_fecha_vencimiento;
+        }
       } else if (name === 'lot_fecha_vencimiento' && value) {
-        const soloVen = !newErrors.lot_fecha_vencimiento || newErrors.lot_fecha_vencimiento === 'Debe ser posterior a la fecha de fabricación';
+        const soloVen = !newErrors.lot_fecha_vencimiento || 
+          newErrors.lot_fecha_vencimiento === 'Debe ser posterior a la fecha de fabricación' ||
+          newErrors.lot_fecha_vencimiento.startsWith('Debe ser al menos');
         if (soloVen) delete newErrors.lot_fecha_vencimiento;
       }
       if (name === 'lot_pro_id_fk') {
@@ -336,9 +387,16 @@ const Inventario = () => {
       setFormError('Selecciona un proveedor para el lote');
       return;
     }
-    if (formData.lot_fecha_fabricacion && formData.lot_fecha_vencimiento && formData.lot_fecha_fabricacion >= formData.lot_fecha_vencimiento) {
-      setFormError('La fecha de fabricación debe ser anterior a la fecha de vencimiento');
-      return;
+    if (formData.lot_fecha_fabricacion && formData.lot_fecha_vencimiento) {
+      const diff = (new Date(formData.lot_fecha_vencimiento) - new Date(formData.lot_fecha_fabricacion)) / (1000 * 60 * 60 * 24);
+      if (formData.lot_fecha_fabricacion >= formData.lot_fecha_vencimiento) {
+        setFormError('La fecha de fabricación debe ser anterior a la fecha de vencimiento');
+        return;
+      }
+      if (diff < 14) {
+        setFormError('La fecha de vencimiento debe ser al menos 14 días después de la fabricación');
+        return;
+      }
     }
     const cantInicial = parseInt(formData.lot_cantidad_inicial, 10);
     if (isNaN(cantInicial) || cantInicial <= 0) {
@@ -1177,7 +1235,7 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Stock Mín.</label>
-                      <input name="stock_minimo" type="number" value={formData.stock_minimo || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="stock_minimo" type="number" min="0" max="999999" value={formData.stock_minimo || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
@@ -1251,7 +1309,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad Inicial</label>
-                      <input name="lot_cantidad_inicial" type="number" min="1" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="lot_cantidad_inicial" type="number" min="1" max="999999" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_cantidad_inicial && <p className="text-red-500 text-xs mt-1">{errors.lot_cantidad_inicial}</p>}
                     </div>
                     <div>
@@ -1314,7 +1372,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad <span className="required-star">*</span></label>
-                      <input name="inm_cantidad" type="number" min="1" value={formData.inm_cantidad || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_cantidad ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="inm_cantidad" type="number" min="1" max="999999" value={formData.inm_cantidad || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_cantidad ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.inm_cantidad && <p className="text-red-500 text-xs mt-1">{errors.inm_cantidad}</p>}
                     </div>
                     <div>
@@ -1350,6 +1408,15 @@ const Inventario = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirmAction}
+        title={confirmAction?.title || ''}
+        message={confirmAction?.message || ''}
+        danger={confirmAction?.danger}
+        onConfirm={confirmAction?.onConfirm || (() => {})}
+        onCancel={confirmAction?.onCancel || (() => {})}
+      />
     </div>
   );
 };

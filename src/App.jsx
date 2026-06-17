@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Truck, BarChart3, RotateCcw, Users
 } from 'lucide-react';
 import { Notificaciones } from './components/Notificaciones';
+import { ToastProvider } from './components/Toast';
 
 // ── Lazy-loading de páginas (code-splitting por ruta) ──
 const DashboardPage = React.lazy(() => import('./pages/Dashboard'));
@@ -157,7 +158,9 @@ const Layout = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <Layout />
+      <ToastProvider>
+        <Layout />
+      </ToastProvider>
     </AuthProvider>
   );
 }

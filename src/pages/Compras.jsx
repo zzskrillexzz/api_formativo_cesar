@@ -720,7 +720,7 @@ const Compras = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total <span className="required-star">*</span></label>
-                      <input name="com_total" type="number" step="0.01" value={formData.com_total || ''} onChange={handleChange}
+                      <input name="com_total" type="number" step="0.01" min="0.01" max="9999999.99" value={formData.com_total || ''} onChange={handleChange}
                         className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_total ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.com_total && <p className="text-red-500 text-xs mt-1">{errors.com_total}</p>}
                     </div>
