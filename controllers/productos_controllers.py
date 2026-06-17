@@ -30,21 +30,39 @@ def cnRegistrarProductos():
         if str(data[campo]).strip() == "":
             return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
 
-    # Validar precio positivo
+    PRECIO_MAXIMO = 999999.99
+    CANTIDAD_MAXIMA = 999999
+
+    # Validar precio positivo con tope
     try:
         precio = float(data["precio"])
         if precio <= 0:
             return jsonify({"mensaje": "El precio debe ser mayor a 0"}), 400
+        if precio > PRECIO_MAXIMO:
+            return jsonify({"mensaje": f"El precio no puede ser mayor a {PRECIO_MAXIMO:,.2f}"}), 400
     except (ValueError, TypeError):
         return jsonify({"mensaje": "El precio debe ser un número válido"}), 400
 
-    # Validar cantidad
+    # Validar cantidad con tope
     try:
         cantidad = int(data["cantidad_disponible"])
         if cantidad < 0:
             return jsonify({"mensaje": "La cantidad disponible no puede ser negativa"}), 400
+        if cantidad > CANTIDAD_MAXIMA:
+            return jsonify({"mensaje": f"La cantidad disponible no puede ser mayor a {CANTIDAD_MAXIMA:,}"}), 400
     except (ValueError, TypeError):
         return jsonify({"mensaje": "La cantidad disponible debe ser un número entero"}), 400
+
+    # Validar stock mínimo con tope
+    if "stock_minimo" in data and data["stock_minimo"] is not None:
+        try:
+            stock = int(data["stock_minimo"])
+            if stock < 0:
+                return jsonify({"mensaje": "El stock mínimo no puede ser negativo"}), 400
+            if stock > CANTIDAD_MAXIMA:
+                return jsonify({"mensaje": f"El stock mínimo no puede ser mayor a {CANTIDAD_MAXIMA:,}"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"mensaje": "El stock mínimo debe ser un número entero"}), 400
 
     # Validar longitud de campos de texto
     errores = validar_campos_texto(data, "nombre", "categoria", "descripcion")
@@ -91,11 +109,16 @@ def cnEditarProductos():
     if errores:
         return jsonify({"mensaje": " | ".join(errores)}), 400
 
+    PRECIO_MAXIMO = 999999.99
+    CANTIDAD_MAXIMA = 999999
+
     if "precio" in data and data["precio"] is not None:
         try:
             precio = float(data["precio"])
             if precio <= 0:
                 return jsonify({"mensaje": "El precio debe ser mayor a 0"}), 400
+            if precio > PRECIO_MAXIMO:
+                return jsonify({"mensaje": f"El precio no puede ser mayor a {PRECIO_MAXIMO:,.2f}"}), 400
         except (ValueError, TypeError):
             return jsonify({"mensaje": "El precio debe ser un número válido"}), 400
 
@@ -104,8 +127,20 @@ def cnEditarProductos():
             cantidad = int(data["cantidad_disponible"])
             if cantidad < 0:
                 return jsonify({"mensaje": "La cantidad no puede ser negativa"}), 400
+            if cantidad > CANTIDAD_MAXIMA:
+                return jsonify({"mensaje": f"La cantidad disponible no puede ser mayor a {CANTIDAD_MAXIMA:,}"}), 400
         except (ValueError, TypeError):
             return jsonify({"mensaje": "La cantidad debe ser un número entero"}), 400
+
+    if "stock_minimo" in data and data["stock_minimo"] is not None:
+        try:
+            stock = int(data["stock_minimo"])
+            if stock < 0:
+                return jsonify({"mensaje": "El stock mínimo no puede ser negativo"}), 400
+            if stock > CANTIDAD_MAXIMA:
+                return jsonify({"mensaje": f"El stock mínimo no puede ser mayor a {CANTIDAD_MAXIMA:,}"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"mensaje": "El stock mínimo debe ser un número entero"}), 400
 
     resultado = editarProductos(data["id"], data)
     return jsonify(resultado), 200

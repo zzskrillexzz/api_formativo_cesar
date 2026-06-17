@@ -1,7 +1,20 @@
+import re
 from flask import jsonify, request, current_app
 from services.clientes_service import listarClientes, registrarClientes, editarClientes, eliminarClientes, buscarClientes
 from utils.validators import validar_campos_texto
 from utils.error_handler import safe_controller
+
+# ── Patrón para teléfono: solo dígitos, espacios, +, -, ( ) ──
+PATRON_TELEFONO = re.compile(r'^[\d\s\+\-\(\)]+$')
+
+
+def _validar_telefono(telefono):
+    """Valida que el teléfono solo contenga caracteres permitidos. Retorna None si es válido."""
+    if not telefono or str(telefono).strip() == "":
+        return None  # campo opcional, vacío es válido
+    if not PATRON_TELEFONO.match(str(telefono)):
+        return "El teléfono solo puede contener dígitos, espacios, +, -, ( y )"
+    return None
 
 @safe_controller
 def cnlistadoclientes():
@@ -40,6 +53,11 @@ def cnregistrarclientes():
     if errores:
         return jsonify({"mensaje": " | ".join(errores)}), 400
 
+    # Validar formato del teléfono
+    err_tel = _validar_telefono(data.get("cli_telefono"))
+    if err_tel:
+        return jsonify({"mensaje": err_tel}), 400
+
     # Validar Correo duplicado
     c = current_app.mysql.connection.cursor()
     c.execute("SELECT cli_id FROM t_cliente WHERE cli_correo = %s", (data["cli_correo"],))
@@ -75,6 +93,11 @@ def cneditarclientes():
     )
     if errores:
         return jsonify({"mensaje": " | ".join(errores)}), 400
+
+    # Validar formato del teléfono
+    err_tel = _validar_telefono(data.get("cli_telefono"))
+    if err_tel:
+        return jsonify({"mensaje": err_tel}), 400
 
     # Validar que el correo no lo tenga otro cliente
     c = current_app.mysql.connection.cursor()

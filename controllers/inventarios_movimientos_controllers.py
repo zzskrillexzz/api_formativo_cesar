@@ -47,11 +47,14 @@ def cnregistrarinventariosmovimientos():
     if data["inm_tipo_movimiento"] not in tipos_validos:
         return jsonify({"mensaje": f"Tipo de movimiento inválido. Valores permitidos: {tipos_validos}"}), 400
 
-    # Validar cantidad positiva
+    # Validar cantidad positiva con tope máximo
+    CANTIDAD_MAXIMA_INVENTARIO = 999999
     try:
         cantidad = int(data["inm_cantidad"])
         if cantidad <= 0:
             return jsonify({"mensaje": "La cantidad debe ser mayor a 0"}), 400
+        if cantidad > CANTIDAD_MAXIMA_INVENTARIO:
+            return jsonify({"mensaje": f"La cantidad no puede ser mayor a {CANTIDAD_MAXIMA_INVENTARIO:,}"}), 400
     except (ValueError, TypeError):
         return jsonify({"mensaje": "La cantidad debe ser un número entero"}), 400
 

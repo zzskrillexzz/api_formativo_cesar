@@ -37,10 +37,13 @@ def cnregistrarcompras():
     if data["com_estado"] not in estados_validos:
         return jsonify({"mensaje": f"Estado inválido. Valores permitidos: {estados_validos}"}), 400
 
+    TOTAL_MAXIMO = 9999999.99
     try:
         total = float(data["com_total"])
         if total <= 0:
             return jsonify({"mensaje": "El total debe ser mayor a 0"}), 400
+        if total > TOTAL_MAXIMO:
+            return jsonify({"mensaje": f"El total no puede ser mayor a {TOTAL_MAXIMO:,.2f}"}), 400
     except (ValueError, TypeError):
         return jsonify({"mensaje": "El total debe ser un número válido"}), 400
 
@@ -86,11 +89,14 @@ def cneditarcompras(COM_ID):
         if data["com_estado"] not in estados_validos:
             return jsonify({"mensaje": f"Estado inválido. Valores permitidos: {estados_validos}"}), 400
 
+    TOTAL_MAXIMO = 9999999.99
     if data.get("com_total"):
         try:
             total = float(data["com_total"])
             if total <= 0:
                 return jsonify({"mensaje": "El total debe ser mayor a 0"}), 400
+            if total > TOTAL_MAXIMO:
+                return jsonify({"mensaje": f"El total no puede ser mayor a {TOTAL_MAXIMO:,.2f}"}), 400
         except (ValueError, TypeError):
             return jsonify({"mensaje": "El total debe ser un número válido"}), 400
 
