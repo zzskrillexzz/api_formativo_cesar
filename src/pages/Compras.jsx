@@ -96,8 +96,12 @@ const Compras = () => {
     }
   };
 
+  // ── Función para eliminar emojis ──
+  const stripEmojis = (text) => text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '');
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    value = stripEmojis(value);
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setFormData({ ...formData, [name]: value });
@@ -106,6 +110,7 @@ const Compras = () => {
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
+    value = stripEmojis(value);
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setEditData({ ...editData, [name]: value });
@@ -245,6 +250,7 @@ const Compras = () => {
   };
 
   const handleChangeStatus = async (compraId, nuevoEstado) => {
+    if (formSubmitting) return; // Evita múltiples envíos simultáneos
     setFormSubmitting(true);
     try {
       await comprasService.editar(compraId, { com_estado: nuevoEstado });
@@ -289,16 +295,21 @@ const Compras = () => {
 
   const handleEditProveedorChange = (e) => {
     const { name, value } = e.target;
+    const cleaned = stripEmojis(value);
     const max = FIELD_LIMITS[name];
-    if (max && value.length > max) return;
-    setEditProveedorData({ ...editProveedorData, [name]: value });
+    if (max && cleaned.length > max) return;
+    setEditProveedorData({ ...editProveedorData, [name]: cleaned });
   };
 
   const handleEditProveedor = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (!editProveedorData.nit || !editProveedorData.nombre || !editProveedorData.tipo || !editProveedorData.contacto || !editProveedorData.email) {
+    if (!editProveedorData.nit || !editProveedorData.nombre || !editProveedorData.tipo || !editProveedorData.contacto || !editProveedorData.direccion || !editProveedorData.email) {
       setFormError('Todos los campos son obligatorios');
+      return;
+    }
+    if (editProveedorData.email && !/\S+@\S+\.\S+/.test(editProveedorData.email)) {
+      setFormError('El correo electrónico no es válido');
       return;
     }
     setFormSubmitting(true);
@@ -346,14 +357,14 @@ const Compras = () => {
       setFormError('Completa los campos del proveedor antes de guardar');
       return;
     }
-    if (!formData.id || !formData.nit || !formData.nombre || !formData.tipo || !formData.contacto || !formData.direccion || !formData.email) {
+    if (!formData.nit || !formData.nombre || !formData.tipo || !formData.contacto || !formData.direccion || !formData.email) {
       setFormError('Todos los campos son obligatorios');
       return;
     }
     setFormSubmitting(true);
     try {
+      // El backend auto-genera el ID; el que muestra el formulario es solo referencial
       await proveedoresService.registrar({
-        id: formData.id,
         nit: formData.nit,
         nombre: formData.nombre,
         tipo: formData.tipo,
@@ -713,6 +724,7 @@ const Compras = () => {
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
                       <input name="com_fecha" type="date" value={formData.com_fecha || ''} onChange={handleChange}
+                        min={new Date().toISOString().split('T')[0]}
                         className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_fecha ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.com_fecha && <p className="text-red-500 text-xs mt-1">{errors.com_fecha}</p>}
                     </div>
@@ -833,6 +845,7 @@ const Compras = () => {
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha</label>
                   <input name="comp_fecha" type="date" value={editData.comp_fecha || ''} onChange={handleEditChange}
+                    min={new Date().toISOString().split('T')[0]}
                     className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                 </div>
                 <div>

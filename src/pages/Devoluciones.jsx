@@ -111,6 +111,8 @@ const Devoluciones = () => {
     };
     setEditData(edit);
     formSnapshotRef.current = JSON.parse(JSON.stringify(edit));
+    // Cargar el máximo disponible para validar en edición también
+    setMaxCantidad(dev.cantidad);
     setShowEditModal(true);
   };
 
@@ -206,6 +208,11 @@ const Devoluciones = () => {
     const cant = parseInt(editData.cantidad);
     if (isNaN(cant) || cant <= 0) {
       setFormError('La cantidad debe ser un número mayor a 0');
+      return;
+    }
+    // Validar límite máximo — igual que en creación
+    if (maxCantidad > 0 && cant > maxCantidad) {
+      setFormError(`La cantidad no puede superar el máximo disponible (${maxCantidad} unidades)`);
       return;
     }
     setFormSubmitting(true);
@@ -549,8 +556,13 @@ const Devoluciones = () => {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cantidad *</label>
                   <input type="number" name="cantidad" value={editData.cantidad || ''} onChange={handleEditChange}
-                    min="1" max={editData.cantidad || 999999}
+                    min="1" max={maxCantidad || editData.cantidad || 999999}
                     className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium" />
+                  {maxCantidad > 0 && (
+                    <p className="text-[10px] text-amber-600 font-semibold mt-1">
+                      Máx disponible: {maxCantidad} unidades
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="space-y-1">

@@ -37,6 +37,7 @@ const Ventas = () => {
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [comprobanteFileName, setComprobanteFileName] = useState('');
+  const lastToastRef = useRef(null); // Evita mostrar el mismo toast repetido
 
   const [editingPedidoId, setEditingPedidoId] = useState(null);
   const [editingClienteId, setEditingClienteId] = useState(null);
@@ -242,11 +243,21 @@ const Ventas = () => {
     setShowModal(true);
   };
 
+  // ── Función para eliminar emojis de un texto ──
+  const stripEmojis = (text) => text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '');
+
   const handleChange = (e) => {
     let { name, value } = e.target;
-    // Sanitizar teléfono: solo dígitos, espacios, +, -, (, )
+    // Eliminar emojis de todos los campos
+    value = stripEmojis(value);
+    // Sanitizar teléfono: solo dígitos, espacios, +, -, (, ) y máximo 10
     if (name === 'cli_telefono') {
-      value = value.replace(/[^\d\s+\-()]/g, '');
+      value = value.replace(/[^\d]/g, '');
+      if (value.length > 10) value = value.slice(0, 10);
+    }
+    // Sanitizar nombre/apellido: sin caracteres especiales como -,@,_,+,[,*
+    if (name === 'cli_nombre' || name === 'cli_apellido') {
+      value = value.replace(/[\-@_+\[\]*]/g, '');
     }
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
@@ -277,13 +288,17 @@ const Ventas = () => {
     }
     if (t === 'clientes') {
       if (name === 'cli_id' && !value) newErrors.cli_id = 'El ID es obligatorio';
+      else if (name === 'cli_id' && value && parseInt(value) > 9999999) newErrors.cli_id = 'El ID no puede superar 9,999,999';
       else if (name === 'cli_id') delete newErrors.cli_id;
       if (name === 'cli_nombre' && !value) newErrors.cli_nombre = 'El nombre es obligatorio';
+      else if (name === 'cli_nombre' && value && value.length < 2) newErrors.cli_nombre = 'Min. 2 caracteres';
       else if (name === 'cli_nombre') delete newErrors.cli_nombre;
       if (name === 'cli_apellido' && !value) newErrors.cli_apellido = 'El apellido es obligatorio';
+      else if (name === 'cli_apellido' && value && value.length < 2) newErrors.cli_apellido = 'Min. 2 caracteres';
       else if (name === 'cli_apellido') delete newErrors.cli_apellido;
       if (name === 'cli_correo' && !value) newErrors.cli_correo = 'El correo es obligatorio';
       else if (name === 'cli_correo' && value && !/\S+@\S+\.\S+/.test(value)) newErrors.cli_correo = 'Correo no válido';
+      else if (name === 'cli_correo' && value && value.length > parseInt(FIELD_LIMITS.cli_correo || 120)) newErrors.cli_correo = `Máx. ${FIELD_LIMITS.cli_correo || 120} caracteres`;
       else if (name === 'cli_correo') delete newErrors.cli_correo;
     }
     setErrors(newErrors);
@@ -476,6 +491,12 @@ const Ventas = () => {
     }
     if (!formData.ped_fecha || !formData.ped_metodo_pago || !formData.ped_estado_entrega || !formData.ped_cli_id_fk) {
       setFormError('Todos los campos con * son obligatorios');
+      return;
+    }
+    // Validar fecha no pasada
+    const hoy = new Date().toISOString().split('T')[0];
+    if (formData.ped_fecha < hoy) {
+      setFormError('No se pueden crear pedidos en fechas pasadas. La fecha debe ser hoy o posterior.');
       return;
     }
     if (productosSeleccionados.length === 0) {
@@ -1313,7 +1334,7 @@ const Ventas = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
-                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_fecha ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} min={new Date().toISOString().split('T')[0]} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_fecha ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.ped_fecha && <p className="text-red-500 text-xs mt-1">{errors.ped_fecha}</p>}
                     </div>
                   </div>
@@ -1351,7 +1372,7 @@ const Ventas = () => {
                       <div className="grid grid-cols-3 gap-2">
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">ID *</label>
-                          <input name="cli_id" type="number" value={formData.cli_id || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
+                          <input name="cli_id" type="number" min="1" max="9999999" value={formData.cli_id || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Tipo Doc *</label>
@@ -1364,7 +1385,7 @@ const Ventas = () => {
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Teléfono</label>
-                          <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
+                          <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} maxLength="10" placeholder="3001234567" className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -1665,7 +1686,7 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Teléfono</label>
-                      <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} maxLength="10" placeholder="3001234567" className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección</label>
