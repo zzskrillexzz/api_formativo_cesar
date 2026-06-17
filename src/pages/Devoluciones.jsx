@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { RotateCcw, RefreshCw, Search, Plus, Edit3, Trash2, X, Loader2 } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { useToast } from '../components/Toast';
 import { devolucionesService } from '../api/services/devolucionesService';
 import { productosService } from '../api/services/productosService';
 import { comprasService } from '../api/services/comprasService';
@@ -31,6 +32,7 @@ const Devoluciones = () => {
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const { toast } = useToast();
   const [formError, setFormError] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -185,9 +187,10 @@ const Devoluciones = () => {
         usuario_id: user?.id || ''
       });
       setShowModal(false);
+      toast({ type: 'success', title: 'Registrada', description: 'Devolución registrada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al registrar devolución');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al registrar devolución' });
     } finally {
       setFormSubmitting(false);
     }
@@ -214,9 +217,10 @@ const Devoluciones = () => {
         fecha: editData.fecha
       });
       setShowEditModal(false);
+      toast({ type: 'success', title: 'Actualizada', description: 'Devolución actualizada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al actualizar devolución');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al actualizar devolución' });
     } finally {
       setFormSubmitting(false);
     }
@@ -228,9 +232,10 @@ const Devoluciones = () => {
     try {
       await devolucionesService.eliminar(confirmDelete);
       setConfirmDelete(null);
+      toast({ type: 'success', title: 'Eliminada', description: 'Devolución eliminada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al eliminar devolución');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al eliminar devolución' });
     } finally {
       setFormSubmitting(false);
     }

@@ -536,9 +536,10 @@ const Ventas = () => {
       }
       setShowModal(false);
       setEditingPedidoId(null);
+      toast({ type: 'success', title: editingPedidoId ? 'Actualizado' : 'Creado', description: `Pedido ${editingPedidoId ? 'actualizado' : 'creado'} correctamente` });
       refreshData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al guardar pedido');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar pedido' });
     } finally {
       setFormSubmitting(false);
     }
@@ -580,9 +581,10 @@ const Ventas = () => {
         cli_id_fk: formData.cli_id_fk || null
       });
       setShowModal(false);
+      toast({ type: 'success', title: 'Creada', description: 'Factura creada correctamente' });
       refreshData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al crear factura');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al crear factura' });
     } finally {
       setFormSubmitting(false);
     }
@@ -812,9 +814,10 @@ const Ventas = () => {
       }
       setShowModal(false);
       setEditingClienteId(null);
+      toast({ type: 'success', title: editingClienteId ? 'Actualizado' : 'Creado', description: `Cliente ${editingClienteId ? 'actualizado' : 'creado'} correctamente` });
       refreshData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al guardar cliente');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar cliente' });
     } finally {
       setFormSubmitting(false);
     }

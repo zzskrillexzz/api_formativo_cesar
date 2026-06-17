@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Users, Shield, Search, Plus, X, RefreshCw, Edit3, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
@@ -38,6 +39,7 @@ const Usuarios = () => {
   // ── Confirmación de eliminación ──
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmDeleteRol, setConfirmDeleteRol] = useState(null);
+  const { toast } = useToast();
 
   const formSnapshotRef = useRef({});
   const focusTrapRef = useFocusTrap(showModal || showRolModal);
@@ -143,9 +145,10 @@ const Usuarios = () => {
         });
       }
       setShowModal(false);
+      toast({ type: 'success', title: editingUserId ? 'Actualizado' : 'Creado', description: `Usuario ${editingUserId ? 'actualizado' : 'creado'} correctamente` });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al guardar usuario');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar usuario' });
     } finally { setFormSubmitting(false); }
   };
 
@@ -155,9 +158,10 @@ const Usuarios = () => {
     try {
       await api.delete(`/usuarios/eliminar/${confirmDelete}`);
       setConfirmDelete(null);
+      toast({ type: 'success', title: 'Eliminado', description: 'Usuario eliminado correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al eliminar usuario');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al eliminar usuario' });
     } finally { setFormSubmitting(false); }
   };
 
@@ -199,9 +203,10 @@ const Usuarios = () => {
         await api.post('/roles/', rolFormData);
       }
       setShowRolModal(false);
+      toast({ type: 'success', title: editingRolId ? 'Actualizado' : 'Creado', description: `Rol ${editingRolId ? 'actualizado' : 'creado'} correctamente` });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al guardar rol');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar rol' });
     } finally { setFormSubmitting(false); }
   };
 
@@ -211,9 +216,10 @@ const Usuarios = () => {
     try {
       await api.delete(`/roles/eliminar/${confirmDeleteRol}`);
       setConfirmDeleteRol(null);
+      toast({ type: 'success', title: 'Eliminado', description: 'Rol eliminado correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al eliminar rol');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al eliminar rol' });
     } finally { setFormSubmitting(false); }
   };
 

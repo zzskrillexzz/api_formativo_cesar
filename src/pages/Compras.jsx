@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Truck, Package, Search, Plus, X, RefreshCw, Loader2, Edit3, Trash2, FileText, Download, Eye } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { useToast } from '../components/Toast';
 import { comprasService } from '../api/services/comprasService';
 import { proveedoresService } from '../api/services/proveedoresService';
 import { useAuth } from '../context/AuthContext';
@@ -39,6 +40,7 @@ const Compras = () => {
   const [showViewProveedorModal, setShowViewProveedorModal] = useState(false);
   const [viewProveedorData, setViewProveedorData] = useState(null);
   const [confirmDeleteProveedor, setConfirmDeleteProveedor] = useState(null);
+  const { toast } = useToast();
   const { user } = useAuth();
 
   const fetchData = async () => {
@@ -196,9 +198,10 @@ const Compras = () => {
         com_comprobante_tipo: formData.com_comprobante_tipo || null
       });
       setShowModal(false);
+      toast({ type: 'success', title: 'Creada', description: 'Compra registrada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al crear compra');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al crear compra' });
     } finally {
       setFormSubmitting(false);
     }
@@ -232,9 +235,10 @@ const Compras = () => {
       }
       await comprasService.editar(editData.comp_id, payload);
       setShowEditModal(false);
+      toast({ type: 'success', title: 'Actualizada', description: 'Compra actualizada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al actualizar compra');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al actualizar compra' });
     } finally {
       setFormSubmitting(false);
     }
@@ -244,9 +248,10 @@ const Compras = () => {
     setFormSubmitting(true);
     try {
       await comprasService.editar(compraId, { com_estado: nuevoEstado });
+      toast({ type: 'success', title: 'Estado actualizado', description: `Compra → ${nuevoEstado}` });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al cambiar estado');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al cambiar estado' });
     } finally {
       setFormSubmitting(false);
     }
@@ -258,9 +263,10 @@ const Compras = () => {
     try {
       await comprasService.eliminar(confirmDelete);
       setConfirmDelete(null);
+      toast({ type: 'success', title: 'Eliminada', description: 'Compra eliminada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al eliminar compra');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al eliminar compra' });
     } finally {
       setFormSubmitting(false);
     }
@@ -299,9 +305,10 @@ const Compras = () => {
     try {
       await proveedoresService.editar(editProveedorData.id, editProveedorData);
       setShowEditProveedorModal(false);
+      toast({ type: 'success', title: 'Actualizado', description: 'Proveedor actualizado correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al actualizar proveedor');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al actualizar proveedor' });
     } finally {
       setFormSubmitting(false);
     }
@@ -313,9 +320,10 @@ const Compras = () => {
     try {
       await proveedoresService.eliminar(confirmDeleteProveedor);
       setConfirmDeleteProveedor(null);
+      toast({ type: 'success', title: 'Eliminado', description: 'Proveedor eliminado correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al eliminar proveedor');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al eliminar proveedor' });
     } finally {
       setFormSubmitting(false);
     }
@@ -327,7 +335,7 @@ const Compras = () => {
       setViewProveedorData(detalle);
       setShowViewProveedorModal(true);
     } catch (_) {
-      setFormError('Error al cargar datos del proveedor');
+      toast({ type: 'error', title: 'Error', description: 'Error al cargar datos del proveedor' });
     }
   };
 
@@ -354,9 +362,10 @@ const Compras = () => {
         email: formData.email
       });
       setShowModal(false);
+      toast({ type: 'success', title: 'Creado', description: 'Proveedor registrado correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al crear proveedor');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al crear proveedor' });
     } finally {
       setFormSubmitting(false);
     }
