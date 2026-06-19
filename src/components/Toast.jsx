@@ -60,15 +60,36 @@ function renderToast(data) {
   containerEl.appendChild(div);
 }
 
-let currentDismiss = null;
+const timers = {}; // Timer por toast ID — cada toast se auto-cierra independientemente
+
+// ── Mapa de último toast para evitar duplicados en ráfaga (mismo tipo+título en < 1.5s) ──
+const lastToast = { key: '', time: 0 };
+const DEDUP_WINDOW = 1500; // ms
 
 export function toast({ type = 'info', title, description, duration = 4000 }) {
   ensureContainer();
+
+  // Deducir toasts idénticos en ráfaga (clics repetidos)
+  const dedupKey = `${type}::${title || ''}::${description || ''}`;
+  const now = Date.now();
+  if (dedupKey === lastToast.key && (now - lastToast.time) < DEDUP_WINDOW) {
+    return lastToast.id; // No duplicar
+  }
+
   const id = ++toastId;
+  lastToast.key = dedupKey;
+  lastToast.time = now;
+  lastToast.id = id;
+
+  // Limpiar timer previo del mismo ID si existe
+  if (timers[id]) clearTimeout(timers[id]);
+
   renderToast({ id, type, title, description, duration, exiting: false });
-  if (currentDismiss) clearTimeout(currentDismiss);
+
   if (duration > 0) {
-    currentDismiss = setTimeout(() => {
+    timers[id] = setTimeout(() => {
+      // eslint-disable-next-line no-unused-expressions
+      delete timers[id];
       const el = containerEl?.querySelector(`[data-toast-id="${id}"]`);
       if (!el) return;
       el.className = el.className.replace('toast-enter', 'toast-exit');
@@ -79,10 +100,19 @@ export function toast({ type = 'info', title, description, duration = 4000 }) {
 }
 
 export function dismiss(id) {
+  if (timers[id]) { clearTimeout(timers[id]); delete timers[id]; }
   const el = containerEl?.querySelector(`[data-toast-id="${id}"]`);
   if (!el) return;
   el.className = el.className.replace('toast-enter', 'toast-exit');
   setTimeout(() => el.remove(), 260);
+}
+
+// Limpiar contenedor al hacer unmount (útil en HMR)
+export function clearAllToasts() {
+  Object.keys(timers).forEach(id => { clearTimeout(timers[id]); delete timers[id]; });
+  if (containerEl) {
+    containerEl.querySelectorAll('[data-toast-id]').forEach(el => el.remove());
+  }
 }
 
 /* ── Provider de respaldo para mantener compatibilidad ── */
