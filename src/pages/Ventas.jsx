@@ -501,6 +501,10 @@ const Ventas = () => {
         setFormError('Todos los campos con * son obligatorios');
         return;
       }
+      if (formData.ped_metodo_pago === 'Transferencia' && !formData.ped_cuenta_bancaria) {
+        setFormError('Seleccione un banco o billetera para la transferencia');
+        return;
+      }
       // Validar fecha no pasada
       const hoy = new Date().toISOString().split('T')[0];
       if (formData.ped_fecha < hoy) {
@@ -582,6 +586,10 @@ const Ventas = () => {
     }
     if (!formData.id || !formData.fecha_emision || formData.email_enviado === undefined || !formData.forma_pago) {
       setFormError('Todos los campos con * son obligatorios');
+      return;
+    }
+    if (formData.forma_pago === 'Transferencia' && !formData.cuenta_bancaria) {
+      setFormError('Seleccione un banco o billetera para la transferencia');
       return;
     }
     const emailEnviado = parseInt(formData.email_enviado, 10);
@@ -1441,12 +1449,12 @@ const Ventas = () => {
                     </div>
                     {formData.ped_metodo_pago === 'Transferencia' && (
                       <div>
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuenta Bancaria</label>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuenta Bancaria <span className="required-star">*</span></label>
                         <select
                           name="ped_cuenta_bancaria"
                           value={formData.ped_cuenta_bancaria || ''}
                           onChange={handleChange}
-                          className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
+                          className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_cuenta_bancaria ? 'border-red-400' : 'border-slate-300'}`}
                         >
                           <option value="">Seleccionar banco o billetera...</option>
                           <option value="Bancolombia">Bancolombia</option>
@@ -1642,9 +1650,9 @@ const Ventas = () => {
                     </div>
                     {formData.forma_pago === 'Transferencia' && (
                       <div>
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuenta Bancaria</label>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuenta Bancaria <span className="required-star">*</span></label>
                         <select name="cuenta_bancaria" value={formData.cuenta_bancaria || ''} onChange={handleChange}
-                          className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                          className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.cuenta_bancaria ? 'border-red-400' : 'border-slate-300'}`}>
                           <option value="">Seleccionar banco o billetera...</option>
                           <option value="Bancolombia">Bancolombia</option>
                           <option value="Davivienda">Davivienda</option>
