@@ -234,7 +234,8 @@ const Inventario = () => {
       }
       if (name === 'categoria' && !value) newErrors.categoria = 'Selecciona una categoría';
       else if (name === 'categoria') delete newErrors.categoria;
-      if (name === 'precio' && value && parseFloat(value) <= 0) newErrors.precio = 'Debe ser mayor a 0';
+      if (name === 'precio' && value && parseFloat(value) < 100) newErrors.precio = 'Mínimo $100 COP';
+      else if (name === 'precio' && value && parseFloat(value) > 999999.99) newErrors.precio = 'Máximo $999,999.99';
       else if (name === 'precio' && value) delete newErrors.precio;
       if (name === 'proveedor_id' && value) delete newErrors.proveedor_id;
     }
@@ -1243,7 +1244,7 @@ const Inventario = () => {
                   <div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Precio</label>
-                      <input name="precio" type="number" step="0.01" value={formData.precio || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.precio ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="precio" type="number" step="0.01" min="100" max="999999.99" value={formData.precio || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.precio ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.precio && <p className="text-red-500 text-xs mt-1">{errors.precio}</p>}
                     </div>
                   </div>
