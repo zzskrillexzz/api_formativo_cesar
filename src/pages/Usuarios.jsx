@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
 import api from '../api/axios';
+import { usuariosService } from '../api/services/usuariosService';
 
 const ROLES_DISPONIBLES = ['Administrador', 'Vendedor', 'Bodeguero', 'Contador'];
 
@@ -160,7 +161,7 @@ const Usuarios = () => {
     if (!confirmDelete) return;
     setFormSubmitting(true);
     try {
-      await api.delete(`/usuarios/eliminar/${confirmDelete}`);
+      await usuariosService.eliminar(confirmDelete);
       setConfirmDelete(null);
       toast({ type: 'success', title: 'Eliminado', description: 'Usuario eliminado correctamente' });
       fetchData();
