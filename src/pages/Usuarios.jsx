@@ -125,6 +125,10 @@ const Usuarios = () => {
       setFormError('Nombre, correo y rol son obligatorios');
       return;
     }
+    if (editingUserId && JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+      toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en el usuario' });
+      return;
+    }
     if (!editingUserId && !formData.usu_contrasena) {
       setFormError('La contraseña es obligatoria para nuevos usuarios');
       return;

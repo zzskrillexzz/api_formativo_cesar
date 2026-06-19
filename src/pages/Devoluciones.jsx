@@ -206,6 +206,10 @@ const Devoluciones = () => {
   const handleEdit = async (e) => {
     e.preventDefault();
     setFormError('');
+    if (JSON.stringify(editData) === JSON.stringify(formSnapshotRef.current)) {
+      toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en la devolución' });
+      return;
+    }
     if (!editData.cantidad || !editData.motivo || !editData.fecha) {
       setFormError('La cantidad, motivo y fecha son obligatorios');
       return;

@@ -317,6 +317,10 @@ const Compras = () => {
   const handleEditProveedor = async (e) => {
     e.preventDefault();
     setFormError('');
+    if (JSON.stringify(editProveedorData) === JSON.stringify(formSnapshotRef.current)) {
+      toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en el proveedor' });
+      return;
+    }
     if (!editProveedorData.nit || !editProveedorData.nombre || !editProveedorData.tipo || !editProveedorData.contacto || !editProveedorData.direccion || !editProveedorData.email) {
       setFormError('Todos los campos son obligatorios');
       return;
