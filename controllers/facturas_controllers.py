@@ -50,6 +50,10 @@ def cnRegistrarFacturas():
     if data.get("cuenta_bancaria") and data["cuenta_bancaria"] not in BANCOS_PERMITIDOS:
         return jsonify({"mensaje": "Cuenta bancaria no válida. Seleccione una de la lista."}), 400
 
+    # Validar cuenta bancaria requerida si es transferencia
+    if data.get("forma_pago") == "Transferencia" and (not data.get("cuenta_bancaria") or str(data["cuenta_bancaria"]).strip() == ""):
+        return jsonify({"mensaje": "Debe seleccionar un banco o billetera cuando la forma de pago es Transferencia"}), 400
+
     # Validar email_enviado (0 o 1)
     if data["email_enviado"] not in [0, 1]:
         return jsonify({"mensaje": "email_enviado debe ser 0 o 1"}), 400

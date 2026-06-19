@@ -69,7 +69,11 @@ def cnregistrarpedidos():
         if data["ped_metodo_pago"] not in metodos_validos:
             return jsonify({"mensaje": f"Método de pago inválido. Valores permitidos: {metodos_validos}"}), 400
 
-        # Validar cuenta bancaria (solo si es transferencia)
+        # Validar cuenta bancaria requerida si es transferencia
+        if data.get("ped_metodo_pago") == "Transferencia" and (not data.get("ped_cuenta_bancaria") or str(data["ped_cuenta_bancaria"]).strip() == ""):
+            return jsonify({"mensaje": "Debe seleccionar un banco o billetera cuando el método de pago es Transferencia"}), 400
+
+        # Validar cuenta bancaria (solo bancos permitidos)
         BANCOS_PERMITIDOS = [
             "Bancolombia", "Davivienda", "Banco de Bogotá", "BBVA Colombia",
             "Banco de Occidente", "Banco Popular", "Banco Agrario", "Banco Caja Social",
@@ -284,7 +288,11 @@ def cneditarpedidos(id):
         if data["ped_metodo_pago"] not in metodos_validos:
             return jsonify({"mensaje": f"Método de pago inválido. Valores permitidos: {metodos_validos}"}), 400
 
-        # Validar cuenta bancaria (solo si es transferencia)
+        # Validar cuenta bancaria requerida si es transferencia
+        if data.get("ped_metodo_pago") == "Transferencia" and (not data.get("ped_cuenta_bancaria") or str(data["ped_cuenta_bancaria"]).strip() == ""):
+            return jsonify({"mensaje": "Debe seleccionar un banco o billetera cuando el método de pago es Transferencia"}), 400
+
+        # Validar cuenta bancaria (solo bancos permitidos)
         BANCOS_PERMITIDOS = [
             "Bancolombia", "Davivienda", "Banco de Bogotá", "BBVA Colombia",
             "Banco de Occidente", "Banco Popular", "Banco Agrario", "Banco Caja Social",
