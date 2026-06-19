@@ -232,6 +232,8 @@ const Inventario = () => {
         if (name === 'nombre' && !value) newErrors.nombre = 'El nombre es obligatorio';
         else if (name === 'nombre') delete newErrors.nombre;
       }
+      if (name === 'categoria' && !value) newErrors.categoria = 'Selecciona una categoría';
+      else if (name === 'categoria') delete newErrors.categoria;
       if (name === 'precio' && value && parseFloat(value) <= 0) newErrors.precio = 'Debe ser mayor a 0';
       else if (name === 'precio' && value) delete newErrors.precio;
       if (name === 'proveedor_id' && value) delete newErrors.proveedor_id;
@@ -323,8 +325,8 @@ const Inventario = () => {
       setFormError('Completa los campos del producto antes de guardar');
       return;
     }
-    if (!formData.id || !formData.nombre) {
-      setFormError('ID y Nombre son obligatorios');
+    if (!formData.id || !formData.nombre || !formData.categoria) {
+      setFormError('ID, Nombre y Categoría son obligatorios');
       return;
     }
     const precio = parseFloat(formData.precio);
@@ -1194,8 +1196,9 @@ const Inventario = () => {
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Categoría</label>
                       <div className="flex gap-2 mt-1">
-                        <select name="categoria" value={formData.categoria || ''} onChange={handleChange} className="flex-1 p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+                        <select name="categoria" value={formData.categoria || ''} onChange={handleChange} className={`flex-1 p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium ${errors.categoria ? 'border-red-400' : 'border-slate-300'}`}>
                           <option value="">Seleccionar categoría...</option>
+                          {errors.categoria && <p className="text-red-500 text-xs mt-1">{errors.categoria}</p>}
                           {[...new Set([...productos.map(p => p.categoria), formData.categoria].filter(Boolean))].sort().map(cat => (
                             <option key={cat} value={cat}>{cat}</option>
                           ))}
