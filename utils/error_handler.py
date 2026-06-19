@@ -34,5 +34,5 @@ def safe_controller(f):
         except Exception as e:
             log.error("Error en %s: %s", f.__name__, str(e), exc_info=True)
             mensaje = "Error interno del servidor" if _es_produccion else str(e)
-            return jsonify({"error": mensaje}), 500
+            return jsonify({"mensaje": mensaje, "error": mensaje}), 500
     return wrapper

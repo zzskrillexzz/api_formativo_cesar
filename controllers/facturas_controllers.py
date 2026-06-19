@@ -1,6 +1,6 @@
 from flask import jsonify, request, current_app
 from services.facturas_service import listarFacturas, registrarFacturas, editarFacturas, eliminarFacturas, buscarFacturas
-from utils.validators import validar_campos_texto
+from utils.validators import validar_campos_texto, contiene_emoji, validar_nombre_apellido
 from utils.error_handler import safe_controller
 
 @safe_controller
@@ -28,6 +28,17 @@ def cnRegistrarFacturas():
     errores = validar_campos_texto(data, "forma_pago", "cuenta_bancaria")
     if errores:
         return jsonify({"mensaje": " | ".join(errores)}), 400
+
+    # Rechazar emojis en campos de texto
+    for campo in ["forma_pago", "cuenta_bancaria"]:
+        if data.get(campo) and contiene_emoji(str(data[campo])):
+            return jsonify({"mensaje": f"El campo {campo} no puede contener emojis"}), 400
+
+    # Validar que forma_pago solo contenga caracteres válidos (letras, números, espacios, -)
+    if data.get("forma_pago"):
+        import re
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\-]+$', str(data["forma_pago"])):
+            return jsonify({"mensaje": "La forma de pago solo puede contener letras, números, espacios y guiones"}), 400
 
     # Validar email_enviado (0 o 1)
     if data["email_enviado"] not in [0, 1]:
