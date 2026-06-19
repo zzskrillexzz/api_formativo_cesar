@@ -108,20 +108,7 @@ const Login = () => {
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
 
-            {/* Checkbox + terminos */}
-            <div className="flex items-center gap-2 animate-slide-up animate-delay-400">
-              <input
-                type="checkbox"
-                id="terms"
-                className="w-3.5 h-3.5 accent-blue-600 rounded"
-                defaultChecked
-              />
-              <label htmlFor="terms" className="text-[10px] text-slate-500 font-medium">
-                Acepto los terminos y condiciones del servicio
-              </label>
-            </div>
-
-            {/* Boton + enlace */}
+            {/* Boton */}
             <div className="flex items-center gap-4 pt-1 animate-slide-up animate-delay-500">
               <button
                 type="submit"
@@ -131,7 +118,6 @@ const Login = () => {
               >
                 {loading ? <Loader2 className="animate-spin" size={14} /> : 'Entrar'}
               </button>
-              <span className="text-[10px] text-slate-400 font-medium">¿Eres miembro?</span>
             </div>
           </form>
         </div>
