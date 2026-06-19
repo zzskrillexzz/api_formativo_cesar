@@ -35,12 +35,12 @@ export const AuthProvider = ({ children }) => {
         id: result.usu_id,
         name: result.usu_nombre,
         initials: result.usu_nombre.substring(0, 2).toUpperCase(),
-        role: result.usu_rol_id_fk
+        role: result.usu_rol || result.usu_rol_id_fk
       };
       sessionStorage.setItem('user_data', JSON.stringify(userData));
 
       setUser(userData);
-      setRole(result.usu_rol_id_fk);
+      setRole(result.usu_rol || result.usu_rol_id_fk);
       setIsLogged(true);
 
       return { success: true };
