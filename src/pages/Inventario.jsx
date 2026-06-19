@@ -1338,7 +1338,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad Inicial</label>
-                      <input name="lot_cantidad_inicial" type="number" min="1" max="999999" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="lot_cantidad_inicial" type="number" min="1" max="1000" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_cantidad_inicial && <p className="text-red-500 text-xs mt-1">{errors.lot_cantidad_inicial}</p>}
                     </div>
                     <div>
