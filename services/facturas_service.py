@@ -116,6 +116,26 @@ def editarFacturas(fac_id, data):
 def eliminarFacturas(fac_id):
     try:
         cursor = current_app.mysql.connection.cursor()
+        
+        # Verificar dependencias antes de eliminar
+        dependencias = []
+        try:
+            cursor.execute("SELECT COUNT(*) FROM t_anulacion WHERE anu_fac_id_fk = %s", (fac_id,))
+            if cursor.fetchone()[0] > 0:
+                dependencias.append("anulaciones")
+        except Exception:
+            pass
+        try:
+            cursor.execute("SELECT COUNT(*) FROM t_anulacion_venta WHERE anu_fac_id_fk = %s", (fac_id,))
+            if cursor.fetchone()[0] > 0:
+                dependencias.append("anulaciones de venta")
+        except Exception:
+            pass
+        
+        if dependencias:
+            cursor.close()
+            raise ValueError(f"No se puede eliminar la factura {fac_id} porque tiene {', '.join(dependencias)} asociadas. Elimine primero esos registros.")
+        
         sql = "DELETE FROM t_factura WHERE fac_id = %s"
         cursor.execute(sql, (fac_id,))
         current_app.mysql.connection.commit()

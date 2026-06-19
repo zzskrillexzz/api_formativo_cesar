@@ -90,6 +90,38 @@ def editarUsuarios(USU_ID, USU_NOMBRE, USU_ROL, USU_CORREO, USU_CONTRASENA, USU_
 
 def eliminarUsuarios(USU_ID):
     c = current_app.mysql.connection.cursor()
+    
+    # Verificar dependencias antes de eliminar
+    dependencias = []
+    c.execute("SELECT COUNT(*) FROM t_pedido WHERE ped_usu_id_fk = %s", (USU_ID,))
+    if c.fetchone()[0] > 0:
+        dependencias.append("pedidos")
+    c.execute("SELECT COUNT(*) FROM t_compra WHERE com_usu_id_fk = %s", (USU_ID,))
+    if c.fetchone()[0] > 0:
+        dependencias.append("compras")
+    try:
+        c.execute("SELECT COUNT(*) FROM t_factura WHERE fac_usu_id_fk = %s", (USU_ID,))
+        if c.fetchone()[0] > 0:
+            dependencias.append("facturas")
+    except Exception:
+        pass
+    try:
+        c.execute("SELECT COUNT(*) FROM t_devolucion WHERE dev_usu_id_fk = %s", (USU_ID,))
+        if c.fetchone()[0] > 0:
+            dependencias.append("devoluciones")
+    except Exception:
+        pass
+    try:
+        c.execute("SELECT COUNT(*) FROM t_monitoria WHERE mon_usu_id_fk = %s", (USU_ID,))
+        if c.fetchone()[0] > 0:
+            dependencias.append("monitorías")
+    except Exception:
+        pass
+    
+    if dependencias:
+        c.close()
+        raise ValueError(f"No se puede eliminar el usuario {USU_ID} porque tiene {', '.join(dependencias)} asociados. Reasigne o elimine primero esos registros.")
+    
     sql = "DELETE FROM t_usuario WHERE usu_id = %s"
     c.execute(sql, (USU_ID,))
     current_app.mysql.connection.commit()

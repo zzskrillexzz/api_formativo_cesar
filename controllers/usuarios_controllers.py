@@ -117,8 +117,11 @@ def cneliminarusuarios(usu_id):
     if not usuario:
         return jsonify({"mensaje": "Usuario no encontrado"}), 404
 
-    eliminarUsuarios(usu_id)
-    return jsonify({"mensaje": "Usuario eliminado", "id": usu_id}), 200
+    try:
+        eliminarUsuarios(usu_id)
+        return jsonify({"mensaje": "Usuario eliminado", "id": usu_id}), 200
+    except ValueError as e:
+        return jsonify({"mensaje": str(e)}), 409
     
     
 @safe_controller

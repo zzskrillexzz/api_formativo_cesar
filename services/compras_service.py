@@ -87,6 +87,23 @@ def editarCompras(COM_ID, data):
 
 def eliminarCompras(COM_ID):
     c = current_app.mysql.connection.cursor()
+    
+    # Verificar dependencias antes de eliminar
+    dependencias = []
+    c.execute("SELECT COUNT(*) FROM t_detalle_compra WHERE dco_com_id_fk = %s", (COM_ID,))
+    if c.fetchone()[0] > 0:
+        dependencias.append("detalles de compra")
+    try:
+        c.execute("SELECT COUNT(*) FROM t_devolucion WHERE dev_com_id_fk = %s", (COM_ID,))
+        if c.fetchone()[0] > 0:
+            dependencias.append("devoluciones")
+    except Exception:
+        pass
+    
+    if dependencias:
+        c.close()
+        raise ValueError(f"No se puede eliminar la compra {COM_ID} porque tiene {', '.join(dependencias)} asociados. Elimine primero esos registros.")
+    
     c.execute("DELETE FROM t_compra WHERE com_id = %s", (COM_ID,))
     current_app.mysql.connection.commit()
     c.close()

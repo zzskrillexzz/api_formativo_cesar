@@ -161,5 +161,8 @@ def cneliminarcompras(COM_ID):
     compra = buscarCompras(COM_ID)
     if compra is None:
         return jsonify({"mensaje": f"No se encontró la compra con ID {COM_ID}"}), 404
-    resultado = eliminarCompras(COM_ID)
-    return jsonify(resultado), 200
+    try:
+        resultado = eliminarCompras(COM_ID)
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"mensaje": str(e)}), 409

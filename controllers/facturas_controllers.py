@@ -123,8 +123,11 @@ def cnEditarFacturas(fac_id):
 
 @safe_controller
 def cnEliminarFacturas(fac_id):
-    resultado = eliminarFacturas(fac_id)
-    return jsonify(resultado), 200
+    try:
+        resultado = eliminarFacturas(fac_id)
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"mensaje": str(e)}), 409
 
 @safe_controller
 def cnBuscarFacturas(fac_id):
