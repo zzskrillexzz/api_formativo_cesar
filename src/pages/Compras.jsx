@@ -10,6 +10,15 @@ import { FIELD_LIMITS } from '../utils/fieldLimits';
 
 const ESTADOS = ['Pendiente', 'Recibida', 'Cancelada'];
 
+// Elimina emojis y caracteres especiales que rompen la BD
+const stripEmojis = (str) => {
+  if (!str) return str;
+  return str.replace(
+    /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2702}-\u{27B0}\u{24C2}-\u{1F251}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{FE00}-\u{FE0F}\u{200D}]+/gu,
+    ''
+  );
+};
+
 const Compras = () => {
   const [tab, setTab] = useState('compras');
   const [compras, setCompras] = useState([]);
@@ -70,7 +79,8 @@ const Compras = () => {
       setFormData(defaultData);
       formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     } else {
-      const nums = proveedores.map(p => { const m = (p.id || '').match(/PROV(\d+)/); return m ? parseInt(m[1]) : 0; });
+      // El ID lo genera el backend automáticamente; el frontend solo muestra una previsualización
+      const nums = proveedores.map(p => { const m = (p.prov_id || '').match(/PROV(\d+)/); return m ? parseInt(m[1]) : 0; });
       const max = nums.length > 0 ? Math.max(...nums) : 0;
       const defaultData = { id: 'PROV' + String(max + 1).padStart(3, '0') };
       setFormData(defaultData);
@@ -96,18 +106,20 @@ const Compras = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const cleanValue = stripEmojis(value);
     const max = FIELD_LIMITS[name];
-    if (max && value.length > max) return;
-    setFormData({ ...formData, [name]: value });
-    validateField(name, value);
+    if (max && cleanValue.length > max) return;
+    setFormData({ ...formData, [name]: cleanValue });
+    validateField(name, cleanValue);
   };
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
+    const cleanValue = stripEmojis(value);
     const max = FIELD_LIMITS[name];
-    if (max && value.length > max) return;
-    setEditData({ ...editData, [name]: value });
-    validateField(name, value);
+    if (max && cleanValue.length > max) return;
+    setEditData({ ...editData, [name]: cleanValue });
+    validateField(name, cleanValue);
   };
 
   const validateField = (name, value) => {
@@ -133,7 +145,10 @@ const Compras = () => {
       else if (name === 'tipo') delete newErrors.tipo;
       if (name === 'contacto' && !value) newErrors.contacto = 'El contacto es obligatorio';
       else if (name === 'contacto') delete newErrors.contacto;
+      if (name === 'direccion' && !value) newErrors.direccion = 'La dirección es obligatoria';
+      else if (name === 'direccion') delete newErrors.direccion;
       if (name === 'email' && !value) newErrors.email = 'El email es obligatorio';
+      else if (name === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) newErrors.email = 'Formato de email inválido';
       else if (name === 'email') delete newErrors.email;
     }
     setErrors(newErrors);
@@ -169,21 +184,21 @@ const Compras = () => {
   const handleSubmitCompra = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
-      setFormError('Completa los campos de la compra antes de guardar');
-      return;
-    }
-    if (!formData.com_id || !formData.com_fecha || !formData.com_prov_id_fk || !formData.com_total) {
-      setFormError('Los campos con * son obligatorios');
-      return;
-    }
-    const total = parseFloat(formData.com_total);
-    if (isNaN(total) || total <= 0) {
-      setFormError('El total debe ser un número mayor a 0');
-      return;
-    }
     setFormSubmitting(true);
     try {
+      if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+        setFormError('Completa los campos de la compra antes de guardar');
+        return;
+      }
+      if (!formData.com_id || !formData.com_fecha || !formData.com_prov_id_fk || !formData.com_total) {
+        setFormError('Los campos con * son obligatorios');
+        return;
+      }
+      const total = parseFloat(formData.com_total);
+      if (isNaN(total) || total <= 0) {
+        setFormError('El total debe ser un número mayor a 0');
+        return;
+      }
       await comprasService.registrar({
         com_id: formData.com_id,
         com_fecha: formData.com_fecha,
@@ -207,17 +222,17 @@ const Compras = () => {
   const handleEditCompra = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (JSON.stringify(editData) === JSON.stringify(formSnapshotRef.current)) {
-      setFormError('No se realizaron cambios en la compra');
-      return;
-    }
-    const total = parseFloat(editData.comp_total);
-    if (isNaN(total) || total <= 0) {
-      setFormError('El total debe ser un número mayor a 0');
-      return;
-    }
     setFormSubmitting(true);
     try {
+      if (JSON.stringify(editData) === JSON.stringify(formSnapshotRef.current)) {
+        setFormError('No se realizaron cambios en la compra');
+        return;
+      }
+      const total = parseFloat(editData.comp_total);
+      if (isNaN(total) || total <= 0) {
+        setFormError('El total debe ser un número mayor a 0');
+        return;
+      }
       const payload = {
         com_fecha: editData.comp_fecha,
         com_prov_id_fk: editData.comp_prov_id_fk,
@@ -241,6 +256,7 @@ const Compras = () => {
   };
 
   const handleChangeStatus = async (compraId, nuevoEstado) => {
+    if (formSubmitting) return; // Evitar múltiples envíos simultáneos
     setFormSubmitting(true);
     try {
       await comprasService.editar(compraId, { com_estado: nuevoEstado });
@@ -283,16 +299,21 @@ const Compras = () => {
 
   const handleEditProveedorChange = (e) => {
     const { name, value } = e.target;
+    const cleanValue = stripEmojis(value);
     const max = FIELD_LIMITS[name];
-    if (max && value.length > max) return;
-    setEditProveedorData({ ...editProveedorData, [name]: value });
+    if (max && cleanValue.length > max) return;
+    setEditProveedorData({ ...editProveedorData, [name]: cleanValue });
   };
 
   const handleEditProveedor = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (!editProveedorData.nit || !editProveedorData.nombre || !editProveedorData.tipo || !editProveedorData.contacto || !editProveedorData.email) {
+    if (!editProveedorData.nit || !editProveedorData.nombre || !editProveedorData.tipo || !editProveedorData.contacto || !editProveedorData.direccion || !editProveedorData.email) {
       setFormError('Todos los campos son obligatorios');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editProveedorData.email)) {
+      setFormError('Formato de email inválido');
       return;
     }
     setFormSubmitting(true);
@@ -334,18 +355,22 @@ const Compras = () => {
   const handleSubmitProveedor = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+    // Verificar que el usuario haya modificado al menos un campo (excluyendo el ID que es auto-generado)
+    const { id: _idSnap, ...snapSinId } = formSnapshotRef.current;
+    const { id: _idForm, ...formSinId } = formData;
+    if (JSON.stringify(formSinId) === JSON.stringify(snapSinId)) {
       setFormError('Completa los campos del proveedor antes de guardar');
       return;
     }
-    if (!formData.id || !formData.nit || !formData.nombre || !formData.tipo || !formData.contacto || !formData.direccion || !formData.email) {
+    if (!formData.nit || !formData.nombre || !formData.tipo || !formData.contacto || !formData.direccion || !formData.email) {
       setFormError('Todos los campos son obligatorios');
       return;
     }
     setFormSubmitting(true);
     try {
+      // No se envía ID — el backend lo genera automáticamente
       await proveedoresService.registrar({
-        id: formData.id,
+        id: '',
         nit: formData.nit,
         nombre: formData.nombre,
         tipo: formData.tipo,
@@ -703,7 +728,7 @@ const Compras = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
-                      <input name="com_fecha" type="date" value={formData.com_fecha || ''} onChange={handleChange}
+                      <input name="com_fecha" type="date" value={formData.com_fecha || ''} onChange={handleChange} max={new Date().toISOString().split('T')[0]}
                         className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_fecha ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.com_fecha && <p className="text-red-500 text-xs mt-1">{errors.com_fecha}</p>}
                     </div>
@@ -787,7 +812,8 @@ const Compras = () => {
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección <span className="required-star">*</span></label>
                     <input name="direccion" value={formData.direccion || ''} onChange={handleChange}
-                      className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.direccion ? 'border-red-400' : 'border-slate-300'}`} />
+                    {errors.direccion && <p className="text-red-500 text-xs mt-1">{errors.direccion}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email <span className="required-star">*</span></label>
@@ -823,7 +849,7 @@ const Compras = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha</label>
-                  <input name="comp_fecha" type="date" value={editData.comp_fecha || ''} onChange={handleEditChange}
+                  <input name="comp_fecha" type="date" value={editData.comp_fecha || ''} onChange={handleEditChange} max={new Date().toISOString().split('T')[0]}
                     className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                 </div>
                 <div>

@@ -284,6 +284,10 @@ const Inventario = () => {
       setFormError('El stock mínimo debe ser un número entero válido');
       return;
     }
+    if (stockMin > cantidad) {
+      setFormError('El stock mínimo no puede superar al stock disponible');
+      return;
+    }
     setFormSubmitting(true);
     try {
       const payload = {
@@ -1256,12 +1260,16 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Fabricación</label>
-                      <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_fabricacion ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange}
+                        min={`${new Date().getFullYear() - 5}-01-01`} max={`${new Date().getFullYear() + 5}-12-31`}
+                        className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_fabricacion ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_fecha_fabricacion && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_fabricacion}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Vencimiento <span className="required-star">*</span></label>
-                      <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_vencimiento ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange}
+                        min={`${new Date().getFullYear() - 5}-01-01`} max={`${new Date().getFullYear() + 5}-12-31`}
+                        className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_vencimiento ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_fecha_vencimiento && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_vencimiento}</p>}
                     </div>
                   </div>

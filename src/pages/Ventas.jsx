@@ -251,8 +251,10 @@ const Ventas = () => {
       if (name === 'cli_id' && !value) newErrors.cli_id = 'El ID es obligatorio';
       else if (name === 'cli_id') delete newErrors.cli_id;
       if (name === 'cli_nombre' && !value) newErrors.cli_nombre = 'El nombre es obligatorio';
+      else if (name === 'cli_nombre' && value && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) newErrors.cli_nombre = 'Solo letras y espacios';
       else if (name === 'cli_nombre') delete newErrors.cli_nombre;
       if (name === 'cli_apellido' && !value) newErrors.cli_apellido = 'El apellido es obligatorio';
+      else if (name === 'cli_apellido' && value && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) newErrors.cli_apellido = 'Solo letras y espacios';
       else if (name === 'cli_apellido') delete newErrors.cli_apellido;
       if (name === 'cli_correo' && !value) newErrors.cli_correo = 'El correo es obligatorio';
       else if (name === 'cli_correo' && value && !/\S+@\S+\.\S+/.test(value)) newErrors.cli_correo = 'Correo no válido';
@@ -442,27 +444,27 @@ const Ventas = () => {
     e.preventDefault();
     setFormError('');
     setErrors({});
-    if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
-      setFormError(editingPedidoId ? 'No se realizaron cambios en el pedido' : 'Completa los campos del pedido antes de guardar');
-      return;
-    }
-    if (!formData.ped_fecha || !formData.ped_metodo_pago || !formData.ped_estado_entrega || !formData.ped_cli_id_fk) {
-      setFormError('Todos los campos con * son obligatorios');
-      return;
-    }
-    if (productosSeleccionados.length === 0) {
-      setFormError('Agrega al menos un producto al pedido');
-      return;
-    }
-    const clienteId = parseInt(formData.ped_cli_id_fk, 10);
-    if (isNaN(clienteId) || clienteId <= 0) {
-      setFormError('El ID del cliente debe ser un número entero positivo');
-      return;
-    }
-    const totalPed = totalPedidoCalculado;
-    const pedId = editingPedidoId || formData.ped_id;
     setFormSubmitting(true);
     try {
+      if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
+        setFormError(editingPedidoId ? 'No se realizaron cambios en el pedido' : 'Completa los campos del pedido antes de guardar');
+        return;
+      }
+      if (!formData.ped_fecha || !formData.ped_metodo_pago || !formData.ped_estado_entrega || !formData.ped_cli_id_fk) {
+        setFormError('Todos los campos con * son obligatorios');
+        return;
+      }
+      if (productosSeleccionados.length === 0) {
+        setFormError('Agrega al menos un producto al pedido');
+        return;
+      }
+      const clienteId = parseInt(formData.ped_cli_id_fk, 10);
+      if (isNaN(clienteId) || clienteId <= 0) {
+        setFormError('El ID del cliente debe ser un número entero positivo');
+        return;
+      }
+      const totalPed = totalPedidoCalculado;
+      const pedId = editingPedidoId || formData.ped_id;
       if (editingPedidoId) {
         // ── Editar pedido existente ──
         await pedidosService.editar(editingPedidoId, {
@@ -1262,7 +1264,7 @@ const Ventas = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
-                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_fecha ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_fecha ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.ped_fecha && <p className="text-red-500 text-xs mt-1">{errors.ped_fecha}</p>}
                     </div>
                   </div>

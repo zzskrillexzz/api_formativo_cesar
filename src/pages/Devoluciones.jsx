@@ -10,6 +10,7 @@ import { detallesPedidosService } from '../api/services/detallesPedidosService';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { FIELD_LIMITS } from '../utils/fieldLimits';
 
 const Devoluciones = () => {
   const [devoluciones, setDevoluciones] = useState([]);
@@ -112,6 +113,8 @@ const Devoluciones = () => {
 
   const handleChange = async (e) => {
     const { name, value } = e.target;
+    const max = FIELD_LIMITS[name];
+    if (max && value.length > max) return;
     const updated = { ...formData, [name]: value };
     // Al cambiar el pedido, buscar sus detalles y auto-completar producto + lote
     if (name === 'pedido_id' && value) {
@@ -148,6 +151,8 @@ const Devoluciones = () => {
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
+    const max = FIELD_LIMITS[name];
+    if (max && value.length > max) return;
     setEditData({ ...editData, [name]: value });
   };
 

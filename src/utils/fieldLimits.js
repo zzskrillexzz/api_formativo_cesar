@@ -10,7 +10,7 @@ export const FIELD_LIMITS = {
   cli_nombre: 80,
   cli_apellido: 80,
   cli_correo: 120,
-  cli_telefono: 20,
+  cli_telefono: 10,
   cli_direccion: 200,
   // Productos
   nombre: 100,
@@ -18,7 +18,7 @@ export const FIELD_LIMITS = {
   descripcion: 500,
   // Proveedores
   nit: 30,
-  contacto: 100,
+  contacto: 20,
   email: 120,
   direccion: 200,
   tipo: 30,
