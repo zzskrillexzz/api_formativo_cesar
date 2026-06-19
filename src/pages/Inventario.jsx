@@ -1254,11 +1254,13 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
-                      <select name="estado" value={formData.estado || 'Activo'} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="estado" value={formData.estado || 'Activo'} onChange={handleChange} disabled={!editingId}
+                        className={`w-full p-3 border-2 rounded-md outline-none text-sm font-medium mt-1 ${editingId ? 'bg-white border-slate-300 focus:ring-2 focus:ring-blue-500' : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'}`}>
                         <option value="Activo">Activo</option>
                         <option value="Descontinuado">Descontinuado</option>
                         <option value="Suspendido">Suspendido</option>
                       </select>
+                      {!editingId && <p className="text-[10px] text-amber-600 font-medium mt-0.5">Solo editable al modificar</p>}
                     </div>
                   </div>
                   <div>
@@ -1333,12 +1335,14 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
-                      <select name="lot_estado" value={formData.lot_estado || 'Activo'} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                      <select name="lot_estado" value={formData.lot_estado || 'Activo'} onChange={handleChange} disabled={!editingId}
+                        className={`w-full p-3 border-2 rounded-md outline-none text-sm font-medium mt-1 ${editingId ? 'bg-white border-slate-300 focus:ring-2 focus:ring-blue-500' : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'}`}>
                         <option value="Activo">Activo</option>
                         <option value="Agotado">Agotado</option>
                         <option value="Vencido">Vencido</option>
                         <option value="Cuarentena">Cuarentena</option>
                       </select>
+                      {!editingId && <p className="text-[10px] text-amber-600 font-medium mt-0.5">Solo editable al modificar</p>}
                     </div>
                   </div>
                 </>
