@@ -59,6 +59,27 @@ def editarClientes(CLI_ID, CLI_TIPO_DOCUMENTO, CLI_NOMBRE, CLI_APELLIDO, CLI_TEL
 
 def eliminarClientes(CLI_ID):
     c = current_app.mysql.connection.cursor()
+    
+    # Verificar dependencias antes de eliminar
+    dependencias = []
+    
+    # Pedidos que referencian este cliente
+    c.execute("SELECT COUNT(*) FROM t_pedido WHERE ped_cli_id_fk = %s", (CLI_ID,))
+    if c.fetchone()[0] > 0:
+        dependencias.append("pedidos")
+    
+    # Facturas que referencian este cliente
+    try:
+        c.execute("SELECT COUNT(*) FROM t_factura WHERE fac_cli_id_fk = %s", (CLI_ID,))
+        if c.fetchone()[0] > 0:
+            dependencias.append("facturas")
+    except Exception:
+        pass  # Columna puede no existir
+    
+    if dependencias:
+        c.close()
+        raise ValueError(f"No se puede eliminar el cliente {CLI_ID} porque tiene {', '.join(dependencias)} asociados. Elimine primero esos registros.")
+    
     sql = "DELETE FROM t_cliente WHERE cli_id = %s"
     c.execute(sql, (CLI_ID,))
     current_app.mysql.connection.commit()

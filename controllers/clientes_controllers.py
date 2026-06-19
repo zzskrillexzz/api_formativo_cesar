@@ -133,7 +133,10 @@ def cneditarclientes():
 def cneliminarclientes(cli_id):
     if not buscarClientes(cli_id):
         return jsonify({"mensaje": "Cliente no encontrado"}), 404
-    return jsonify(eliminarClientes(cli_id)), 200
+    try:
+        return jsonify(eliminarClientes(cli_id)), 200
+    except ValueError as e:
+        return jsonify({"mensaje": str(e)}), 409
 
 @safe_controller
 def cnbuscarclientes():

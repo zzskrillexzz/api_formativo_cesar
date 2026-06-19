@@ -86,6 +86,26 @@ def editarProveedores(prov_id, data):
 def eliminarProveedores(prov_id):
     """Elimina un proveedor por su ID."""
     cursor = current_app.mysql.connection.cursor()
+    
+    # Verificar dependencias
+    dependencias = []
+    cursor.execute("SELECT COUNT(*) FROM t_compra WHERE com_prov_id_fk = %s", (prov_id,))
+    if cursor.fetchone()[0] > 0:
+        dependencias.append("compras")
+    cursor.execute("SELECT COUNT(*) FROM t_lote WHERE lot_prov_id_fk = %s", (prov_id,))
+    if cursor.fetchone()[0] > 0:
+        dependencias.append("lotes")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM t_producto WHERE pro_prov_id_fk = %s", (prov_id,))
+        if cursor.fetchone()[0] > 0:
+            dependencias.append("productos")
+    except Exception:
+        pass
+    
+    if dependencias:
+        cursor.close()
+        raise ValueError(f"No se puede eliminar el proveedor {prov_id} porque tiene {', '.join(dependencias)} asociados. Elimine primero esos registros.")
+    
     cursor.execute("DELETE FROM t_proveedor WHERE prov_id = %s", (prov_id,))
     current_app.mysql.connection.commit()
     cursor.close()

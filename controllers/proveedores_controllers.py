@@ -121,5 +121,8 @@ def cneditarproveedores():
 def cneliminarproveedores(prov_id):
     if not buscarProveedores(prov_id):
         return jsonify({"mensaje": f"No existe un proveedor con el ID {prov_id}"}), 404
-    resultado = eliminarProveedores(prov_id)
-    return jsonify(resultado), 200
+    try:
+        resultado = eliminarProveedores(prov_id)
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"mensaje": str(e)}), 409
