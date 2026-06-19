@@ -362,13 +362,15 @@ const Inventario = () => {
       };
       if (isEditing) {
         await productosService.editar(payload.id, payload);
+        toast({ type: 'success', title: 'Actualizado', description: 'Producto actualizado correctamente' });
       } else {
         await productosService.registrar(payload);
+        toast({ type: 'success', title: 'Creado', description: 'Producto registrado correctamente' });
       }
       setShowModal(false);
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al guardar producto');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar producto' });
     } finally {
       setFormSubmitting(false);
     }
@@ -433,13 +435,15 @@ const Inventario = () => {
       };
       if (isEditing) {
         await lotesService.editar(payload.lot_id, payload);
+        toast({ type: 'success', title: 'Actualizado', description: 'Lote actualizado correctamente' });
       } else {
         await lotesService.registrar(payload);
+        toast({ type: 'success', title: 'Creado', description: 'Lote registrado correctamente' });
       }
       setShowModal(false);
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al guardar lote');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar lote' });
     } finally {
       setFormSubmitting(false);
     }
@@ -475,9 +479,10 @@ const Inventario = () => {
         inm_usu_id_fk: user?.id || ''
       });
       setShowModal(false);
+      toast({ type: 'success', title: 'Creado', description: 'Movimiento registrado correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al crear movimiento');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al crear movimiento' });
     } finally {
       setFormSubmitting(false);
     }
