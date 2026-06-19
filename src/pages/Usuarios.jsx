@@ -13,7 +13,13 @@ const ROLES_DISPONIBLES = ['Administrador', 'Vendedor', 'Bodeguero', 'Contador']
 
 const Usuarios = () => {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'Administrador';
   const [tab, setTab] = useState('usuarios');
+
+  // Si el usuario no es admin, forzar pestaña 'usuarios'
+  useEffect(() => {
+    if (!isAdmin && tab === 'roles') setTab('usuarios');
+  }, [isAdmin, tab]);
   const [usuarios, setUsuarios] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -265,7 +271,7 @@ const Usuarios = () => {
 
   const tabs = [
     { id: 'usuarios', label: 'Usuarios', icon: Users },
-    { id: 'roles', label: 'Roles', icon: Shield },
+    ...(isAdmin ? [{ id: 'roles', label: 'Roles', icon: Shield }] : []),
   ];
 
   if (loading) return <ThemeLoader module="Usuarios" />;
@@ -315,10 +321,12 @@ const Usuarios = () => {
           <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
             <RefreshCw size={18} className="text-slate-500" />
           </button>
-          <button onClick={() => tab === 'usuarios' ? openUserModal() : openRolModal()}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-md">
-            <Plus size={16} /> {tab === 'usuarios' ? 'Nuevo Usuario' : 'Nuevo Rol'}
-          </button>
+          {isAdmin && (
+            <button onClick={() => tab === 'usuarios' ? openUserModal() : openRolModal()}
+              className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-md">
+              <Plus size={16} /> {tab === 'usuarios' ? 'Nuevo Usuario' : 'Nuevo Rol'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -371,14 +379,18 @@ const Usuarios = () => {
                       <td className="px-5 py-3">{estadoBadge(u.usu_estado)}</td>
                       <td className="px-5 py-3">
                         <div className="flex items-center justify-center gap-1.5">
-                          <button onClick={() => openUserModal(u)} title="Editar usuario"
-                            className="p-1.5 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
-                            <Edit3 size={15} />
-                          </button>
-                          <button onClick={() => setConfirmDelete(u.usu_id)} title="Eliminar usuario"
-                            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-                            <Trash2 size={15} />
-                          </button>
+                          {isAdmin && (
+                            <>
+                              <button onClick={() => openUserModal(u)} title="Editar usuario"
+                                className="p-1.5 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                                <Edit3 size={15} />
+                              </button>
+                              <button onClick={() => setConfirmDelete(u.usu_id)} title="Eliminar usuario"
+                                className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                <Trash2 size={15} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -430,14 +442,18 @@ const Usuarios = () => {
                       <td className="px-5 py-3 text-slate-400 text-xs">{r.rol_descripcion || '-'}</td>
                       <td className="px-5 py-3">
                         <div className="flex items-center justify-center gap-1.5">
-                          <button onClick={() => openRolModal(r)} title="Editar rol"
-                            className="p-1.5 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
-                            <Edit3 size={15} />
-                          </button>
-                          <button onClick={() => setConfirmDeleteRol(r.rol_id)} title="Eliminar rol"
-                            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-                            <Trash2 size={15} />
-                          </button>
+                          {isAdmin && (
+                            <>
+                              <button onClick={() => openRolModal(r)} title="Editar rol"
+                                className="p-1.5 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                                <Edit3 size={15} />
+                              </button>
+                              <button onClick={() => setConfirmDeleteRol(r.rol_id)} title="Eliminar rol"
+                                className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                <Trash2 size={15} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
