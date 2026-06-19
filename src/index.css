@@ -106,10 +106,10 @@
   50%      { transform: translateY(-4px); }
 }
 
-@keyframes gradientShift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* Gradiente ESTÁTICO overlay — misma estética, ~1% del costo GPU */
+@keyframes breathe {
+  from { opacity: 0.25; }
+  to   { opacity: 0.65; }
 }
 
 .animate-fade-in    { animation: fadeIn 0.6s ease-out both; }
@@ -117,7 +117,21 @@
 .animate-pulse-soft { animation: pulseSoft 2s ease-in-out infinite; }
 .animate-glow       { animation: glow 2s ease-in-out infinite; }
 .animate-float      { animation: float 3s ease-in-out infinite; }
-.animate-gradient   { background-size: 200% 200%; animation: gradientShift 8s ease-in-out infinite; }
+.animate-gradient   {
+  position: relative;
+  z-index: 0;
+}
+
+/* Overlay sutil que "respira" sobre el gradiente estático */
+.animate-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;                         /* entre el fondo y el contenido */
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 220, 140, 0.07) 0%, transparent 65%);
+  animation: breathe 7s ease-in-out infinite alternate;
+}
 
 .animate-delay-100 { animation-delay: 0.1s; }
 .animate-delay-200 { animation-delay: 0.2s; }
@@ -191,6 +205,23 @@
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-3px); }
 }
+/* ── Toast notifications ── */
+@keyframes toastSlideDown {
+  from { transform: translateY(-120%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes toastSlideUp {
+  from { transform: translateY(0); opacity: 1; }
+  to   { transform: translateY(-120%); opacity: 0; }
+}
+@keyframes toastProgress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+.toast-enter { animation: toastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.toast-exit  { animation: toastSlideUp 0.25s ease-in both; }
+
 @keyframes loginGlow {
   0%, 100% { box-shadow: 0 0 15px rgba(63,169,245,0.12), 0 6px 30px rgba(0,0,0,0.06); }
   50%      { box-shadow: 0 0 28px rgba(63,169,245,0.20), 0 6px 30px rgba(0,0,0,0.06); }

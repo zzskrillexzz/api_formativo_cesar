@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Truck, Package, Search, Plus, X, RefreshCw, Loader2, Edit3, Trash2, FileText, Download, Eye } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { useToast } from '../components/Toast';
 import { comprasService } from '../api/services/comprasService';
 import { proveedoresService } from '../api/services/proveedoresService';
 import { useAuth } from '../context/AuthContext';
@@ -48,6 +49,7 @@ const Compras = () => {
   const [showViewProveedorModal, setShowViewProveedorModal] = useState(false);
   const [viewProveedorData, setViewProveedorData] = useState(null);
   const [confirmDeleteProveedor, setConfirmDeleteProveedor] = useState(null);
+  const { toast } = useToast();
   const { user } = useAuth();
 
   const fetchData = async () => {
@@ -103,6 +105,9 @@ const Compras = () => {
       setFormError('Error al cargar datos de la compra');
     }
   };
+
+  // ── Función para eliminar emojis ──
+  const stripEmojis = (text) => text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -211,9 +216,10 @@ const Compras = () => {
         com_comprobante_tipo: formData.com_comprobante_tipo || null
       });
       setShowModal(false);
+      toast({ type: 'success', title: 'Creada', description: 'Compra registrada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al crear compra');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al crear compra' });
     } finally {
       setFormSubmitting(false);
     }
@@ -247,9 +253,10 @@ const Compras = () => {
       }
       await comprasService.editar(editData.comp_id, payload);
       setShowEditModal(false);
+      toast({ type: 'success', title: 'Actualizada', description: 'Compra actualizada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al actualizar compra');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al actualizar compra' });
     } finally {
       setFormSubmitting(false);
     }
@@ -260,9 +267,10 @@ const Compras = () => {
     setFormSubmitting(true);
     try {
       await comprasService.editar(compraId, { com_estado: nuevoEstado });
+      toast({ type: 'success', title: 'Estado actualizado', description: `Compra → ${nuevoEstado}` });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al cambiar estado');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al cambiar estado' });
     } finally {
       setFormSubmitting(false);
     }
@@ -274,9 +282,10 @@ const Compras = () => {
     try {
       await comprasService.eliminar(confirmDelete);
       setConfirmDelete(null);
+      toast({ type: 'success', title: 'Eliminada', description: 'Compra eliminada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al eliminar compra');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al eliminar compra' });
     } finally {
       setFormSubmitting(false);
     }
@@ -299,10 +308,10 @@ const Compras = () => {
 
   const handleEditProveedorChange = (e) => {
     const { name, value } = e.target;
-    const cleanValue = stripEmojis(value);
+    const cleaned = stripEmojis(value);
     const max = FIELD_LIMITS[name];
-    if (max && cleanValue.length > max) return;
-    setEditProveedorData({ ...editProveedorData, [name]: cleanValue });
+    if (max && cleaned.length > max) return;
+    setEditProveedorData({ ...editProveedorData, [name]: cleaned });
   };
 
   const handleEditProveedor = async (e) => {
@@ -312,17 +321,18 @@ const Compras = () => {
       setFormError('Todos los campos son obligatorios');
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editProveedorData.email)) {
-      setFormError('Formato de email inválido');
+    if (editProveedorData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editProveedorData.email)) {
+      setFormError('El correo electrónico no es válido');
       return;
     }
     setFormSubmitting(true);
     try {
       await proveedoresService.editar(editProveedorData.id, editProveedorData);
       setShowEditProveedorModal(false);
+      toast({ type: 'success', title: 'Actualizado', description: 'Proveedor actualizado correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al actualizar proveedor');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al actualizar proveedor' });
     } finally {
       setFormSubmitting(false);
     }
@@ -334,9 +344,10 @@ const Compras = () => {
     try {
       await proveedoresService.eliminar(confirmDeleteProveedor);
       setConfirmDeleteProveedor(null);
+      toast({ type: 'success', title: 'Eliminado', description: 'Proveedor eliminado correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al eliminar proveedor');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al eliminar proveedor' });
     } finally {
       setFormSubmitting(false);
     }
@@ -348,7 +359,7 @@ const Compras = () => {
       setViewProveedorData(detalle);
       setShowViewProveedorModal(true);
     } catch (_) {
-      setFormError('Error al cargar datos del proveedor');
+      toast({ type: 'error', title: 'Error', description: 'Error al cargar datos del proveedor' });
     }
   };
 
@@ -368,9 +379,8 @@ const Compras = () => {
     }
     setFormSubmitting(true);
     try {
-      // No se envía ID — el backend lo genera automáticamente
+      // El backend auto-genera el ID; el que muestra el formulario es solo referencial
       await proveedoresService.registrar({
-        id: '',
         nit: formData.nit,
         nombre: formData.nombre,
         tipo: formData.tipo,
@@ -379,9 +389,10 @@ const Compras = () => {
         email: formData.email
       });
       setShowModal(false);
+      toast({ type: 'success', title: 'Creado', description: 'Proveedor registrado correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al crear proveedor');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al crear proveedor' });
     } finally {
       setFormSubmitting(false);
     }
@@ -444,7 +455,7 @@ const Compras = () => {
             <Search size={18} className="text-slate-400" />
             <input type="text" placeholder={tab === 'compras' ? 'Buscar compra...' : 'Buscar proveedor...'}
               className="bg-transparent border-none outline-none text-sm w-full font-medium"
-              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} maxLength={100} />
           </div>
           {tab === 'compras' && (
             <select
@@ -710,7 +721,7 @@ const Compras = () => {
       {/* Modal Registrar */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowModal(false)} />
           <div ref={focusTrapRef} className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">{tab === 'compras' ? 'Registrar Compra' : 'Registrar Proveedor'}</h3>
@@ -745,7 +756,7 @@ const Compras = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total <span className="required-star">*</span></label>
-                      <input name="com_total" type="number" step="0.01" value={formData.com_total || ''} onChange={handleChange}
+                      <input name="com_total" type="number" step="0.01" min="0.01" max="9999999.99" value={formData.com_total || ''} onChange={handleChange}
                         className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_total ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.com_total && <p className="text-red-500 text-xs mt-1">{errors.com_total}</p>}
                     </div>
@@ -837,7 +848,7 @@ const Compras = () => {
       {/* Modal Editar Compra */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowEditModal(false)} />
           <div ref={focusTrapRef} className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Editar Compra {editData.comp_id}</h3>
@@ -904,7 +915,7 @@ const Compras = () => {
       {/* Modal Editar Proveedor */}
       {showEditProveedorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditProveedorModal(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowEditProveedorModal(false)} />
           <div ref={focusTrapRef} className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Editar Proveedor {editProveedorData.id}</h3>
@@ -969,7 +980,7 @@ const Compras = () => {
       {/* Modal Ver Proveedor */}
       {showViewProveedorModal && viewProveedorData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setShowViewProveedorModal(false); setViewProveedorData(null); }} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowViewProveedorModal(false); setViewProveedorData(null); }} />
           <div className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Detalle del Proveedor</h3>
@@ -1018,7 +1029,7 @@ const Compras = () => {
       {/* Modal Vista Previa Comprobante */}
       {showComprobanteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowComprobanteModal(null)} />
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowComprobanteModal(null)} />
           <div className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Comprobante de pago — {showComprobanteModal.comp_id}</h3>

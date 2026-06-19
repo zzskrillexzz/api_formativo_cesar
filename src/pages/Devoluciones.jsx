@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { RotateCcw, RefreshCw, Search, Plus, Edit3, Trash2, X, Loader2 } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { useToast } from '../components/Toast';
 import { devolucionesService } from '../api/services/devolucionesService';
 import { productosService } from '../api/services/productosService';
-import { pedidosService } from '../api/services/pedidosService';
+import { comprasService } from '../api/services/comprasService';
 import { lotesService } from '../api/services/lotesService';
-import { detallesPedidosService } from '../api/services/detallesPedidosService';
+import { detallesComprasService } from '../api/services/detallesComprasService';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -15,11 +16,12 @@ import { FIELD_LIMITS } from '../utils/fieldLimits';
 const Devoluciones = () => {
   const [devoluciones, setDevoluciones] = useState([]);
   const [productos, setProductos] = useState([]);
-  const [pedidos, setPedidos] = useState([]);
+  const [compras, setCompras] = useState([]);
   const [lotes, setLotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroResumen, setFiltroResumen] = useState('todas'); // 'todas' | 'este-mes' | 'unidades-devueltas'
-  const [detallesPedido, setDetallesPedido] = useState([]); // detalles del pedido seleccionado en el modal
+  const [detallesCompra, setDetallesCompra] = useState([]); // detalles de la compra seleccionada en el modal
+  const [maxCantidad, setMaxCantidad] = useState(0); // cantidad máxima disponible para devolver
   const [searchTerm, setSearchTerm] = useState('');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -31,6 +33,7 @@ const Devoluciones = () => {
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const { toast } = useToast();
   const [formError, setFormError] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -40,15 +43,15 @@ const Devoluciones = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [devs, prods, peds, lotsRes] = await Promise.all([
+      const [devs, prods, comps, lotsRes] = await Promise.all([
         devolucionesService.listar().catch(() => []),
         productosService.listar().catch(() => []),
-        pedidosService.listar().catch(() => []),
+        comprasService.listar().catch(() => []),
         lotesService.listar({ limit: 500 }).catch(() => ({}))
       ]);
       setDevoluciones(devs);
       setProductos(prods);
-      setPedidos(peds);
+      setCompras(comps);
       // lotesService con params retorna { data: [...], total, page, ... }
       setLotes(Array.isArray(lotsRes) ? lotsRes : (lotsRes?.data ?? []));
     } catch (_) {} finally { setLoading(false); }
@@ -64,9 +67,9 @@ const Devoluciones = () => {
     return prod ? prod.nombre : prodId;
   };
 
-  const getPedidoInfo = (pedId) => {
-    const ped = pedidos.find(p => p.ped_id === pedId);
-    return ped ? `${ped.ped_id} (${ped.ped_cli_id_fk || '?'})` : pedId;
+  const getCompraInfo = (comId) => {
+    const com = compras.find(c => c.comp_id === comId);
+    return com ? `${com.comp_id}` : comId;
   };
 
   const getLotesPorProducto = (productoId) => {
@@ -83,7 +86,8 @@ const Devoluciones = () => {
       fecha: hoy
     };
     setFormData(defaultData);
-    setDetallesPedido([]);
+    setDetallesCompra([]);
+    setMaxCantidad(0);
     formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     setFormError('');
     setErrors({});
@@ -99,7 +103,7 @@ const Devoluciones = () => {
     })();
     const edit = {
       id: dev.id,
-      pedido_id: dev.pedido_id,
+      compra_id: dev.compra_id,
       producto_id: dev.producto_id,
       lote_id: loteInicial,
       cantidad: dev.cantidad,
@@ -108,6 +112,8 @@ const Devoluciones = () => {
     };
     setEditData(edit);
     formSnapshotRef.current = JSON.parse(JSON.stringify(edit));
+    // Cargar el máximo disponible para validar en edición también
+    setMaxCantidad(dev.cantidad);
     setShowEditModal(true);
   };
 
@@ -116,34 +122,38 @@ const Devoluciones = () => {
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     const updated = { ...formData, [name]: value };
-    // Al cambiar el pedido, buscar sus detalles y auto-completar producto + lote
-    if (name === 'pedido_id' && value) {
+    // Al cambiar la compra, buscar sus detalles y auto-completar producto + lote
+    if (name === 'compra_id' && value) {
       try {
-        const res = await api.get('/detalles_pedidos/', { params: { det_ped_id_fk: value } });
+        const res = await api.get('/detalles_compras/', { params: { dco_com_id_fk: value } });
         const detalles = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
-        setDetallesPedido(detalles);
+        setDetallesCompra(detalles);
+        setMaxCantidad(0);
         if (detalles.length > 0) {
           // Auto-completar con el primer detalle
           const det = detalles[0];
-          updated.producto_id = det.det_pro_id_fk;
-          // Buscar el lote exacto que salió en ese pedido para ese producto
-          if (det.det_lot_id_fk) {
-            updated.lote_id = det.det_lot_id_fk;
+          updated.producto_id = det.producto_id;
+          // Buscar el lote exacto de ese detalle
+          if (det.lote_id) {
+            updated.lote_id = det.lote_id;
           } else {
-            const lotesProd = getLotesPorProducto(det.det_pro_id_fk);
+            const lotesProd = getLotesPorProducto(det.producto_id);
             updated.lote_id = lotesProd.length === 1 ? lotesProd[0].lot_id : '';
           }
+          setMaxCantidad(det.cantidad);
         }
-      } catch (_) { setDetallesPedido([]); }
+      } catch (_) { setDetallesCompra([]); setMaxCantidad(0); }
     }
-    // Al cambiar el producto, buscar el lote exacto de ese pedido si existe
-    if (name === 'producto_id') {
-      const detalle = detallesPedido.find(d => d.det_pro_id_fk === value);
-      if (detalle?.det_lot_id_fk) {
-        updated.lote_id = detalle.det_lot_id_fk;
+    // Al cambiar el producto, buscar el lote exacto de ese detalle de compra
+    if (name === 'producto_id' && formData.compra_id) {
+      const detalle = detallesCompra.find(d => d.producto_id === value);
+      if (detalle?.lote_id) {
+        updated.lote_id = detalle.lote_id;
+        setMaxCantidad(detalle.cantidad);
       } else {
         const lotesFiltrados = getLotesPorProducto(value);
         updated.lote_id = lotesFiltrados.length === 1 ? lotesFiltrados[0].lot_id : '';
+        setMaxCantidad(detalle?.cantidad || 0);
       }
     }
     setFormData(updated);
@@ -159,7 +169,7 @@ const Devoluciones = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (!formData.pedido_id || !formData.producto_id || !formData.cantidad || !formData.motivo || !formData.fecha) {
+    if (!formData.compra_id || !formData.producto_id || !formData.cantidad || !formData.motivo || !formData.fecha) {
       setFormError('Los campos marcados con * son obligatorios');
       return;
     }
@@ -168,10 +178,14 @@ const Devoluciones = () => {
       setFormError('La cantidad debe ser un número mayor a 0');
       return;
     }
+    if (maxCantidad > 0 && cant > maxCantidad) {
+      setFormError(`La cantidad no puede superar el máximo disponible (${maxCantidad} unidades)`);
+      return;
+    }
     setFormSubmitting(true);
     try {
       await devolucionesService.registrar({
-        pedido_id: formData.pedido_id,
+        compra_id: formData.compra_id,
         producto_id: formData.producto_id,
         lote_id: formData.lote_id || null,
         cantidad: cant,
@@ -180,9 +194,10 @@ const Devoluciones = () => {
         usuario_id: user?.id || ''
       });
       setShowModal(false);
+      toast({ type: 'success', title: 'Registrada', description: 'Devolución registrada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al registrar devolución');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al registrar devolución' });
     } finally {
       setFormSubmitting(false);
     }
@@ -200,6 +215,11 @@ const Devoluciones = () => {
       setFormError('La cantidad debe ser un número mayor a 0');
       return;
     }
+    // Validar límite máximo — igual que en creación
+    if (maxCantidad > 0 && cant > maxCantidad) {
+      setFormError(`La cantidad no puede superar el máximo disponible (${maxCantidad} unidades)`);
+      return;
+    }
     setFormSubmitting(true);
     try {
       await devolucionesService.editar(editData.id, {
@@ -209,9 +229,10 @@ const Devoluciones = () => {
         fecha: editData.fecha
       });
       setShowEditModal(false);
+      toast({ type: 'success', title: 'Actualizada', description: 'Devolución actualizada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al actualizar devolución');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al actualizar devolución' });
     } finally {
       setFormSubmitting(false);
     }
@@ -223,9 +244,10 @@ const Devoluciones = () => {
     try {
       await devolucionesService.eliminar(confirmDelete);
       setConfirmDelete(null);
+      toast({ type: 'success', title: 'Eliminada', description: 'Devolución eliminada correctamente' });
       fetchData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al eliminar devolución');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al eliminar devolución' });
     } finally {
       setFormSubmitting(false);
     }
@@ -239,7 +261,7 @@ const Devoluciones = () => {
 
   const filteredDevoluciones = devoluciones.filter(d => {
     const busca = searchTerm
-      ? [d.id, d.pedido_id, getProductoNombre(d.producto_id), d.lote_id, d.motivo, d.usuario_id]
+      ? [d.id, d.compra_id, getProductoNombre(d.producto_id), d.lote_id, d.motivo, d.usuario_id]
           .filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
       : true;
     const porFechaDesde = !fechaDesde || (d.fecha && d.fecha >= fechaDesde);
@@ -273,6 +295,7 @@ const Devoluciones = () => {
               className="bg-transparent border-none outline-none text-sm w-full font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              maxLength={100}
             />
           </div>
         </div>
@@ -343,7 +366,7 @@ const Devoluciones = () => {
             <thead className="bg-slate-50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
               <tr>
                 <th className="px-5 py-3">ID</th>
-                <th className="px-5 py-3">Pedido</th>
+                <th className="px-5 py-3">Compra</th>
                 <th className="px-5 py-3">Producto</th>
                 <th className="px-5 py-3">Lote</th>
                 <th className="px-5 py-3 text-right">Cant.</th>
@@ -362,7 +385,7 @@ const Devoluciones = () => {
                 paginatedDevoluciones.map((d, i) => (
                   <tr key={i} className="hover:bg-orange-100/70 group">
                     <td className="px-5 py-3 text-slate-400 text-xs">{d.id}</td>
-                    <td className="px-5 py-3 text-xs" title={d.pedido_id}>{getPedidoInfo(d.pedido_id)}</td>
+                    <td className="px-5 py-3 text-xs" title={d.compra_id}>{getCompraInfo(d.compra_id)}</td>
                     <td className="px-5 py-3" title={d.producto_id}>{getProductoNombre(d.producto_id)}</td>
                     <td className="px-5 py-3">{d.lote_id || '-'}</td>
                     <td className="px-5 py-3 text-right font-bold">{d.cantidad}</td>
@@ -405,7 +428,7 @@ const Devoluciones = () => {
 
       {/* ── MODAL: Nueva Devolución ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" ref={focusTrapRef}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" ref={focusTrapRef}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-slate-200 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">Nueva Devolución</h2>
@@ -419,12 +442,12 @@ const Devoluciones = () => {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pedido *</label>
-                  <select name="pedido_id" value={formData.pedido_id || ''} onChange={handleChange}
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Compra *</label>
+                  <select name="compra_id" value={formData.compra_id || ''} onChange={handleChange}
                     className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium">
-                    <option value="">Seleccionar pedido</option>
-                    {pedidos.map(p => (
-                      <option key={p.ped_id} value={p.ped_id}>{p.ped_id} — {p.ped_cli_id_fk || '?'}</option>
+                    <option value="">Seleccionar compra</option>
+                    {compras.map(c => (
+                      <option key={c.comp_id} value={c.comp_id}>{c.comp_id}</option>
                     ))}
                   </select>
                 </div>
@@ -455,8 +478,13 @@ const Devoluciones = () => {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cantidad *</label>
                   <input type="number" name="cantidad" value={formData.cantidad || ''} onChange={handleChange}
-                    min="1" placeholder="0"
+                    min="1" max={maxCantidad || 999999} placeholder="0"
                     className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium" />
+                  {maxCantidad > 0 && (
+                    <p className="text-[10px] text-amber-600 font-semibold mt-1">
+                      Máx disponible: {maxCantidad} unidades
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="space-y-1">
@@ -488,7 +516,7 @@ const Devoluciones = () => {
 
       {/* ── MODAL: Editar Devolución ── */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" ref={focusTrapRef}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" ref={focusTrapRef}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-slate-200 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">Editar Devolución</h2>
@@ -507,8 +535,8 @@ const Devoluciones = () => {
                     className="w-full text-sm border border-slate-200 rounded-md px-3 py-2.5 bg-slate-50 outline-none font-medium text-slate-400" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pedido</label>
-                  <input type="text" value={editData.pedido_id || ''} disabled
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Compra</label>
+                  <input type="text" value={editData.compra_id || ''} disabled
                     className="w-full text-sm border border-slate-200 rounded-md px-3 py-2.5 bg-slate-50 outline-none font-medium text-slate-400" />
                 </div>
               </div>
@@ -533,8 +561,13 @@ const Devoluciones = () => {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cantidad *</label>
                   <input type="number" name="cantidad" value={editData.cantidad || ''} onChange={handleEditChange}
-                    min="1"
+                    min="1" max={maxCantidad || editData.cantidad || 999999}
                     className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium" />
+                  {maxCantidad > 0 && (
+                    <p className="text-[10px] text-amber-600 font-semibold mt-1">
+                      Máx disponible: {maxCantidad} unidades
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="space-y-1">

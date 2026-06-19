@@ -7,8 +7,11 @@ import { clientesService } from '../api/services/clientesService';
 import { productosService } from '../api/services/productosService';
 import { detallesPedidosService } from '../api/services/detallesPedidosService';
 import { devolucionesService } from '../api/services/devolucionesService';
+import { anulacionesService } from '../api/services/anulacionesService';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { ConfirmModal } from '../components/ConfirmModal';
+import { useToast } from '../components/Toast';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
 
 const Ventas = () => {
@@ -24,6 +27,8 @@ const Ventas = () => {
   const [formError, setFormError] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [confirmAction, setConfirmAction] = useState(null);
+  const { toast } = useToast();
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
   const [productosDisponibles, setProductosDisponibles] = useState([]);
@@ -32,6 +37,7 @@ const Ventas = () => {
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [comprobanteFileName, setComprobanteFileName] = useState('');
+  const lastToastRef = useRef(null); // Evita mostrar el mismo toast repetido
 
   const [editingPedidoId, setEditingPedidoId] = useState(null);
   const [editingClienteId, setEditingClienteId] = useState(null);
@@ -185,9 +191,28 @@ const Ventas = () => {
     }
   };
 
-  const eliminarPedido = async (id) => { if (!window.confirm('Eliminar pedido ' + id + '?')) return; try { await pedidosService.eliminar(id); refreshData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
-  const eliminarFactura = async (id) => { if (!window.confirm('Eliminar factura ' + id + '?')) return; try { await facturasService.eliminar(id); refreshData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
-  const eliminarCliente = async (id) => { if (!window.confirm('Eliminar cliente ' + id + '?')) return; try { await clientesService.eliminar(id); refreshData(); } catch(e) { alert('Error: ' + (e.response?.data?.mensaje || e.message)); } };
+  const confirmarEliminar = (type, id, label) => {
+    setConfirmAction({
+      danger: true,
+      title: `Eliminar ${type}`,
+      message: `¿Eliminar ${label} ${id}? Esta acción no se puede deshacer.`,
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          const service = type === 'pedido' ? pedidosService : type === 'factura' ? facturasService : clientesService;
+          await service.eliminar(id);
+          toast({ type: 'success', title: 'Eliminado', description: `${type} ${id} eliminado correctamente` });
+          refreshData();
+        } catch(e) {
+          toast({ type: 'error', title: 'Error', description: e.response?.data?.mensaje || e.message });
+        }
+      },
+      onCancel: () => setConfirmAction(null),
+    });
+  };
+  const eliminarPedido = (id) => confirmarEliminar('pedido', id, 'pedido');
+  const eliminarFactura = (id) => confirmarEliminar('factura', id, 'factura');
+  const eliminarCliente = (id) => confirmarEliminar('cliente', id, 'cliente');
 
   const openModal = async () => {
     setEditingClienteId(null);
@@ -218,8 +243,22 @@ const Ventas = () => {
     setShowModal(true);
   };
 
+  // ── Función para eliminar emojis de un texto ──
+  const stripEmojis = (text) => text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '');
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    // Eliminar emojis de todos los campos
+    value = stripEmojis(value);
+    // Sanitizar teléfono: solo dígitos, espacios, +, -, (, ) y máximo 10
+    if (name === 'cli_telefono') {
+      value = value.replace(/[^\d]/g, '');
+      if (value.length > 10) value = value.slice(0, 10);
+    }
+    // Sanitizar nombre/apellido: sin caracteres especiales como -,@,_,+,[,*
+    if (name === 'cli_nombre' || name === 'cli_apellido') {
+      value = value.replace(/[\-@_+\[\]*]/g, '');
+    }
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setFormData({ ...formData, [name]: value });
@@ -249,15 +288,19 @@ const Ventas = () => {
     }
     if (t === 'clientes') {
       if (name === 'cli_id' && !value) newErrors.cli_id = 'El ID es obligatorio';
+      else if (name === 'cli_id' && value && parseInt(value) > 9999999) newErrors.cli_id = 'El ID no puede superar 9,999,999';
       else if (name === 'cli_id') delete newErrors.cli_id;
       if (name === 'cli_nombre' && !value) newErrors.cli_nombre = 'El nombre es obligatorio';
+      else if (name === 'cli_nombre' && value && value.length < 2) newErrors.cli_nombre = 'Min. 2 caracteres';
       else if (name === 'cli_nombre' && value && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) newErrors.cli_nombre = 'Solo letras y espacios';
       else if (name === 'cli_nombre') delete newErrors.cli_nombre;
       if (name === 'cli_apellido' && !value) newErrors.cli_apellido = 'El apellido es obligatorio';
+      else if (name === 'cli_apellido' && value && value.length < 2) newErrors.cli_apellido = 'Min. 2 caracteres';
       else if (name === 'cli_apellido' && value && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) newErrors.cli_apellido = 'Solo letras y espacios';
       else if (name === 'cli_apellido') delete newErrors.cli_apellido;
       if (name === 'cli_correo' && !value) newErrors.cli_correo = 'El correo es obligatorio';
       else if (name === 'cli_correo' && value && !/\S+@\S+\.\S+/.test(value)) newErrors.cli_correo = 'Correo no válido';
+      else if (name === 'cli_correo' && value && value.length > parseInt(FIELD_LIMITS.cli_correo || 120)) newErrors.cli_correo = `Máx. ${FIELD_LIMITS.cli_correo || 120} caracteres`;
       else if (name === 'cli_correo') delete newErrors.cli_correo;
     }
     setErrors(newErrors);
@@ -454,6 +497,12 @@ const Ventas = () => {
         setFormError('Todos los campos con * son obligatorios');
         return;
       }
+      // Validar fecha no pasada
+      const hoy = new Date().toISOString().split('T')[0];
+      if (formData.ped_fecha < hoy) {
+        setFormError('No se pueden crear pedidos en fechas pasadas. La fecha debe ser hoy o posterior.');
+        return;
+      }
       if (productosSeleccionados.length === 0) {
         setFormError('Agrega al menos un producto al pedido');
         return;
@@ -510,9 +559,10 @@ const Ventas = () => {
       }
       setShowModal(false);
       setEditingPedidoId(null);
+      toast({ type: 'success', title: editingPedidoId ? 'Actualizado' : 'Creado', description: `Pedido ${editingPedidoId ? 'actualizado' : 'creado'} correctamente` });
       refreshData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al guardar pedido');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar pedido' });
     } finally {
       setFormSubmitting(false);
     }
@@ -554,9 +604,10 @@ const Ventas = () => {
         cli_id_fk: formData.cli_id_fk || null
       });
       setShowModal(false);
+      toast({ type: 'success', title: 'Creada', description: 'Factura creada correctamente' });
       refreshData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al crear factura');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al crear factura' });
     } finally {
       setFormSubmitting(false);
     }
@@ -601,14 +652,14 @@ const Ventas = () => {
       setProductosSeleccionados(detsConNombres);
       setShowModal(true);
     } catch (err) {
-      alert('Error al cargar pedido: ' + (err.response?.data?.mensaje || err.message));
+      toast({ type: 'error', title: 'Error', description: 'Error al cargar pedido: ' + (err.response?.data?.mensaje || err.message) });
     }
   };
 
   const cancelarPedidoConDevolucion = async () => {
     if (!pedidoACancelar) return;
     if (pedidoACancelar.ped_estado_entrega === 'Anulado') {
-      alert('Este pedido ya fue anulado anteriormente.');
+      toast({ type: 'warning', title: 'Ya anulado', description: 'Este pedido ya fue anulado anteriormente.' });
       setShowConfirmCancel(false);
       setPedidoACancelar(null);
       return;
@@ -647,11 +698,30 @@ const Ventas = () => {
         });
       }
 
+      // 4. Registrar anulación si existe una factura asociada al pedido
+      const facturaAsociada = facturas.find(f => f.id === id);
+      if (facturaAsociada) {
+        const nums = facturas
+          .map(f => { const m = (f.id || '').match(/FAC(\d+)/); return m ? parseInt(m[1]) : 0; })
+          .filter(n => n > 0);
+        const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
+        const anuId = 'ANU' + String(maxNum + 1).padStart(3, '0');
+        await anulacionesService.registrar({
+          anu_id: anuId,
+          anu_fac_id_fk: id,
+          anu_usu_id_fk: user?.id || '',
+          anu_fecha: new Date().toISOString().split('T')[0],
+          anu_motivo: 'Anulación automática por cancelación de pedido'
+        }).catch(err => {
+          console.warn('Error al registrar anulación:', err);
+        });
+      }
+
       setShowConfirmCancel(false);
       setPedidoACancelar(null);
       refreshData();
     } catch (err) {
-      alert('Error al cancelar pedido: ' + (err.response?.data?.mensaje || err.message));
+      toast({ type: 'error', title: 'Error', description: 'Error al cancelar pedido: ' + (err.response?.data?.mensaje || err.message) });
     } finally {
       setCancelLoading(false);
     }
@@ -700,7 +770,7 @@ const Ventas = () => {
       cerrarVerificarPago();
       refreshData(); // refuerzo con datos frescos del backend
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.mensaje || err.message));
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || err.message });
     } finally {
       setNotifLoading(false);
     }
@@ -767,9 +837,10 @@ const Ventas = () => {
       }
       setShowModal(false);
       setEditingClienteId(null);
+      toast({ type: 'success', title: editingClienteId ? 'Actualizado' : 'Creado', description: `Cliente ${editingClienteId ? 'actualizado' : 'creado'} correctamente` });
       refreshData();
     } catch (err) {
-      setFormError(err.response?.data?.mensaje || 'Error al guardar cliente');
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar cliente' });
     } finally {
       setFormSubmitting(false);
     }
@@ -807,6 +878,7 @@ const Ventas = () => {
             className="bg-transparent border-none outline-none text-sm w-full font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            maxLength={100}
           />
         </div>
         <div className="flex gap-2">
@@ -952,7 +1024,7 @@ const Ventas = () => {
                                     pd.ped_id === p.ped_id ? { ...pd, ...datos } : pd
                                   ));
                                 } catch (err) {
-                                  alert('Error: ' + (err.response?.data?.mensaje || err.message));
+                                  toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || err.message });
                                 }
                               }}
                               className="p-2 text-indigo-500 hover:text-white hover:bg-indigo-500 transition-colors rounded-md"
@@ -973,7 +1045,7 @@ const Ventas = () => {
                                     ));
                                     setShowQRModal(false);
                                   } catch (err) {
-                                    alert('Error: ' + (err.response?.data?.mensaje || err.message));
+                                    toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || err.message });
                                   }
                                 }}
                                 className="p-2 text-emerald-500 hover:text-white hover:bg-emerald-500 transition-colors rounded-md"
@@ -1235,7 +1307,7 @@ const Ventas = () => {
 
       {/* ── Modal: Nuevo ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
           <div ref={focusTrapRef} className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">
@@ -1264,7 +1336,7 @@ const Ventas = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
-                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_fecha ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="ped_fecha" type="date" value={formData.ped_fecha || ''} onChange={handleChange} min={new Date().toISOString().split('T')[0]} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.ped_fecha ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.ped_fecha && <p className="text-red-500 text-xs mt-1">{errors.ped_fecha}</p>}
                     </div>
                   </div>
@@ -1302,7 +1374,7 @@ const Ventas = () => {
                       <div className="grid grid-cols-3 gap-2">
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">ID *</label>
-                          <input name="cli_id" type="number" value={formData.cli_id || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
+                          <input name="cli_id" type="number" min="1" max="9999999" value={formData.cli_id || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Tipo Doc *</label>
@@ -1315,7 +1387,7 @@ const Ventas = () => {
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Teléfono</label>
-                          <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
+                          <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} maxLength="10" placeholder="3001234567" className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -1616,7 +1688,7 @@ const Ventas = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Teléfono</label>
-                      <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="cli_telefono" value={formData.cli_telefono || ''} onChange={handleChange} maxLength="10" placeholder="3001234567" className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección</label>
@@ -1641,7 +1713,7 @@ const Ventas = () => {
 
       {/* ── Modal: Detalle de Pedido ── */}
       {showDetalle && detalleTipo === 'pedido' && detalleData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowDetalle(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowDetalle(false)}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-black text-slate-800">Pedido {detalleData.ped_id}</h2>
@@ -1728,7 +1800,7 @@ const Ventas = () => {
               #factura-print { position: absolute; left: 0; top: 0; width: 100%; background: white; }
             }
           `}</style>
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowDetalle(false)}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowDetalle(false)}>
             <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
                 <h2 className="text-lg font-black text-slate-800">Factura</h2>
@@ -1835,7 +1907,7 @@ const Ventas = () => {
 
       {/* ── Modal: Confirmar cancelación ── */}
       {showConfirmCancel && pedidoACancelar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowConfirmCancel(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowConfirmCancel(false)}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-red-600 uppercase tracking-wider flex items-center gap-2">
@@ -1850,8 +1922,8 @@ const Ventas = () => {
                 Vas a cancelar el pedido <strong>{pedidoACancelar.ped_id}</strong>.
               </p>
               <p className="text-xs text-slate-400">
-                El pedido se marcará como <strong>Anulado</strong> y se crearán
-                automáticamente las devoluciones de los productos asociados.
+                El pedido se marcará como <strong>Anulado</strong>, se registrará
+                la anulación y se crearán automáticamente las devoluciones de los productos asociados.
               </p>
               <div className="flex gap-3 pt-2">
                 <button
@@ -1879,7 +1951,7 @@ const Ventas = () => {
 
       {/* ── Modal: Verificar pago ── */}
       {showVerificarModal && pedidoAVerificar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={cerrarVerificarPago}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={cerrarVerificarPago}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Verificar pago</h3>
@@ -1949,7 +2021,7 @@ const Ventas = () => {
 
       {/* ── Modal: Notificar cliente ── */}
       {showNotificarModal && pedidoANotificar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => { setShowNotificarModal(false); setNotifResultadoCorreo(null); setNotifResultadoFactura(null); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => { setShowNotificarModal(false); setNotifResultadoCorreo(null); setNotifResultadoFactura(null); }}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Notificar cliente</h3>
@@ -2026,7 +2098,7 @@ const Ventas = () => {
 
       {/* ── Modal: QR de entrega ── */}
       {showQRModal && pedidoQR && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowQRModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowQRModal(false)}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Código QR de entrega</h3>
@@ -2080,7 +2152,7 @@ const Ventas = () => {
                       onClick={() => {
                         const url = qrBaseUrl + '/confirmar-entrega/' + pedidoQR.ped_token_entrega;
                         navigator.clipboard.writeText(url);
-                        alert('Enlace copiado al portapapeles');
+                        toast({ type: 'success', title: 'Copiado', description: 'Enlace copiado al portapapeles' });
                       }}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-all"
                     >
@@ -2116,7 +2188,7 @@ const Ventas = () => {
 
       {/* ── Modal: Preview comprobante ── */}
       {showPreviewModal && formData.ped_comprobante && formData.ped_comprobante_tipo && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowPreviewModal(false)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4" onClick={() => setShowPreviewModal(false)}>
           <div className="relative bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Comprobante de pago</h3>
@@ -2150,7 +2222,7 @@ const Ventas = () => {
 
       {/* ── Modal: Ficha del cliente (E-card) ── */}
       {showClienteTarjeta && clienteTarjeta && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowClienteTarjeta(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowClienteTarjeta(false)}>
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* Cabecera con color */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-8 text-center">
@@ -2213,7 +2285,7 @@ const Ventas = () => {
 
       {/* ── Modal: Subir comprobante ── */}
       {showSubirComprobanteModal && pedidoSubirComprobante && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6" onClick={() => setShowSubirComprobanteModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={() => setShowSubirComprobanteModal(false)}>
           <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Subir comprobante</h3>
@@ -2241,6 +2313,15 @@ const Ventas = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirmAction}
+        title={confirmAction?.title || ''}
+        message={confirmAction?.message || ''}
+        danger={confirmAction?.danger}
+        onConfirm={confirmAction?.onConfirm || (() => {})}
+        onCancel={confirmAction?.onCancel || (() => {})}
+      />
     </div>
   );
 };

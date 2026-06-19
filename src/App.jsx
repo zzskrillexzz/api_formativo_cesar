@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Truck, BarChart3, RotateCcw, Users
 } from 'lucide-react';
 import { Notificaciones } from './components/Notificaciones';
+import { ToastProvider } from './components/Toast';
 
 // ── Lazy-loading de páginas (code-splitting por ruta) ──
 const DashboardPage = React.lazy(() => import('./pages/Dashboard'));
@@ -47,28 +48,24 @@ const Layout = () => {
   };
   const IconoActivo = iconosModulos[activeTab] || LayoutDashboard;
 
+  // ── Health check consolidado (server + DB en un solo intervalo) ──
   useEffect(() => {
-    const check = async () => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+    const checkHealth = async () => {
+      // Server check
       try {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 3000);
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const res = await fetch(`${apiUrl}/`, { method: 'GET', signal: ctrl.signal });
         clearTimeout(timer);
         setConectado(res.ok || res.status === 200);
       } catch { setConectado(false); }
-    };
-    check();
-    const interval = setInterval(check, 15000);
-    return () => clearInterval(interval);
-  }, []);
 
-  useEffect(() => {
-    const checkDb = async () => {
+      // DB check
       try {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 3000);
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const res = await fetch(`${apiUrl}/health`, { method: 'GET', signal: ctrl.signal });
         clearTimeout(timer);
         if (res.ok) {
@@ -79,8 +76,9 @@ const Layout = () => {
         }
       } catch { setDbConectado(false); }
     };
-    checkDb();
-    const interval = setInterval(checkDb, 15000);
+
+    checkHealth();
+    const interval = setInterval(checkHealth, 30000); // 30s en vez de 15s
     return () => clearInterval(interval);
   }, []);
 
@@ -113,7 +111,7 @@ const Layout = () => {
         <section className="flex-1 overflow-y-auto px-8 pb-8">
           <div className="max-w-7xl mx-auto">
             <header className="mb-6 flex justify-between items-center">
-              <div className="flex items-center gap-4 px-5 py-3 bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] rounded-2xl shadow-sm hover:bg-white/[0.07] transition-all duration-300 group">
+              <div className="flex items-center gap-4 px-5 py-3 bg-white/10 border border-white/[0.10] rounded-2xl shadow-sm hover:bg-white/15 transition-all duration-300 group">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform duration-300">
                   <IconoActivo size={18} className="text-white drop-shadow-sm" />
                 </div>
@@ -160,7 +158,9 @@ const Layout = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <Layout />
+      <ToastProvider>
+        <Layout />
+      </ToastProvider>
     </AuthProvider>
   );
 }

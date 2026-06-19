@@ -8,6 +8,8 @@ import { inventariosMovimientosService } from '../api/services/inventariosMovimi
 import { proveedoresService } from '../api/services/proveedoresService';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { ConfirmModal } from '../components/ConfirmModal';
+import { useToast } from '../components/Toast';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
 
 const Inventario = () => {
@@ -24,6 +26,8 @@ const Inventario = () => {
   const [formError, setFormError] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [confirmAction, setConfirmAction] = useState(null);
+  const { toast } = useToast();
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -107,32 +111,62 @@ const Inventario = () => {
   };
 
   const eliminarProducto = async (id) => {
-    if (!window.confirm('Eliminar este producto? Se borrarán todos sus lotes, movimientos y registros asociados.')) return;
-    try {
-      await productosService.eliminar(id, { params: { force: true } });
-      fetchData();
-    } catch(e) {
-      alert('No se pudo eliminar: ' + (e.response?.data?.mensaje || e.message));
-    }
+    setConfirmAction({
+      type: 'delete',
+      danger: true,
+      title: 'Eliminar Producto',
+      message: '¿Eliminar este producto? Se borrarán todos sus lotes, movimientos y registros asociados.',
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          await productosService.eliminar(id, { params: { force: true } });
+          toast({ type: 'success', title: 'Eliminado', description: 'Producto eliminado correctamente' });
+          fetchData();
+        } catch(e) {
+          toast({ type: 'error', title: 'Error', description: e.response?.data?.mensaje || e.message });
+        }
+      },
+      onCancel: () => setConfirmAction(null),
+    });
   };
   const eliminarLote = async (id) => {
-    if (!window.confirm('Eliminar este lote? Se borrarán movimientos, monitoría y registros asociados.')) return;
-    try {
-      await lotesService.eliminar(id, { params: { force: true } });
-      fetchData();
-    } catch(e) {
-      alert('No se pudo eliminar: ' + (e.response?.data?.mensaje || e.message));
-    }
+    setConfirmAction({
+      type: 'delete',
+      danger: true,
+      title: 'Eliminar Lote',
+      message: '¿Eliminar este lote? Se borrarán movimientos, monitoría y registros asociados.',
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          await lotesService.eliminar(id, { params: { force: true } });
+          toast({ type: 'success', title: 'Eliminado', description: 'Lote eliminado correctamente' });
+          fetchData();
+        } catch(e) {
+          toast({ type: 'error', title: 'Error', description: e.response?.data?.mensaje || e.message });
+        }
+      },
+      onCancel: () => setConfirmAction(null),
+    });
   };
 
   const cambiarEstadoLote = async (id, nuevoEstado) => {
-    if (!window.confirm(`¿Cambiar estado del lote ${id} a "${nuevoEstado}"?`)) return;
-    try {
-      await lotesService.editar(id, { lot_estado: nuevoEstado });
-      fetchData();
-    } catch(e) {
-      alert('No se pudo cambiar el estado: ' + (e.response?.data?.mensaje || e.message));
-    }
+    setConfirmAction({
+      type: 'status',
+      danger: false,
+      title: 'Cambiar Estado',
+      message: `¿Cambiar estado del lote ${id} a "${nuevoEstado}"?`,
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          await lotesService.editar(id, { lot_estado: nuevoEstado });
+          toast({ type: 'success', title: 'Estado actualizado', description: `Lote ${id} → ${nuevoEstado}` });
+          fetchData();
+        } catch(e) {
+          toast({ type: 'error', title: 'Error', description: e.response?.data?.mensaje || e.message });
+        }
+      },
+      onCancel: () => setConfirmAction(null),
+    });
   };
 
   const abrirEditarLote = (lote) => {
@@ -152,8 +186,11 @@ const Inventario = () => {
     setShowModal(true);
   };
 
+  const stripEmojis = (text) => text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '');
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    value = stripEmojis(value);
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setFormData({ ...formData, [name]: value });
@@ -209,15 +246,32 @@ const Inventario = () => {
       if (name === 'lot_numero' && !value) newErrors.lot_numero = 'El número de lote es obligatorio';
       else if (name === 'lot_numero' && value && !editingId && lotes.some(l => l.lot_numero === value)) newErrors.lot_numero = 'Este número de lote ya existe';
       else if (name === 'lot_numero') delete newErrors.lot_numero;
+      const VIDA_UTIL_MINIMA = 14; // días mínimos entre fabricación y vencimiento
       if (name === 'lot_fecha_vencimiento' && !value) newErrors.lot_fecha_vencimiento = 'La fecha de vencimiento es obligatoria';
       else if (name === 'lot_fecha_vencimiento') delete newErrors.lot_fecha_vencimiento;
-      if (name === 'lot_fecha_fabricacion' && value && formData.lot_fecha_vencimiento && value >= formData.lot_fecha_vencimiento) {
-        newErrors.lot_fecha_fabricacion = 'Debe ser anterior a la fecha de vencimiento';
+      if (name === 'lot_fecha_fabricacion' && value && formData.lot_fecha_vencimiento) {
+        const diff = (new Date(formData.lot_fecha_vencimiento) - new Date(value)) / (1000 * 60 * 60 * 24);
+        if (value >= formData.lot_fecha_vencimiento) {
+          newErrors.lot_fecha_fabricacion = 'Debe ser anterior a la fecha de vencimiento';
+        } else if (diff < VIDA_UTIL_MINIMA) {
+          newErrors.lot_fecha_fabricacion = `La diferencia mínima debe ser de ${VIDA_UTIL_MINIMA} días (jarabe)`;
+        } else {
+          delete newErrors.lot_fecha_fabricacion;
+        }
       } else if (name === 'lot_fecha_fabricacion') delete newErrors.lot_fecha_fabricacion;
-      if (name === 'lot_fecha_vencimiento' && value && formData.lot_fecha_fabricacion && formData.lot_fecha_fabricacion >= value) {
-        newErrors.lot_fecha_vencimiento = 'Debe ser posterior a la fecha de fabricación';
+      if (name === 'lot_fecha_vencimiento' && value && formData.lot_fecha_fabricacion) {
+        const diff = (new Date(value) - new Date(formData.lot_fecha_fabricacion)) / (1000 * 60 * 60 * 24);
+        if (formData.lot_fecha_fabricacion >= value) {
+          newErrors.lot_fecha_vencimiento = 'Debe ser posterior a la fecha de fabricación';
+        } else if (diff < VIDA_UTIL_MINIMA) {
+          newErrors.lot_fecha_vencimiento = `Debe ser al menos ${VIDA_UTIL_MINIMA} días después de la fabricación`;
+        } else {
+          delete newErrors.lot_fecha_vencimiento;
+        }
       } else if (name === 'lot_fecha_vencimiento' && value) {
-        const soloVen = !newErrors.lot_fecha_vencimiento || newErrors.lot_fecha_vencimiento === 'Debe ser posterior a la fecha de fabricación';
+        const soloVen = !newErrors.lot_fecha_vencimiento || 
+          newErrors.lot_fecha_vencimiento === 'Debe ser posterior a la fecha de fabricación' ||
+          newErrors.lot_fecha_vencimiento.startsWith('Debe ser al menos');
         if (soloVen) delete newErrors.lot_fecha_vencimiento;
       }
       if (name === 'lot_pro_id_fk') {
@@ -285,7 +339,7 @@ const Inventario = () => {
       return;
     }
     if (stockMin > cantidad) {
-      setFormError('El stock mínimo no puede superar al stock disponible');
+      setFormError('El stock mínimo no puede ser mayor que el stock disponible');
       return;
     }
     setFormSubmitting(true);
@@ -300,9 +354,7 @@ const Inventario = () => {
         stock_minimo: stockMin,
         fecha_caducidad: formData.fecha_caducidad || null,
         estado: formData.estado || 'Activo',
-        proveedor_id: formData.proveedor_id || null,
-        presentacion: formData.presentacion || null,
-        laboratorio: formData.laboratorio || null
+        proveedor_id: formData.proveedor_id || null
       };
       if (isEditing) {
         await productosService.editar(payload.id, payload);
@@ -342,9 +394,16 @@ const Inventario = () => {
       setFormError('Selecciona un proveedor para el lote');
       return;
     }
-    if (formData.lot_fecha_fabricacion && formData.lot_fecha_vencimiento && formData.lot_fecha_fabricacion >= formData.lot_fecha_vencimiento) {
-      setFormError('La fecha de fabricación debe ser anterior a la fecha de vencimiento');
-      return;
+    if (formData.lot_fecha_fabricacion && formData.lot_fecha_vencimiento) {
+      const diff = (new Date(formData.lot_fecha_vencimiento) - new Date(formData.lot_fecha_fabricacion)) / (1000 * 60 * 60 * 24);
+      if (formData.lot_fecha_fabricacion >= formData.lot_fecha_vencimiento) {
+        setFormError('La fecha de fabricación debe ser anterior a la fecha de vencimiento');
+        return;
+      }
+      if (diff < 14) {
+        setFormError('La fecha de vencimiento debe ser al menos 14 días después de la fabricación');
+        return;
+      }
     }
     const cantInicial = parseInt(formData.lot_cantidad_inicial, 10);
     if (isNaN(cantInicial) || cantInicial <= 0) {
@@ -557,6 +616,7 @@ const Inventario = () => {
             className="bg-transparent border-none outline-none text-sm w-full font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            maxLength={100}
           />
         </div>
         <div className="flex gap-2">
@@ -1084,7 +1144,7 @@ const Inventario = () => {
 
       {/* ── Modal: Nuevo ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
           <div ref={focusTrapRef} className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">
@@ -1182,7 +1242,7 @@ const Inventario = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Stock Mín.</label>
-                      <input name="stock_minimo" type="number" value={formData.stock_minimo || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                      <input name="stock_minimo" type="number" min="0" max="999999" value={formData.stock_minimo || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
@@ -1201,22 +1261,6 @@ const Inventario = () => {
                         <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
                       ))}
                     </select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Presentación</label>
-                      <select name="presentacion" value={formData.presentacion || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
-                        <option value="">Seleccionar...</option>
-                        {['Tableta', 'Cápsula', 'Jarabe', 'Inyectable', 'Crema', 'Ungüento', 'Suspensión', 'Solución', 'Polvo', 'Supositorio', 'Parche', 'Aerosol', 'Gotas', 'Emulsión', 'Granulado', 'Otro'].map(pres => (
-                          <option key={pres} value={pres}>{pres}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Laboratorio</label>
-                      <input name="laboratorio" value={formData.laboratorio || ''} onChange={handleChange} placeholder="Ej: Bayer, Genfar, La Santé..."
-                        className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
-                    </div>
                   </div>
                 </>
               )}
@@ -1261,14 +1305,14 @@ const Inventario = () => {
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Fabricación</label>
                       <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange}
-                        min={`${new Date().getFullYear() - 5}-01-01`} max={`${new Date().getFullYear() + 5}-12-31`}
+                        min={`${new Date().getFullYear() - 5}-01-01`} max={new Date().toISOString().split('T')[0]}
                         className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_fabricacion ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_fecha_fabricacion && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_fabricacion}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Vencimiento <span className="required-star">*</span></label>
                       <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange}
-                        min={`${new Date().getFullYear() - 5}-01-01`} max={`${new Date().getFullYear() + 5}-12-31`}
+                        min={`${new Date().getFullYear() - 5}-01-01`} max={new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                         className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_vencimiento ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_fecha_vencimiento && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_vencimiento}</p>}
                     </div>
@@ -1276,7 +1320,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad Inicial</label>
-                      <input name="lot_cantidad_inicial" type="number" min="1" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="lot_cantidad_inicial" type="number" min="1" max="999999" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.lot_cantidad_inicial && <p className="text-red-500 text-xs mt-1">{errors.lot_cantidad_inicial}</p>}
                     </div>
                     <div>
@@ -1339,7 +1383,7 @@ const Inventario = () => {
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad <span className="required-star">*</span></label>
-                      <input name="inm_cantidad" type="number" min="1" value={formData.inm_cantidad || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_cantidad ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="inm_cantidad" type="number" min="1" max="999999" value={formData.inm_cantidad || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.inm_cantidad ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.inm_cantidad && <p className="text-red-500 text-xs mt-1">{errors.inm_cantidad}</p>}
                     </div>
                     <div>
@@ -1375,6 +1419,15 @@ const Inventario = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirmAction}
+        title={confirmAction?.title || ''}
+        message={confirmAction?.message || ''}
+        danger={confirmAction?.danger}
+        onConfirm={confirmAction?.onConfirm || (() => {})}
+        onCancel={confirmAction?.onCancel || (() => {})}
+      />
     </div>
   );
 };
