@@ -316,7 +316,11 @@ const Inventario = () => {
     setFormError('');
     setErrors({});
     if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
-      setFormError(isEditing ? 'No se realizaron cambios en el producto' : 'Completa los campos del producto antes de guardar');
+      if (isEditing) {
+        toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en el producto' });
+        return;
+      }
+      setFormError('Completa los campos del producto antes de guardar');
       return;
     }
     if (!formData.id || !formData.nombre) {
@@ -375,7 +379,11 @@ const Inventario = () => {
     setFormError('');
     setErrors({});
     if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
-      setFormError(isEditing ? 'No se realizaron cambios en el lote' : 'Completa los campos del lote antes de guardar');
+      if (isEditing) {
+        toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en el lote' });
+        return;
+      }
+      setFormError('Completa los campos del lote antes de guardar');
       return;
     }
     if (!formData.lot_id || !formData.lot_fecha_vencimiento) {

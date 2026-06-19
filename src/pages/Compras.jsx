@@ -231,7 +231,7 @@ const Compras = () => {
     setFormSubmitting(true);
     try {
       if (JSON.stringify(editData) === JSON.stringify(formSnapshotRef.current)) {
-        setFormError('No se realizaron cambios en la compra');
+        toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en la compra' });
         return;
       }
       const total = parseFloat(editData.comp_total);

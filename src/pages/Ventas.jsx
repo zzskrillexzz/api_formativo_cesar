@@ -490,7 +490,11 @@ const Ventas = () => {
     setFormSubmitting(true);
     try {
       if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
-        setFormError(editingPedidoId ? 'No se realizaron cambios en el pedido' : 'Completa los campos del pedido antes de guardar');
+        if (editingPedidoId) {
+          toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en el pedido' });
+          return;
+        }
+        setFormError('Completa los campos del pedido antes de guardar');
         return;
       }
       if (!formData.ped_fecha || !formData.ped_metodo_pago || !formData.ped_estado_entrega || !formData.ped_cli_id_fk) {
@@ -807,7 +811,11 @@ const Ventas = () => {
     setFormError('');
     setErrors({});
     if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
-      setFormError(editingClienteId ? 'No se realizaron cambios en el cliente' : 'Completa los campos del cliente antes de guardar');
+      if (editingClienteId) {
+        toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en el cliente' });
+        return;
+      }
+      setFormError('Completa los campos del cliente antes de guardar');
       return;
     }
     if (!formData.cli_id || !formData.cli_tipo_documento || !formData.cli_nombre || !formData.cli_apellido || !formData.cli_correo) {
