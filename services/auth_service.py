@@ -195,6 +195,7 @@ def token_requerido(f):
         auth_header = request.headers.get('Authorization')
         if not auth_header:
             return jsonify({
+                "mensaje": "Token de autenticación requerido",
                 "error": "Token de autenticación requerido",
                 "detalle": "Header 'Authorization' no presente"
             }), 401
@@ -202,6 +203,7 @@ def token_requerido(f):
         # ── 2. Validar que sea Bearer token ──
         if not auth_header.startswith('Bearer '):
             return jsonify({
+                "mensaje": "Formato de token inválido",
                 "error": "Formato de token inválido",
                 "detalle": "Debe usar el esquema 'Bearer <token>'"
             }), 401
@@ -210,6 +212,7 @@ def token_requerido(f):
         token = auth_header.split(' ', 1)[1].strip()
         if not token:
             return jsonify({
+                "mensaje": "Token vacío",
                 "error": "Token vacío",
                 "detalle": "El token no puede estar vacío"
             }), 401
@@ -223,11 +226,13 @@ def token_requerido(f):
             )
         except jwt.ExpiredSignatureError:
             return jsonify({
+                "mensaje": "Token expirado — inicie sesión nuevamente",
                 "error": "Token expirado",
                 "detalle": "El token ha expirado, inicie sesión nuevamente"
             }), 401
         except jwt.InvalidTokenError as e:
             return jsonify({
+                "mensaje": f"Token inválido: {e}",
                 "error": "Token inválido",
                 "detalle": str(e)
             }), 401
@@ -237,6 +242,7 @@ def token_requerido(f):
         for campo in campos_requeridos:
             if campo not in payload or not payload[campo]:
                 return jsonify({
+                    "mensaje": f"Token malformado — falta campo '{campo}'",
                     "error": "Token malformado",
                     "detalle": f"El payload del token no contiene el campo '{campo}'"
                 }), 401
@@ -252,18 +258,21 @@ def token_requerido(f):
             c.close()
         except Exception as e:
             return jsonify({
+                "mensaje": "Error interno al verificar usuario",
                 "error": "Error interno",
                 "detalle": "No se pudo verificar el usuario en la base de datos"
             }), 500
 
         if not usuario:
             return jsonify({
+                "mensaje": "Usuario no encontrado",
                 "error": "Usuario no encontrado",
                 "detalle": "El usuario asociado al token ya no existe"
             }), 401
 
         if usuario[0] != 1:
             return jsonify({
+                "mensaje": "Usuario inactivo — contacte al administrador",
                 "error": "Usuario inactivo",
                 "detalle": "El usuario está desactivado. Contacte al administrador"
             }), 401
@@ -271,6 +280,7 @@ def token_requerido(f):
         # ── 8. Validar que el token no esté revocado (logout) ──
         if tokenEstaRevocado(token):
             return jsonify({
+                "mensaje": "Sesión cerrada — inicie sesión nuevamente",
                 "error": "Token revocado",
                 "detalle": "La sesión fue cerrada. Inicie sesión nuevamente"
             }), 401
@@ -306,6 +316,7 @@ def rol_requerido(*roles_permitidos):
             payload = getattr(g, 'usuario_actual', None)
             if not payload:
                 return jsonify({
+                    "mensaje": "No autenticado",
                     "error": "No autenticado",
                     "detalle": "Debe iniciar sesión para acceder a este recurso"
                 }), 401
@@ -313,6 +324,7 @@ def rol_requerido(*roles_permitidos):
             rol_usuario = payload.get('rol')
             if rol_usuario not in roles_permitidos:
                 return jsonify({
+                    "mensaje": f"Acceso denegado — se requiere rol: {', '.join(roles_permitidos)}",
                     "error": "Acceso denegado",
                     "detalle": f"Se requiere uno de los roles: {', '.join(roles_permitidos)}"
                 }), 403
