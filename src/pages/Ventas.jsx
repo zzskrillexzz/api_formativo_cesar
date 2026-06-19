@@ -1442,13 +1442,33 @@ const Ventas = () => {
                     {formData.ped_metodo_pago === 'Transferencia' && (
                       <div>
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuenta Bancaria</label>
-                        <input
+                        <select
                           name="ped_cuenta_bancaria"
-                          placeholder="Ej: Nequi, Bancolombia, Davivienda..."
                           value={formData.ped_cuenta_bancaria || ''}
                           onChange={handleChange}
                           className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
-                        />
+                        >
+                          <option value="">Seleccionar banco o billetera...</option>
+                          <option value="Bancolombia">Bancolombia</option>
+                          <option value="Davivienda">Davivienda</option>
+                          <option value="Banco de Bogotá">Banco de Bogotá</option>
+                          <option value="BBVA Colombia">BBVA Colombia</option>
+                          <option value="Banco de Occidente">Banco de Occidente</option>
+                          <option value="Banco Popular">Banco Popular</option>
+                          <option value="Banco Agrario">Banco Agrario</option>
+                          <option value="Banco Caja Social">Banco Caja Social</option>
+                          <option value="Banco Falabella">Banco Falabella</option>
+                          <option value="Scotiabank Colpatria">Scotiabank Colpatria</option>
+                          <option value="Itaú Colombia">Itaú Colombia</option>
+                          <option value="Banco Pichincha">Banco Pichincha</option>
+                          <option value="Bancamía">Bancamía</option>
+                          <option value="Bancoomeva">Bancoomeva</option>
+                          <option value="AV Villas">AV Villas</option>
+                          <option value="Nequi">Nequi</option>
+                          <option value="Daviplata">Daviplata</option>
+                          <option value="Movii">Movii</option>
+                          <option value="Dale">Dale</option>
+                        </select>
                       </div>
                     )}
                     <div>
@@ -1623,7 +1643,29 @@ const Ventas = () => {
                     {formData.forma_pago === 'Transferencia' && (
                       <div>
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuenta Bancaria</label>
-                        <input name="cuenta_bancaria" placeholder="Ej: Nequi, Bancolombia, Davivienda..." value={formData.cuenta_bancaria || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                        <select name="cuenta_bancaria" value={formData.cuenta_bancaria || ''} onChange={handleChange}
+                          className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                          <option value="">Seleccionar banco o billetera...</option>
+                          <option value="Bancolombia">Bancolombia</option>
+                          <option value="Davivienda">Davivienda</option>
+                          <option value="Banco de Bogotá">Banco de Bogotá</option>
+                          <option value="BBVA Colombia">BBVA Colombia</option>
+                          <option value="Banco de Occidente">Banco de Occidente</option>
+                          <option value="Banco Popular">Banco Popular</option>
+                          <option value="Banco Agrario">Banco Agrario</option>
+                          <option value="Banco Caja Social">Banco Caja Social</option>
+                          <option value="Banco Falabella">Banco Falabella</option>
+                          <option value="Scotiabank Colpatria">Scotiabank Colpatria</option>
+                          <option value="Itaú Colombia">Itaú Colombia</option>
+                          <option value="Banco Pichincha">Banco Pichincha</option>
+                          <option value="Bancamía">Bancamía</option>
+                          <option value="Bancoomeva">Bancoomeva</option>
+                          <option value="AV Villas">AV Villas</option>
+                          <option value="Nequi">Nequi</option>
+                          <option value="Daviplata">Daviplata</option>
+                          <option value="Movii">Movii</option>
+                          <option value="Dale">Dale</option>
+                        </select>
                       </div>
                     )}
                     <div>
