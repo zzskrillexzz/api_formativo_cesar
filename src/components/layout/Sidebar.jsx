@@ -7,13 +7,13 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
   const { role, logout } = useAuth();
 
   const menuItems = [
-    { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ROL001', 'ROL002', 'ROL003', 'ROL004'] },
-    { id: 'Inventario', label: 'Inventario', icon: Package, roles: ['ROL001', 'ROL003'] },
-    { id: 'Ventas', label: 'Módulo Ventas', icon: ShoppingCart, roles: ['ROL001', 'ROL002'] },
-    { id: 'Compras', label: 'Gestión Compras', icon: Truck, roles: ['ROL001', 'ROL003'] },
-    { id: 'Reportes', label: 'Analítica', icon: BarChart3, roles: ['ROL001', 'ROL004'] },
-    { id: 'Devoluciones', label: 'Devoluciones', icon: RotateCcw, roles: ['ROL001', 'ROL002', 'ROL003'] },
-    { id: 'Usuarios', label: 'Usuarios', icon: Users, roles: ['ROL001'] },
+    { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Administrador', 'Vendedor', 'Bodeguero', 'Gerente'] },
+    { id: 'Inventario', label: 'Inventario', icon: Package, roles: ['Administrador', 'Bodeguero'] },
+    { id: 'Ventas', label: 'Módulo Ventas', icon: ShoppingCart, roles: ['Administrador', 'Vendedor'] },
+    { id: 'Compras', label: 'Gestión Compras', icon: Truck, roles: ['Administrador', 'Bodeguero'] },
+    { id: 'Reportes', label: 'Analítica', icon: BarChart3, roles: ['Administrador', 'Gerente'] },
+    { id: 'Devoluciones', label: 'Devoluciones', icon: RotateCcw, roles: ['Administrador', 'Vendedor', 'Bodeguero'] },
+    { id: 'Usuarios', label: 'Usuarios', icon: Users, roles: ['Administrador'] },
   ];
 
   return (
