@@ -30,14 +30,15 @@ def cnRegistrarProductos():
         if str(data[campo]).strip() == "":
             return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
 
+    PRECIO_MINIMO = 100  # Medicamento más barato en distribución en Colombia (~$100 COP)
     PRECIO_MAXIMO = 999999.99
     CANTIDAD_MAXIMA = 999999
 
-    # Validar precio positivo con tope
+    # Validar precio positivo con topes
     try:
         precio = float(data["precio"])
-        if precio <= 0:
-            return jsonify({"mensaje": "El precio debe ser mayor a 0"}), 400
+        if precio < PRECIO_MINIMO:
+            return jsonify({"mensaje": f"El precio no puede ser menor a ${PRECIO_MINIMO:,.0f} COP (mínimo regulatorio)"}), 400
         if precio > PRECIO_MAXIMO:
             return jsonify({"mensaje": f"El precio no puede ser mayor a {PRECIO_MAXIMO:,.2f}"}), 400
     except (ValueError, TypeError):
@@ -114,14 +115,15 @@ def cnEditarProductos():
     if errores:
         return jsonify({"mensaje": " | ".join(errores)}), 400
 
+    PRECIO_MINIMO = 100  # Medicamento más barato en distribución en Colombia (~$100 COP)
     PRECIO_MAXIMO = 999999.99
     CANTIDAD_MAXIMA = 999999
 
     if "precio" in data and data["precio"] is not None:
         try:
             precio = float(data["precio"])
-            if precio <= 0:
-                return jsonify({"mensaje": "El precio debe ser mayor a 0"}), 400
+            if precio < PRECIO_MINIMO:
+                return jsonify({"mensaje": f"El precio no puede ser menor a ${PRECIO_MINIMO:,.0f} COP (mínimo regulatorio)"}), 400
             if precio > PRECIO_MAXIMO:
                 return jsonify({"mensaje": f"El precio no puede ser mayor a {PRECIO_MAXIMO:,.2f}"}), 400
         except (ValueError, TypeError):
