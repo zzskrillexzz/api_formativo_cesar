@@ -614,12 +614,13 @@ const Inventario = () => {
   };
 
   const getStockBarColor = (disp, min) => {
-    if (!min || min <= 0) return 'bg-emerald-400';
-    const ratio = (disp || 0) / min;
-    if (ratio >= 2) return 'bg-emerald-400';       // Muy superior al mínimo
-    if (ratio >= 1.5) return 'bg-blue-400';         // Adecuado con margen
-    if (ratio >= 1) return 'bg-amber-400';           // Justo en el mínimo (alerta)
-    return 'bg-red-400';                              // Por debajo del mínimo (crítico)
+    const dispVal = disp || 0;
+    const minVal = Math.max(min || 10, 10); // piso visual de 10 unidades
+    const ratio = dispVal / minVal;
+    if (ratio >= 2) return 'bg-emerald-400';
+    if (ratio >= 1.5) return 'bg-blue-400';
+    if (ratio >= 1) return 'bg-amber-400';
+    return 'bg-red-400';
   };
 
 
@@ -778,7 +779,7 @@ const Inventario = () => {
                           <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full ${getStockBarColor(p.cantidad_disponible, p.stock_minimo)}`}
-                              style={{ width: `${Math.min((p.cantidad_disponible || 0) / Math.max(p.stock_minimo || 1, 1) * 100, 100)}%` }}
+                              style={{ width: `${Math.min((p.cantidad_disponible || 0) / Math.max(p.stock_minimo || 10, 10) * 100, 100)}%` }}
                             />
                           </div>
                           <span className={`font-bold text-xs ${(p.cantidad_disponible || 0) <= (p.stock_minimo || 0) ? 'text-red-600' : 'text-slate-800'}`}>
