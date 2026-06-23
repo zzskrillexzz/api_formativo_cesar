@@ -616,10 +616,10 @@ const Inventario = () => {
   const getStockBarColor = (disp, min) => {
     if (!min || min <= 0) return 'bg-emerald-400';
     const ratio = (disp || 0) / min;
-    if (ratio >= 1.5) return 'bg-emerald-400';
-    if (ratio >= 1) return 'bg-blue-400';
-    if (ratio >= 0.5) return 'bg-amber-400';
-    return 'bg-red-400';
+    if (ratio >= 2) return 'bg-emerald-400';       // Muy superior al mínimo
+    if (ratio >= 1.5) return 'bg-blue-400';         // Adecuado con margen
+    if (ratio >= 1) return 'bg-amber-400';           // Justo en el mínimo (alerta)
+    return 'bg-red-400';                              // Por debajo del mínimo (crítico)
   };
 
 
