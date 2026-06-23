@@ -1,6 +1,6 @@
 from flask import jsonify, request, current_app
 from services.usuarios_service import listarUsuarios, registrarUsuarios, editarUsuarios, eliminarUsuarios, buscarUsuarios
-from utils.validators import validar_campos_texto
+from utils.validators import validar_campos_texto, LIMITES
 from utils.error_handler import safe_controller
 
 @safe_controller
@@ -24,10 +24,11 @@ def cnregistrarusuarios():
     if faltantes:
         return jsonify({"mensaje": f"Faltan los siguientes campos: {faltantes}"}), 400
 
-    # Validar campos no vacíos
+    # Validar campos no vacíos (con nombre legible)
     for campo in ["usu_id", "usu_nombre", "usu_rol", "usu_correo", "usu_contrasena"]:
         if str(data[campo]).strip() == "":
-            return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
+            legible = LIMITES.get(campo, (0, campo))[1] if campo in LIMITES else campo
+            return jsonify({"mensaje": f"El campo {legible} no puede estar vacío"}), 400
 
     # Validar longitud de campos de texto
     errores = validar_campos_texto(data, "usu_nombre", "usu_rol", "usu_correo", "usu_contrasena")
@@ -93,7 +94,8 @@ def cneditarusuarios():
     # Validar campos no vacíos (excepto contraseña que es opcional en edición)
     for campo in requerido:
         if str(data[campo]).strip() == "":
-            return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
+            legible = LIMITES.get(campo, (0, campo))[1] if campo in LIMITES else campo
+            return jsonify({"mensaje": f"El campo {legible} no puede estar vacío"}), 400
 
     # Validar longitud de campos de texto
     errores = validar_campos_texto(data, "usu_nombre", "usu_rol", "usu_correo", "usu_contrasena")
