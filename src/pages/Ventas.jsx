@@ -2011,8 +2011,8 @@ const Ventas = () => {
                     <span>»</span>
                   </div>
                   <p className="text-lg font-black text-black uppercase tracking-[4px] mt-2">San Diego Distribuidora</p>
-                  <p className="text-base text-blue-600 font-bold mt-1">NIT: 900.123.456-7 · Cali, Colombia</p>
-                  <p className="text-sm text-[#5a5a5a] mt-0.5">Calle 10 # 15-20 · Tel: (602) 555-0123</p>
+                  <p className="text-base text-blue-600 font-bold mt-1">NIT: 900.123.456-7 · Barranquilla, Atlántico</p>
+                  <p className="text-sm text-[#5a5a5a] mt-0.5">Cra.2 #45-15 Local 2 Ciudadela 20 de Julio · Tel: (605) 555-0123</p>
                 </div>
 
                 {/* ── DATOS CLIENTE + FACTURA ── */}
