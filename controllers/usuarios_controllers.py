@@ -34,8 +34,13 @@ def cnregistrarusuarios():
     if errores:
         return jsonify({"mensaje": " | ".join(errores)}), 400
 
-    # Validar rol
-    roles_validos = ["Administrador", "Vendedor", "Bodeguero", "Contador"]
+    # Validar rol contra BD
+    c = current_app.mysql.connection.cursor()
+    c.execute("SELECT rol_nombre FROM t_rol WHERE rol_estado = 1 OR rol_estado IS NULL")
+    roles_validos = [row[0] for row in c.fetchall()]
+    c.close()
+    if not roles_validos:
+        roles_validos = ["Administrador", "Vendedor", "Bodeguero"]
     if data["usu_rol"] not in roles_validos:
         return jsonify({"mensaje": f"Rol inválido. Valores permitidos: {roles_validos}"}), 400
 
@@ -95,8 +100,13 @@ def cneditarusuarios():
     if errores:
         return jsonify({"mensaje": " | ".join(errores)}), 400
 
-    # Validar rol y estado
-    roles_validos = ["Administrador", "Vendedor", "Bodeguero", "Contador"]
+    # Validar rol contra BD y estado
+    c = current_app.mysql.connection.cursor()
+    c.execute("SELECT rol_nombre FROM t_rol WHERE rol_estado = 1 OR rol_estado IS NULL")
+    roles_validos = [row[0] for row in c.fetchall()]
+    c.close()
+    if not roles_validos:
+        roles_validos = ["Administrador", "Vendedor", "Bodeguero"]
     if data["usu_rol"] not in roles_validos:
         return jsonify({"mensaje": f"Rol inválido"}), 400
     if data["usu_estado"] not in [0, 1]:

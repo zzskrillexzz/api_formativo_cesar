@@ -149,14 +149,43 @@ def eliminarUsuarios(USU_ID):
     except Exception:
         pass
     try:
-        c.execute("SELECT COUNT(*) FROM t_monitoria WHERE mon_usu_id_fk = %s", (USU_ID,))
+        c.execute("SELECT COUNT(*) FROM t_inventario_movimiento WHERE inm_usu_id_fk = %s", (USU_ID,))
         if c.fetchone()[0] > 0:
-            dependencias.append("monitorías")
+            dependencias.append("movimientos de inventario")
+    except Exception:
+        pass
+    try:
+        c.execute("SELECT COUNT(*) FROM t_reporte WHERE rep_usu_id_fk = %s", (USU_ID,))
+        if c.fetchone()[0] > 0:
+            dependencias.append("reportes")
+    except Exception:
+        pass
+    try:
+        c.execute("SELECT COUNT(*) FROM t_alerta_vencimiento WHERE alv_usu_id_fk = %s", (USU_ID,))
+        if c.fetchone()[0] > 0:
+            dependencias.append("alertas de vencimiento")
+    except Exception:
+        pass
+    try:
+        c.execute("SELECT COUNT(*) FROM t_anulacion_venta WHERE anu_usu_id_fk = %s", (USU_ID,))
+        if c.fetchone()[0] > 0:
+            dependencias.append("anulaciones")
+    except Exception:
+        pass
+    try:
+        c.execute("SELECT COUNT(*) FROM t_usuario_factura WHERE usa_usu_id_fk = %s", (USU_ID,))
+        if c.fetchone()[0] > 0:
+            dependencias.append("facturas de usuario")
     except Exception:
         pass
     # Las sesiones se eliminan automáticamente al borrar el usuario (no bloquean)
     try:
         c.execute("DELETE FROM t_sesion WHERE ses_usu_id_fk = %s", (USU_ID,))
+    except Exception:
+        pass
+    # Limpiar tokens revocados (no tienen FK, pero es buena práctica)
+    try:
+        c.execute("DELETE FROM t_token_revocado WHERE tre_usu_id_fk = %s", (USU_ID,))
     except Exception:
         pass
 
