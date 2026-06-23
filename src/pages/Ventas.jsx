@@ -295,6 +295,7 @@ const Ventas = () => {
     }
     if (t === 'clientes') {
       if (name === 'cli_id' && !value) newErrors.cli_id = 'El ID es obligatorio';
+      else if (name === 'cli_id' && value && parseInt(value) > 99999999999) newErrors.cli_id = 'El ID no puede tener más de 11 dígitos';
       else if (name === 'cli_id') delete newErrors.cli_id;
       if (name === 'cli_nombre' && !value) newErrors.cli_nombre = 'El nombre es obligatorio';
       else if (name === 'cli_nombre' && value && value.length < 2) newErrors.cli_nombre = 'Min. 2 caracteres';
@@ -1425,7 +1426,7 @@ const Ventas = () => {
                       <div className="grid grid-cols-3 gap-2">
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">ID *</label>
-                          <input name="cli_id" type="number" min="1" value={formData.cli_id || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
+                          <input name="cli_id" type="number" min="1" max="99999999999" value={formData.cli_id || ''} onChange={handleChange} className="w-full p-2 bg-white border border-slate-300 rounded text-sm mt-0.5" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Tipo Doc *</label>
