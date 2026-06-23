@@ -42,6 +42,8 @@ const Usuarios = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formData, setFormData] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [showAdminPassword, setShowAdminPassword] = useState(false);
 
@@ -122,6 +124,8 @@ const Usuarios = () => {
     }
     setShowModal(true);
     setShowPassword(false);
+    setConfirmPassword('');
+    setShowConfirmPassword(false);
   };
 
   const stripEmojis = (str) => str ? str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]+/gu, '') : str;
@@ -152,6 +156,10 @@ const Usuarios = () => {
     }
     if (formData.usu_contrasena && formData.usu_contrasena.trim() !== '' && formData.usu_contrasena.length < 6) {
       setFormError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    if (!editingUserId && formData.usu_contrasena !== confirmPassword) {
+      setFormError('Las contraseñas no coinciden');
       return;
     }
     if (editingUserId && !adminPassword.trim()) {
@@ -550,6 +558,26 @@ const Usuarios = () => {
                   </button>
                 </div>
               </div>
+              {!editingUserId && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Confirmar contraseña *</label>
+                  <div className="relative">
+                    <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium pr-10"
+                      placeholder="Repite la contraseña" />
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {confirmPassword && formData.usu_contrasena !== confirmPassword && (
+                    <p className="text-[10px] text-red-500 font-medium mt-1">⚠ Las contraseñas no coinciden</p>
+                  )}
+                  {confirmPassword && formData.usu_contrasena === confirmPassword && formData.usu_contrasena?.length >= 6 && (
+                    <p className="text-[10px] text-emerald-500 font-medium mt-1">✓ Las contraseñas coinciden</p>
+                  )}
+                </div>
+              )}
               {editingUserId && (
                 <div className="space-y-1 border-t border-slate-100 pt-3 mt-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
@@ -567,7 +595,7 @@ const Usuarios = () => {
                 </div>
               )}
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => { setShowModal(false); setAdminPassword(''); }}
+                <button type="button" onClick={() => { setShowModal(false); setAdminPassword(''); setConfirmPassword(''); }}
                   className="px-4 py-2.5 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors uppercase tracking-wider">Cancelar</button>
                 <button type="submit" disabled={formSubmitting}
                   className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors uppercase tracking-wider disabled:opacity-50">
