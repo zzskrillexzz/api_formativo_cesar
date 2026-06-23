@@ -978,11 +978,9 @@ const Ventas = () => {
                       <td className="px-6 py-4">{p.ped_cli_id_fk || '-'}</td>
                       <td className="px-6 py-4 text-slate-400">{p.ped_fecha || '-'}</td>
                       <td className="px-6 py-4">
-                        {p.ped_cuenta_bancaria
-                          ? `Transferencia (${p.ped_cuenta_bancaria})`
-                          : ['Nequi', 'Daviplata', 'Transferencia'].includes(p.ped_metodo_pago)
-                            ? `Transferencia${p.ped_metodo_pago !== 'Transferencia' ? ` (${p.ped_metodo_pago})` : ''}`
-                            : p.ped_metodo_pago || '-'}
+                        {['Nequi', 'Daviplata', 'Transferencia'].includes(p.ped_metodo_pago)
+                          ? `Transferencia${p.ped_metodo_pago !== 'Transferencia' ? ` (${p.ped_metodo_pago})` : p.ped_cuenta_bancaria ? ` (${p.ped_cuenta_bancaria})` : ''}`
+                          : p.ped_metodo_pago || '-'}
                       </td>
                       <td className="px-6 py-4 text-right">
                         ${parseFloat(p.ped_total || 0).toLocaleString()}
@@ -1175,11 +1173,9 @@ const Ventas = () => {
                       </td>
                       <td className="px-6 py-4">{f.fecha_emision || '-'}</td>
                       <td className="px-6 py-4">
-                        {f.cuenta_bancaria
-                          ? `Transferencia (${f.cuenta_bancaria})`
-                          : ['Nequi', 'Daviplata', 'Transferencia'].includes(f.forma_pago)
-                            ? `Transferencia${f.forma_pago !== 'Transferencia' ? ` (${f.forma_pago})` : ''}`
-                            : f.forma_pago || '-'}
+                        {['Nequi', 'Daviplata', 'Transferencia'].includes(f.forma_pago)
+                          ? `Transferencia${f.forma_pago !== 'Transferencia' ? ` (${f.forma_pago})` : f.cuenta_bancaria ? ` (${f.cuenta_bancaria})` : ''}`
+                          : f.forma_pago || '-'}
                       </td>
                       <td className="px-6 py-4 text-right">${parseFloat(f.total || 0).toLocaleString()}</td>
                       <td className="px-6 py-4">
@@ -1798,11 +1794,9 @@ const Ventas = () => {
                 <div>
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Metodo Pago</span>
                   <p className="font-bold text-slate-700 mt-1">
-                    {detalleData.ped_cuenta_bancaria
-                      ? `Transferencia (${detalleData.ped_cuenta_bancaria})`
-                      : ['Nequi', 'Daviplata', 'Transferencia'].includes(detalleData.ped_metodo_pago)
-                        ? `Transferencia${detalleData.ped_metodo_pago !== 'Transferencia' ? ` (${detalleData.ped_metodo_pago})` : ''}`
-                        : detalleData.ped_metodo_pago || '-'}
+                    {['Nequi', 'Daviplata', 'Transferencia'].includes(detalleData.ped_metodo_pago)
+                      ? `Transferencia${detalleData.ped_metodo_pago !== 'Transferencia' ? ` (${detalleData.ped_metodo_pago})` : detalleData.ped_cuenta_bancaria ? ` (${detalleData.ped_cuenta_bancaria})` : ''}`
+                      : detalleData.ped_metodo_pago || '-'}
                   </p>
                 </div>
                 <div>
