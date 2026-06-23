@@ -143,6 +143,10 @@ const Usuarios = () => {
       setFormError('La contraseña es obligatoria para nuevos usuarios');
       return;
     }
+    if (formData.usu_contrasena && formData.usu_contrasena.trim() !== '' && formData.usu_contrasena.length < 6) {
+      setFormError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
     setFormSubmitting(true);
     try {
       if (editingUserId) {
