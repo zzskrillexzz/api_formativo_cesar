@@ -1494,7 +1494,7 @@ const Ventas = () => {
                         <option value="En preparación">En preparación</option>
                         <option value="En camino">En camino</option>
                         <option value="Entregado">Entregado</option>
-                        <option value="Anulado">Anulado</option>
+                        {editingPedidoId && <option value="Anulado">Anulado</option>}
                       </select>
                     </div>
                   </div>
