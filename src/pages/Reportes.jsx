@@ -75,7 +75,11 @@ const Reportes = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // ── Generar reporte real (usando reportesService) ──
   const generarReporte = async () => {

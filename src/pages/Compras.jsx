@@ -325,13 +325,25 @@ const Compras = () => {
       setFormError('Todos los campos son obligatorios');
       return;
     }
+    if (/^0+$/.test(editProveedorData.nit)) {
+      setFormError('El NIT no puede ser todo ceros');
+      return;
+    }
     if (editProveedorData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editProveedorData.email)) {
       setFormError('El correo electrónico no es válido');
       return;
     }
     setFormSubmitting(true);
     try {
-      await proveedoresService.editar(editProveedorData.id, editProveedorData);
+      const normalizarNombre = (s) =>
+        (s || '').trim().replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const payload = {
+        ...editProveedorData,
+        nombre: normalizarNombre(editProveedorData.nombre),
+        contacto: normalizarNombre(editProveedorData.contacto),
+        email: (editProveedorData.email || '').trim().toLowerCase()
+      };
+      await proveedoresService.editar(editProveedorData.id, payload);
       setShowEditProveedorModal(false);
       toast({ type: 'success', title: 'Actualizado', description: 'Proveedor actualizado correctamente' });
       fetchData();
@@ -381,16 +393,24 @@ const Compras = () => {
       setFormError('Todos los campos son obligatorios');
       return;
     }
+    // Validar NIT — no puede ser todo ceros
+    if (/^0+$/.test(formData.nit)) {
+      setFormError('El NIT no puede ser todo ceros');
+      setFormSubmitting(false);
+      return;
+    }
     setFormSubmitting(true);
     try {
+      const normalizarNombre = (s) =>
+        (s || '').trim().replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       // El backend auto-genera el ID; el que muestra el formulario es solo referencial
       await proveedoresService.registrar({
         nit: formData.nit,
-        nombre: formData.nombre,
+        nombre: normalizarNombre(formData.nombre),
         tipo: formData.tipo,
-        contacto: formData.contacto,
+        contacto: normalizarNombre(formData.contacto),
         direccion: formData.direccion,
-        email: formData.email
+        email: (formData.email || '').trim().toLowerCase()
       });
       setShowModal(false);
       toast({ type: 'success', title: 'Creado', description: 'Proveedor registrado correctamente' });
@@ -870,10 +890,14 @@ const Compras = () => {
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor</label>
                   <select name="comp_prov_id_fk" value={editData.comp_prov_id_fk || ''} onChange={handleEditChange}
-                    className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
+                    disabled={editData.comp_tiene_detalles}
+                    className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${editData.comp_tiene_detalles ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed' : 'border-slate-300'}`}>
                     <option value="">Seleccionar proveedor...</option>
                     {proveedores.map(p => <option key={p.prov_id} value={p.prov_id}>{p.prov_nombre} ({p.prov_id})</option>)}
                   </select>
+                  {editData.comp_tiene_detalles && (
+                    <p className="text-xs text-amber-600 mt-1">⛔ No se puede cambiar — la compra ya tiene productos asociados</p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">

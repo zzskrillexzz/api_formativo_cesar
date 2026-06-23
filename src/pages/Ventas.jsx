@@ -461,12 +461,14 @@ const Ventas = () => {
     setFormSubmitting(true);
     try {
       const cliId = parseInt(formData.cli_id, 10);
+      const normalizarNombre = (s) =>
+        (s || '').trim().replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       await clientesService.registrar({
         cli_id: cliId,
         cli_tipo_documento: formData.cli_tipo_documento || 'CC',
-        cli_nombre: formData.cli_nombre,
-        cli_apellido: formData.cli_apellido,
-        cli_correo: formData.cli_correo,
+        cli_nombre: normalizarNombre(formData.cli_nombre),
+        cli_apellido: normalizarNombre(formData.cli_apellido),
+        cli_correo: (formData.cli_correo || '').trim().toLowerCase(),
         cli_telefono: formData.cli_telefono || null,
         cli_direccion: formData.cli_direccion || null
       });
@@ -550,7 +552,8 @@ const Ventas = () => {
           ped_estado_entrega: formData.ped_estado_entrega,
           ped_total: totalPed,
           ped_cli_id_fk: clienteId,
-          ped_usu_id_fk: user?.id || null
+          ped_usu_id_fk: user?.id || null,
+          productos: productosSeleccionados.map(p => ({ pro_id: p.pro_id }))
         });
       }
       // 2. Crear/actualizar detalles del pedido
@@ -837,12 +840,15 @@ const Ventas = () => {
     }
     setFormSubmitting(true);
     try {
+      // Normalizar: correo a minúsculas, nombre/apellido con primera letra mayúscula
+      const normalizarNombre = (s) =>
+        (s || '').trim().replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       const payload = {
         cli_id: cliId,
         cli_tipo_documento: formData.cli_tipo_documento,
-        cli_nombre: formData.cli_nombre,
-        cli_apellido: formData.cli_apellido,
-        cli_correo: formData.cli_correo,
+        cli_nombre: normalizarNombre(formData.cli_nombre),
+        cli_apellido: normalizarNombre(formData.cli_apellido),
+        cli_correo: (formData.cli_correo || '').trim().toLowerCase(),
         cli_telefono: formData.cli_telefono || null,
         cli_direccion: formData.cli_direccion || null
       };

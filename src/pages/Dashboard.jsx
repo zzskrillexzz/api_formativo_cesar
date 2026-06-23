@@ -58,6 +58,8 @@ const Dashboard = () => {
       }
     };
     fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const stockTotal = productos.reduce((sum, p) => sum + (p.cantidad_disponible || 0), 0);
