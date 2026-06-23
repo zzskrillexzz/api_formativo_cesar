@@ -786,9 +786,17 @@ const Ventas = () => {
     try {
       await pedidosService.verificarPago(pedidoAVerificar.ped_id, estado);
       // Actualizar visualmente el estado en la tabla de inmediato
-      setPedidos(prev => prev.map(p =>
-        p.ped_id === pedidoAVerificar.ped_id ? { ...p, ped_estado_pago: estado } : p
-      ));
+      setPedidos(prev => prev.map(p => {
+        if (p.ped_id !== pedidoAVerificar.ped_id) return p;
+        const updates = { ...p, ped_estado_pago: estado };
+        // Al rechazar, el backend limpia el comprobante — reflejarlo
+        if (estado === 'Rechazado') {
+          updates.ped_tiene_comprobante = false;
+          updates.ped_comprobante = null;
+          updates.ped_comprobante_tipo = null;
+        }
+        return updates;
+      }));
       cerrarVerificarPago();
       refreshData(); // refuerzo con datos frescos del backend
     } catch (err) {
@@ -1010,7 +1018,15 @@ const Ventas = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {p.ped_tiene_comprobante ? (
+                          {p.ped_estado_pago === 'Rechazado' ? (
+                            <button
+                              onClick={() => { setPedidoSubirComprobante(p); setShowSubirComprobanteModal(true); }}
+                              className="p-2 text-blue-500 hover:text-white hover:bg-blue-500 transition-colors rounded-md"
+                              title="Subir nuevo comprobante"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            </button>
+                          ) : p.ped_tiene_comprobante ? (
                             <button
                               onClick={() => abrirVerificarPago(p)}
                               disabled={p.ped_estado_pago === 'Verificado'}
@@ -1023,7 +1039,7 @@ const Ventas = () => {
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                             </button>
-                          ) : p.ped_estado_pago !== 'Verificado' && p.ped_estado_pago !== 'Rechazado' ? (
+                          ) : p.ped_estado_pago !== 'Verificado' ? (
                             <button
                               onClick={() => { setPedidoSubirComprobante(p); setShowSubirComprobanteModal(true); }}
                               className="p-2 text-blue-500 hover:text-white hover:bg-blue-500 transition-colors rounded-md"
