@@ -7,11 +7,11 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
   const { role, logout } = useAuth();
 
   const menuItems = [
-    { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Administrador', 'Vendedor', 'Bodeguero', 'Gerente'] },
-    { id: 'Inventario', label: 'Inventario', icon: Package, roles: ['Administrador', 'Bodeguero'] },
-    { id: 'Ventas', label: 'Módulo Ventas', icon: ShoppingCart, roles: ['Administrador', 'Vendedor'] },
-    { id: 'Compras', label: 'Gestión Compras', icon: Truck, roles: ['Administrador', 'Bodeguero'] },
-    { id: 'Reportes', label: 'Analítica', icon: BarChart3, roles: ['Administrador', 'Gerente'] },
+    { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Administrador', 'Vendedor', 'Bodeguero'] },
+    { id: 'Inventario', label: 'Inventario', icon: Package, roles: ['Administrador', 'Vendedor', 'Bodeguero'] },
+    { id: 'Ventas', label: 'Módulo Ventas', icon: ShoppingCart, roles: ['Administrador', 'Vendedor', 'Bodeguero'] },
+    { id: 'Compras', label: 'Gestión Compras', icon: Truck, roles: ['Administrador', 'Vendedor', 'Bodeguero'] },
+    { id: 'Reportes', label: 'Analítica', icon: BarChart3, roles: ['Administrador', 'Vendedor', 'Bodeguero'] },
     { id: 'Devoluciones', label: 'Devoluciones', icon: RotateCcw, roles: ['Administrador', 'Vendedor', 'Bodeguero'] },
     { id: 'Usuarios', label: 'Usuarios', icon: Users, roles: ['Administrador'] },
   ];
