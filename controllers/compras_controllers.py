@@ -37,7 +37,7 @@ def cnregistrarcompras():
             fecha_obj = date(año, mes, dia)
             if fecha_obj > date.today():
                 return jsonify({"mensaje": "La fecha de la compra no puede ser futura"}), 400
-            if año < 2000:
+            if año < 2024:
                 return jsonify({"mensaje": "La fecha de la compra no es válida (año muy antiguo)"}), 400
     except (ValueError, TypeError):
         return jsonify({"mensaje": "El formato de la fecha no es válido (use YYYY-MM-DD)"}), 400
@@ -107,7 +107,7 @@ def cneditarcompras(COM_ID):
                 fecha_obj = date(año, mes, dia)
                 if fecha_obj > date.today():
                     return jsonify({"mensaje": "La fecha de la compra no puede ser futura"}), 400
-                if año < 2000:
+                if año < 2024:
                     return jsonify({"mensaje": "La fecha de la compra no es válida (año muy antiguo)"}), 400
         except (ValueError, TypeError):
             return jsonify({"mensaje": "El formato de la fecha no es válido (use YYYY-MM-DD)"}), 400
@@ -116,6 +116,19 @@ def cneditarcompras(COM_ID):
         estados_validos = ["Pendiente", "Recibida", "Cancelada"]
         if data["com_estado"] not in estados_validos:
             return jsonify({"mensaje": f"Estado inválido. Valores permitidos: {estados_validos}"}), 400
+
+    # Validar que no se cambie el proveedor si la compra ya tiene detalles
+    if data.get("com_prov_id_fk"):
+        c = current_app.mysql.connection.cursor()
+        c.execute("SELECT COUNT(*) FROM t_detalle_compra WHERE dco_com_id_fk = %s", (COM_ID,))
+        tiene_detalles = c.fetchone()[0] > 0
+        c.close()
+        if tiene_detalles:
+            # Obtener el proveedor actual para comparar
+            compra_actual = buscarCompras(COM_ID)
+            proveedor_actual = compra_actual.get("comp_prov_id_fk") if compra_actual else None
+            if str(data["com_prov_id_fk"]) != str(proveedor_actual):
+                return jsonify({"mensaje": "No se puede cambiar el proveedor porque la compra ya tiene productos asociados"}), 400
 
     TOTAL_MAXIMO = 9999999.99
     if data.get("com_total"):

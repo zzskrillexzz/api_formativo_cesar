@@ -33,6 +33,11 @@ def cnregistrarclientes():
     if not data or any(x not in data for x in requerido):
         return jsonify({"mensaje": "Faltan campos obligatorios"}), 400
 
+    # Normalizar: correo a minúsculas, nombre/apellido con primera letra mayúscula
+    data["cli_correo"] = (data.get("cli_correo") or "").strip().lower()
+    data["cli_nombre"] = re.sub(r'\s+', ' ', (data.get("cli_nombre") or "").strip().title())
+    data["cli_apellido"] = re.sub(r'\s+', ' ', (data.get("cli_apellido") or "").strip().title())
+
     # Validar que cli_id sea un entero positivo
     try:
         cli_id = int(data["cli_id"])
@@ -85,6 +90,11 @@ def cneditarclientes():
     data = request.get_json()
     if not data or "cli_id" not in data:
         return jsonify({"mensaje": "ID de cliente requerido"}), 400
+
+    # Normalizar: correo a minúsculas, nombre/apellido con primera letra mayúscula
+    data["cli_correo"] = (data.get("cli_correo") or "").strip().lower()
+    data["cli_nombre"] = re.sub(r'\s+', ' ', (data.get("cli_nombre") or "").strip().title())
+    data["cli_apellido"] = re.sub(r'\s+', ' ', (data.get("cli_apellido") or "").strip().title())
 
     # Validar que cli_id sea un entero positivo
     try:

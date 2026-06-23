@@ -47,7 +47,13 @@ def buscarCompras(COM_ID):
     c.execute(sql, (COM_ID,))
     dato = c.fetchone()
     if dato:
-        return compras(dato[0], dato[1], dato[2], dato[3], dato[4], dato[5], dato[6], dato[7], dato[8]).todic()
+        result = compras(dato[0], dato[1], dato[2], dato[3], dato[4], dato[5], dato[6], dato[7], dato[8]).todic()
+        # Incluir si la compra tiene detalles asociados
+        c.execute("SELECT COUNT(*) FROM t_detalle_compra WHERE dco_com_id_fk = %s", (COM_ID,))
+        result['comp_tiene_detalles'] = c.fetchone()[0] > 0
+        c.close()
+        return result
+    c.close()
     return None
 
 def editarCompras(COM_ID, data):

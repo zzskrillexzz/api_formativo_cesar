@@ -122,6 +122,12 @@ def cneliminarusuarios(usu_id):
         return jsonify({"mensaje": "Usuario eliminado", "id": usu_id}), 200
     except ValueError as e:
         return jsonify({"mensaje": str(e)}), 409
+    except Exception as e:
+        err_msg = str(e)
+        # Error FK (MySQL 1451) — mostrar mensaje legible
+        if "1451" in err_msg or "foreign key constraint" in err_msg.lower():
+            return jsonify({"mensaje": "No se puede eliminar el usuario porque tiene registros asociados en el sistema (roles, pedidos, compras, etc.). Reasigne o elimine esos registros primero."}), 409
+        return jsonify({"mensaje": f"Error al eliminar usuario: {err_msg}"}), 500
     
     
 @safe_controller

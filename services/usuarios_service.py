@@ -118,6 +118,18 @@ def eliminarUsuarios(USU_ID):
     
     # Verificar dependencias antes de eliminar
     dependencias = []
+
+    # Obtener el rol del usuario
+    c.execute("SELECT usu_rol_id_fk FROM t_usuario WHERE usu_id = %s", (USU_ID,))
+    row_rol = c.fetchone()
+    rol_usuario = row_rol[0] if row_rol else None
+
+    # Verificar si es el último usuario con ese rol (FK constraint t_rol → t_usuario)
+    if rol_usuario:
+        c.execute("SELECT COUNT(*) FROM t_usuario WHERE usu_rol_id_fk = %s AND usu_id != %s", (rol_usuario, USU_ID))
+        if c.fetchone()[0] == 0:
+            dependencias.append(f"rol '{rol_usuario}' (es el único usuario con ese rol)")
+
     c.execute("SELECT COUNT(*) FROM t_pedido WHERE ped_usu_id_fk = %s", (USU_ID,))
     if c.fetchone()[0] > 0:
         dependencias.append("pedidos")
@@ -142,7 +154,7 @@ def eliminarUsuarios(USU_ID):
             dependencias.append("monitorías")
     except Exception:
         pass
-    
+
     if dependencias:
         c.close()
         raise ValueError(f"No se puede eliminar el usuario {USU_ID} porque tiene {', '.join(dependencias)} asociados. Reasigne o elimine primero esos registros.")

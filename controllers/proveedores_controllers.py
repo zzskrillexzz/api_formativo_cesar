@@ -28,6 +28,15 @@ def cnregistrarproveedores():
     if faltantes:
         return jsonify({"mensaje": f"Faltan los siguientes campos o están vacíos: {faltantes}"}), 400
 
+    # Normalizar: email a minúsculas, nombre/contacto con primera letra mayúscula
+    data["email"] = (data.get("email") or "").strip().lower()
+    data["nombre"] = re.sub(r'\s+', ' ', (data.get("nombre") or "").strip().title())
+    data["contacto"] = re.sub(r'\s+', ' ', (data.get("contacto") or "").strip().title())
+
+    # Validar NIT — no puede ser todo ceros
+    if re.match(r'^0+$', data.get("nit", "")):
+        return jsonify({"mensaje": "El NIT no puede ser todo ceros"}), 400
+
     # Auto-generar ID siempre (el backend es la autoridad, ignora lo que envíe el frontend)
     from utils.id_generator import generarIdSiguiente
     data['id'] = generarIdSiguiente('t_proveedor', 'prov_id', 'PROV', 3)
@@ -85,6 +94,15 @@ def cneditarproveedores():
     prov_id = data['id']
     if not buscarProveedores(prov_id):
         return jsonify({"mensaje": f"No existe un proveedor con el ID {prov_id}"}), 404
+
+    # Normalizar: email a minúsculas, nombre/contacto con primera letra mayúscula
+    data["email"] = (data.get("email") or "").strip().lower()
+    data["nombre"] = re.sub(r'\s+', ' ', (data.get("nombre") or "").strip().title())
+    data["contacto"] = re.sub(r'\s+', ' ', (data.get("contacto") or "").strip().title())
+
+    # Validar NIT — no puede ser todo ceros
+    if re.match(r'^0+$', data.get("nit", "")):
+        return jsonify({"mensaje": "El NIT no puede ser todo ceros"}), 400
 
     requerido = ["nit", "nombre", "tipo", "contacto", "direccion", "email"]
     faltantes = [x for x in requerido if x not in data or str(data[x]).strip() == ""]

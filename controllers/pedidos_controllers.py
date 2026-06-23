@@ -134,6 +134,33 @@ def cnregistrarpedidos():
                 return jsonify({"mensaje": f"No existe un usuario con el ID {fk_usuario}"}), 404
         c.close()
 
+        # Validar cuarentena en productos seleccionados (si se enviaron)
+        productos = data.get("productos")
+        if productos and isinstance(productos, list) and len(productos) > 0:
+            c2 = current_app.mysql.connection.cursor()
+            try:
+                for prod in productos:
+                    pro_id = prod.get("pro_id") if isinstance(prod, dict) else prod
+                    if not pro_id:
+                        continue
+                    # Verificar si todos los lotes con stock disponible están en cuarentena
+                    c2.execute("""
+                        SELECT
+                          CASE WHEN COUNT(*) > 0 AND SUM(CASE WHEN lot_estado != 'Cuarentena' THEN 1 ELSE 0 END) = 0
+                          THEN 1 ELSE 0 END as solo_cuarentena
+                        FROM t_lote
+                        WHERE lot_pro_id_fk = %s AND lot_cantidad_actual > 0
+                    """, (pro_id,))
+                    row = c2.fetchone()
+                    if row and row[0] == 1:
+                        c2.close()
+                        return jsonify({
+                            "mensaje": f"El producto {pro_id} solo tiene lotes en CUARENTENA. "
+                                       "No se puede crear el pedido con productos en cuarentena."
+                        }), 400
+            finally:
+                c2.close()
+
         # Calcular IVA (19%) si no se envía explícitamente
         total = float(data["ped_total"])
         ped_subtotal = data.get("ped_subtotal")
