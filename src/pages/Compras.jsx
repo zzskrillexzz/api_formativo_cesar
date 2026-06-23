@@ -111,7 +111,13 @@ const Compras = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const cleanValue = stripEmojis(value);
+    let cleanValue = stripEmojis(value);
+    // Validar tipo de entrada según campo
+    if (name === 'contacto') {
+      cleanValue = cleanValue.replace(/[^0-9+\- ]/g, '');
+    } else if (name === 'nombre') {
+      cleanValue = cleanValue.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]/g, '');
+    }
     const max = FIELD_LIMITS[name];
     if (max && cleanValue.length > max) return;
     setFormData({ ...formData, [name]: cleanValue });
@@ -308,7 +314,13 @@ const Compras = () => {
 
   const handleEditProveedorChange = (e) => {
     const { name, value } = e.target;
-    const cleaned = stripEmojis(value);
+    let cleaned = stripEmojis(value);
+    // Validar tipo de entrada según campo
+    if (name === 'contacto') {
+      cleaned = cleaned.replace(/[^0-9+\- ]/g, '');
+    } else if (name === 'nombre') {
+      cleaned = cleaned.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]/g, '');
+    }
     const max = FIELD_LIMITS[name];
     if (max && cleaned.length > max) return;
     setEditProveedorData({ ...editProveedorData, [name]: cleaned });

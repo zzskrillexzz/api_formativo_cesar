@@ -2235,16 +2235,28 @@ const Ventas = () => {
               ) : comprobanteUrl ? (
                 <div className="bg-slate-50 rounded-lg p-4 flex justify-center">
                   {pedidoAVerificar?.ped_comprobante_tipo?.startsWith('image/') ? (
-                    <img
-                      src={comprobanteUrl}
-                      alt="Comprobante"
-                      className="max-h-96 w-full rounded object-contain"
-                    />
+                    <>
+                      <img
+                        src={comprobanteUrl}
+                        alt="Comprobante"
+                        className="max-h-96 w-full rounded object-contain"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          const fallback = e.target.nextElementSibling;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <div className="hidden flex-col items-center gap-2 py-8 text-slate-400">
+                        <FileText size={32} strokeWidth={1.5} />
+                        <p className="text-sm font-medium">No se pudo cargar la vista previa</p>
+                        <a href={comprobanteUrl} download="comprobante" className="text-xs text-blue-500 hover:underline font-bold">Descargar archivo</a>
+                      </div>
+                    </>
                   ) : (
-                    <embed
+                    <iframe
                       src={comprobanteUrl}
-                      type={pedidoAVerificar?.ped_comprobante_tipo || 'application/octet-stream'}
-                      className="w-full h-96 rounded"
+                      title="Comprobante PDF"
+                      className="w-full h-96 rounded border-0"
                     />
                   )}
                 </div>
