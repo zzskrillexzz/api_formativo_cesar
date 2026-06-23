@@ -659,12 +659,14 @@ const Inventario = () => {
           <button onClick={() => fetchData()} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
             <RefreshCw size={18} className="text-slate-500" />
           </button>
-          <button
-            onClick={openModal}
-            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md btn-pulse"
-          >
-            <Plus size={16} /> Nuevo {tab === 'productos' ? 'Producto' : tab === 'lotes' ? 'Lote' : 'Movimiento'}
-          </button>
+          {tab !== 'movimientos' && (
+            <button
+              onClick={openModal}
+              className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md btn-pulse"
+            >
+              <Plus size={16} /> Nuevo {tab === 'productos' ? 'Producto' : 'Lote'}
+            </button>
+          )}
         </div>
       </div>
 
