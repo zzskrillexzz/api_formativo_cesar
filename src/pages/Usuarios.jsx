@@ -35,18 +35,6 @@ const Usuarios = () => {
     ? roles.map(r => r.rol_nombre)
     : ['Administrador', 'Vendedor', 'Bodeguero', 'Contador'];
 
-  // Detectar si hubo cambios reales en edición (ignorando contraseña que siempre inicia vacía)
-  const hasChanges = editingUserId ? (() => {
-    const snap = formSnapshotRef.current;
-    if (!snap || !snap.usu_id) return true;
-    if (formData.usu_nombre !== snap.usu_nombre) return true;
-    if (formData.usu_correo !== snap.usu_correo) return true;
-    if (formData.usu_rol !== snap.usu_rol) return true;
-    if (formData.usu_estado !== snap.usu_estado) return true;
-    if (formData.usu_contrasena && formData.usu_contrasena.trim() !== '') return true;
-    return false;
-  })() : true;
-
   // ── Modal crear/editar usuario ──
   const [showModal, setShowModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
@@ -74,7 +62,20 @@ const Usuarios = () => {
   const formSnapshotRef = useRef({});
   const focusTrapRef = useFocusTrap(showModal || showRolModal);
 
-    // ── Mapear campos del backend (modelo returns id/nombre/rol/correo/estado) ──
+  // Detectar si hubo cambios reales en edición (ignorando contraseña que siempre inicia vacía)
+  // NOTA: debe ir DESPUÉS de editingUserId, formData y formSnapshotRef para evitar TDZ
+  const hasChanges = editingUserId ? (() => {
+    const snap = formSnapshotRef.current;
+    if (!snap || !snap.usu_id) return true;
+    if (formData.usu_nombre !== snap.usu_nombre) return true;
+    if (formData.usu_correo !== snap.usu_correo) return true;
+    if (formData.usu_rol !== snap.usu_rol) return true;
+    if (formData.usu_estado !== snap.usu_estado) return true;
+    if (formData.usu_contrasena && formData.usu_contrasena.trim() !== '') return true;
+    return false;
+  })() : true;
+
+  // ── Mapear campos del backend (modelo returns id/nombre/rol/correo/estado) ──
   const mapearUsuario = (u) => ({
     usu_id: u.usu_id || u.id || '',
     usu_nombre: u.usu_nombre || u.nombre || '',
