@@ -1109,15 +1109,25 @@ const Ventas = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 flex items-center justify-between text-xs">
-            {(filtroEstadoPedido) && (
-              <button onClick={() => setFiltroEstadoPedido('')} className="text-slate-400 hover:text-red-500 transition-colors font-bold uppercase">
-                ✕ Limpiar filtro
-              </button>
-            )}
-            <span className="text-slate-400 font-bold">
-              {filteredPedidos.length} de {pedidos.length} pedidos
-            </span>
+          <div className="flex items-center justify-between px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-xs text-slate-400 font-bold">
+            <div className="flex items-center gap-3">
+              {(filtroEstadoPedido) && (
+                <button onClick={() => setFiltroEstadoPedido('')} className="text-slate-400 hover:text-red-500 transition-colors font-bold uppercase">
+                  ✕ Limpiar filtro
+                </button>
+              )}
+              <span>{filteredPedidos.length > 0
+                ? `${(paginaPedidos - 1) * POR_PAGINA + 1}–${Math.min(paginaPedidos * POR_PAGINA, filteredPedidos.length)} de ${filteredPedidos.length}`
+                : `${filteredPedidos.length} pedidos`
+              }</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPaginaPedidos(p => Math.max(1, p - 1))} disabled={paginaPedidos <= 1}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Anterior</button>
+              <span className="text-slate-500">{paginaPedidos} / {Math.max(1, Math.ceil(filteredPedidos.length / POR_PAGINA))}</span>
+              <button onClick={() => setPaginaPedidos(p => p + 1)} disabled={paginaPedidos >= Math.ceil(filteredPedidos.length / POR_PAGINA)}
+                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Siguiente</button>
+            </div>
           </div>
         </div>
       )}

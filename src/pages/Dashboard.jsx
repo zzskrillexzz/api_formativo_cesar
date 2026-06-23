@@ -30,6 +30,7 @@ const Dashboard = () => {
   const [showCharts, setShowCharts] = useState(true);
   const [clickCount, setClickCount] = useState(0);
   const [showEgg, setShowEgg] = useState(false);
+  const [animateCharts, setAnimateCharts] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,6 +56,9 @@ const Dashboard = () => {
       } catch (_) {
       } finally {
         setLoading(false);
+        if (animateCharts) {
+          setTimeout(() => setAnimateCharts(false), 900);
+        }
       }
     };
     fetchData();
@@ -303,7 +307,7 @@ const Dashboard = () => {
                       formatter={(value) => [`${value} días`, 'Días restantes']}
                       labelFormatter={(label) => `Producto: ${label}`}
                     />
-                    <Bar dataKey="dias" radius={[4, 4, 0, 0]} maxBarSize={40} isAnimationActive={true}>
+                    <Bar dataKey="dias" radius={[4, 4, 0, 0]} maxBarSize={40} isAnimationActive={animateCharts}>
                       {alertasChartData.map((entry, idx) => (
                         <Cell
                           key={idx}
@@ -468,7 +472,7 @@ const Dashboard = () => {
                         contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
                         formatter={(value) => [`${value} unidades`, 'Vendido']}
                       />
-                      <Bar dataKey="vendido" radius={[0, 4, 4, 0]} maxBarSize={20} isAnimationActive={true}>
+                      <Bar dataKey="vendido" radius={[0, 4, 4, 0]} maxBarSize={20} isAnimationActive={animateCharts}>
                         {topVendidosData.map((_, idx) => (
                           <Cell key={idx} fill={TOP_COLORS[idx % TOP_COLORS.length]} />
                         ))}
@@ -537,7 +541,7 @@ const Dashboard = () => {
               <div className="p-4">
                 {totalProductos > 0 && (
                   <ResponsiveContainer width="100%" height={140}>
-                    <PieChart animationBegin={0} animationDuration={800} animationEasing="ease-out">
+                    <PieChart animationBegin={0} animationDuration={animateCharts ? 800 : 0} animationEasing="ease-out">
                       <defs>
                         <linearGradient id="pieRed" x1="0" y1="0" x2="1" y2="1">
                           <stop offset="0%" stopColor="#f87171" />
@@ -561,7 +565,7 @@ const Dashboard = () => {
                         outerRadius={60}
                         paddingAngle={3}
                         dataKey="value"
-                        isAnimationActive={true}
+                        isAnimationActive={animateCharts}
                       >
                         {stockPieData.map((entry, idx) => (
                           <Cell key={idx} fill={entry.color} />
@@ -684,7 +688,7 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
-                  <AreaChart data={movimientosChartData} margin={{ top: 10, right: 10, left: -10, bottom: 5 }} animationBegin={0} animationDuration={800} animationEasing="ease-out">
+                  <AreaChart data={movimientosChartData} margin={{ top: 10, right: 10, left: -10, bottom: 5 }} animationBegin={0} animationDuration={animateCharts ? 800 : 0} animationEasing="ease-out">
                     <defs>
                       <linearGradient id="colorEntrada" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#ea580c" stopOpacity={0.5} />
@@ -728,7 +732,7 @@ const Dashboard = () => {
                       fill="url(#colorEntrada)"
                       dot={false}
                       activeDot={{ r: 4, fill: '#f97316' }}
-                      isAnimationActive={true}
+                      isAnimationActive={animateCharts}
                     />
                     <Area
                       type="monotone"
@@ -739,7 +743,7 @@ const Dashboard = () => {
                       fill="url(#colorSalida)"
                       dot={false}
                       activeDot={{ r: 4, fill: '#ef4444' }}
-                      isAnimationActive={true}
+                      isAnimationActive={animateCharts}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
