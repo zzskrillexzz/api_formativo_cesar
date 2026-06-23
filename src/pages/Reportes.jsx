@@ -85,9 +85,14 @@ const Reportes = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  // Refrescar datos al cambiar de tab (para datos en tiempo real)
+  useEffect(() => {
+    fetchData();
+  }, [tab]);
 
   // ── Generar reporte real (usando reportesService) ──
   const generarReporte = async () => {
