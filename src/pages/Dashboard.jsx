@@ -246,7 +246,7 @@ const Dashboard = () => {
       <div className={showCharts ? "space-y-6" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
 
         {/* ── ALERTAS (BarChart / Tabla) ── */}
-        <div className={`${showCharts ? '' : 'lg:col-span-2'} bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden transition-shadow hover:shadow-md`}>
+        <div className={`${showCharts ? '' : 'lg:col-span-2'} bg-white rounded-xl shadow-sm border border-slate-200/80 transition-shadow hover:shadow-md`}>
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
               <Activity className="text-emerald-500" size={18} />
@@ -410,7 +410,7 @@ const Dashboard = () => {
         <div className={showCharts ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-4"}>
 
           {/* ── MÁS VENDIDOS (HorizontalBarChart / Lista) ── */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden transition-shadow hover:shadow-md">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 transition-shadow hover:shadow-md">
             <div className="px-5 py-4 border-b border-slate-100">
               <h4 className="font-bold text-sm text-slate-800 flex items-center gap-2">
                 <TrendingUp size={16} className="text-blue-500" />
@@ -527,7 +527,7 @@ const Dashboard = () => {
           </div>
 
           {/* ── STOCK BAJO (PieChart / Tabla) ── */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden transition-shadow hover:shadow-md">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 transition-shadow hover:shadow-md">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <h4 className="font-bold text-sm text-slate-800 flex items-center gap-2">
                 <AlertTriangle size={16} className="text-red-500" />
@@ -666,7 +666,7 @@ const Dashboard = () => {
       </div>
 
       {/* ── Fila 3: Últimos Movimientos (AreaChart / Tabla) ── */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden transition-shadow hover:shadow-md">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 transition-shadow hover:shadow-md">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
             <Package size={16} className="text-slate-500" />
@@ -830,7 +830,7 @@ const Dashboard = () => {
 
       {/* ── Lotes próximos a vencer ── */}
       {lotes.filter(l => l.lot_estado === 'Activo' && l.lot_fecha_vencimiento).length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200/80">
           <div className="px-5 py-4 border-b border-slate-100">
             <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
               <Clock className="text-amber-500" size={18} />
