@@ -730,6 +730,7 @@ const Inventario = () => {
                   <th className="px-6 py-4">Categoría</th>
                   <th className="px-6 py-4 text-right">Precio</th>
                   <th className="px-6 py-4 text-right">Stock</th>
+                  <th className="px-6 py-4">Lote</th>
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4 text-right">Acción</th>
                 </tr>
@@ -737,7 +738,7 @@ const Inventario = () => {
               <tbody className="divide-y divide-slate-50 text-sm font-bold text-slate-600">
                 {filteredProductos.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-16 text-center">
+                    <td colSpan="8" className="px-6 py-16 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <Package size={40} strokeWidth={1.2} className="text-slate-300" />
                         <p className="text-sm font-medium text-slate-400">
@@ -770,6 +771,19 @@ const Inventario = () => {
                             {p.cantidad_disponible || 0}
                           </span>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-slate-400">
+                        {(() => {
+                          const lots = lotes.filter(l => l.lot_pro_id_fk === p.id);
+                          if (lots.length === 0) return <span className="text-slate-300">—</span>;
+                          const mostrados = lots.slice(0, 2).map(l => l.lot_id).join(', ');
+                          const restantes = lots.length - 2;
+                          return (
+                            <span title={lots.map(l => `${l.lot_id} (${l.lot_cantidad_actual || 0} uds)`).join(' | ')}>
+                              {mostrados}{restantes > 0 ? ` +${restantes} más` : ''}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase ${getEstadoBadge(p.estado).cls}`}>
