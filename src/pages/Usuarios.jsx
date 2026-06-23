@@ -9,7 +9,7 @@ import { FIELD_LIMITS } from '../utils/fieldLimits';
 import api from '../api/axios';
 import { usuariosService } from '../api/services/usuariosService';
 
-const ROLES_DISPONIBLES = ['Administrador', 'Vendedor', 'Bodeguero', 'Contador'];
+// Roles se cargan desde BD vía fetchData → api.get('/roles/')
 
 const Usuarios = () => {
   const { user } = useAuth();
@@ -29,6 +29,11 @@ const Usuarios = () => {
   const POR_PAGINA = 10;
   const [paginaUsuarios, setPaginaUsuarios] = useState(1);
   const [paginaRoles, setPaginaRoles] = useState(1);
+
+  // Roles desde BD (cargados en fetchData), con fallback para primer render
+  const rolesDisponibles = roles.length > 0
+    ? roles.map(r => r.rol_nombre)
+    : ['Administrador', 'Vendedor', 'Bodeguero', 'Contador'];
 
   // ── Modal crear/editar usuario ──
   const [showModal, setShowModal] = useState(false);
@@ -313,7 +318,7 @@ const Usuarios = () => {
               <select value={filtroRol} onChange={e => setFiltroRol(e.target.value)}
                 className="text-xs border border-slate-300 rounded-md px-2.5 py-3 bg-white outline-none shadow-sm font-medium text-slate-600">
                 <option value="">Todos los roles</option>
-                {ROLES_DISPONIBLES.map(r => <option key={r} value={r}>{r}</option>)}
+                {rolesDisponibles.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
               <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}
                 className="text-xs border border-slate-300 rounded-md px-2.5 py-3 bg-white outline-none shadow-sm font-medium text-slate-600">
@@ -518,7 +523,7 @@ const Usuarios = () => {
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Rol *</label>
                   <select name="usu_rol" value={formData.usu_rol || 'Vendedor'} onChange={handleUserChange}
                     className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium">
-                    {ROLES_DISPONIBLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    {rolesDisponibles.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1">
