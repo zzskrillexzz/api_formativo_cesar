@@ -656,7 +656,19 @@ const Inventario = () => {
           />
         </div>
         <div className="flex gap-2">
-          <button onClick={() => fetchData()} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
+          <button onClick={() => {
+            if (tab === 'movimientos') {
+              const params = { page: pagina, limit: POR_PAGINA_MOV };
+              if (filtroProducto) params.mon_pro_id_fk = filtroProducto;
+              if (filtroTipo) params.tipo = filtroTipo;
+              if (filtroFechaDesde) params.fecha_desde = filtroFechaDesde;
+              if (filtroFechaHasta) params.fecha_hasta = filtroFechaHasta;
+              if (searchTerm) params.q = searchTerm;
+              fetchData(params);
+            } else {
+              fetchData();
+            }
+          }} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
             <RefreshCw size={18} className="text-slate-500" />
           </button>
           {tab !== 'movimientos' && (

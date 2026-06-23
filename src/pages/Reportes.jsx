@@ -57,10 +57,11 @@ const Reportes = () => {
   const [exportando, setExportando] = useState(false);
   const downloadRef = useRef(null);
   const isFirstLoad = useRef(true);
+  const manualRefresh = useRef(false);
   const [animateCharts, setAnimateCharts] = useState(true);
 
   const fetchData = async () => {
-    if (isFirstLoad.current) setLoading(true);
+    if (isFirstLoad.current || manualRefresh.current) setLoading(true);
     try {
       const [top, reps, anuls] = await Promise.all([
         masVendidosService.listar().catch(() => []),
@@ -74,6 +75,7 @@ const Reportes = () => {
       console.error('Error cargando reportes:', err);
     } finally {
       setLoading(false);
+      manualRefresh.current = false;
       if (isFirstLoad.current) {
         isFirstLoad.current = false;
         setTimeout(() => setAnimateCharts(false), 900);
@@ -244,7 +246,7 @@ const Reportes = () => {
             </button>
           ))}
         </div>
-        <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
+        <button onClick={() => { manualRefresh.current = true; fetchData(); }} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
           <RefreshCw size={18} className="text-slate-500" />
         </button>
       </div>
