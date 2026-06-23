@@ -5,6 +5,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { ThemeLoader } from '../components/ThemeLoader';
+import { toast } from '../components/Toast';
 import { masVendidosService } from '../api/services/masVendidosService';
 import { reportesService } from '../api/services/reportesService';
 import { anulacionesService } from '../api/services/anulacionesService';
@@ -35,7 +36,7 @@ const EmptyState = ({ message }) => (
   </div>
 );
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 
 const Reportes = () => {
   const { user } = useAuth();
@@ -54,6 +55,7 @@ const Reportes = () => {
   const [cargandoReporte, setCargandoReporte] = useState(false);
   const [reporteError, setReporteError] = useState('');
   const [exportando, setExportando] = useState(false);
+  const downloadRef = useRef(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -75,58 +77,105 @@ const Reportes = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  // ── Generar reporte real ──
+  // ── Generar reporte real (usando reportesService) ──
   const generarReporte = async () => {
     setCargandoReporte(true);
     setReporteError('');
     setDatosReporte(null);
     try {
-      const token = sessionStorage.getItem('access_token');
-      let url = `${API_URL}/reportes/generar/${reporteTipo}`;
-      const params = new URLSearchParams();
-      if (fechaDesde) params.append('fecha_desde', fechaDesde);
-      if (fechaHasta) params.append('fecha_hasta', fechaHasta);
-      if (reporteTipo === 'por_vencer') params.append('dias', diasVencer);
-      if (params.toString()) url += '?' + params.toString();
-
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error((await res.json()).mensaje || 'Error al generar reporte');
-      const data = await res.json();
+      const params = {};
+      if (fechaDesde) params.fecha_desde = fechaDesde;
+      if (fechaHasta) params.fecha_hasta = fechaHasta;
+      if (reporteTipo === 'por_vencer') params.dias = diasVencer;
+      const data = await reportesService.generar(reporteTipo, params);
       setDatosReporte(data);
     } catch (err) {
-      setReporteError(err.message);
+      const msg = err.response?.data?.mensaje || err.message || 'Error al generar reporte';
+      setReporteError(msg);
+      toast({ type: 'error', title: 'Error', description: msg });
     } finally {
       setCargandoReporte(false);
     }
   };
 
-  // ── Exportar PDF/Excel ──
+  // ── Exportar PDF/Excel (blob + <a download> → muestra "Guardar como…") ──
   const exportarReporte = async (formato) => {
+    if (exportando) return;
     setExportando(true);
     try {
       const token = sessionStorage.getItem('access_token');
-      let url = `${API_URL}/reportes/exportar/${reporteTipo}/${formato}`;
-      const params = new URLSearchParams();
-      if (fechaDesde) params.append('fecha_desde', fechaDesde);
-      if (fechaHasta) params.append('fecha_hasta', fechaHasta);
-      if (reporteTipo === 'por_vencer') params.append('dias', diasVencer);
-      if (params.toString()) url += '?' + params.toString();
+      if (!token) {
+        toast({ type: 'error', title: 'Sesión expirada', description: 'Inicie sesión nuevamente' });
+        return;
+      }
 
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Error al exportar');
-      const blob = await res.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = `reporte_${reporteTipo}_${new Date().toISOString().slice(0, 10)}.${formato}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+      const ext = formato === 'pdf' ? 'pdf' : 'xlsx';
+      const fileName = `reporte_${reporteTipo}_${new Date().toISOString().slice(0, 10)}.${ext}`;
+      const blob = await reportesService.exportar(reporteTipo, formato, {
+        fecha_desde: fechaDesde || undefined,
+        fecha_hasta: fechaHasta || undefined,
+        dias: reporteTipo === 'por_vencer' ? diasVencer : undefined,
+      });
+
+      // Si el backend devolvió un JSON de error envuelto en Blob
+      if (blob.type === 'application/json') {
+        const text = await blob.text();
+        const err = JSON.parse(text);
+        throw new Error(err.mensaje || 'Error del servidor');
+      }
+
+      // Intentar con showSaveFilePicker (API moderna → muestra "Guardar como…")
+      try {
+        if ('showSaveFilePicker' in window) {
+          const opts = {
+            suggestedName: fileName,
+            types: [{
+              description: formato === 'pdf' ? 'PDF' : 'Excel',
+              accept: formato === 'pdf'
+                ? { 'application/pdf': ['.pdf'] }
+                : { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
+            }]
+          };
+          const handle = await window.showSaveFilePicker(opts);
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          toast({ type: 'success', title: `Guardado`, description: `«${fileName}» se guardó correctamente` });
+        } else {
+          throw new Error('API no disponible');
+        }
+      } catch (pickerErr) {
+        // Fallback: <a download> para navegadores sin showSaveFilePicker
+        if (pickerErr.name === 'AbortError') {
+          // El usuario canceló el diálogo — no hacer nada
+          toast({ type: 'info', title: 'Cancelado', description: 'Descarga cancelada' });
+          return;
+        }
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+        toast({ type: 'success', title: `Descargando ${formato.toUpperCase()}`, description: `Archivo guardado en Descargas como «${fileName}»` });
+      }
     } catch (err) {
-      setReporteError('Error al exportar: ' + err.message);
+      let msg = err.message || 'Error desconocido';
+      try {
+        if (err.response?.data instanceof Blob) {
+          const text = await err.response.data.text();
+          const json = JSON.parse(text);
+          msg = json.mensaje || json.error || msg;
+        } else if (err.response?.data?.mensaje) {
+          msg = err.response.data.mensaje;
+        }
+      } catch (_) {}
+      toast({ type: 'error', title: 'Error al exportar', description: msg });
+      console.error('[ExportarReporte]', err);
     } finally {
-      setExportando(false);
+      setTimeout(() => setExportando(false), 2000);
     }
   };
 
@@ -167,6 +216,8 @@ const Reportes = () => {
   if (loading) return <ThemeLoader module="Reportes" />;
 
   return (
+    <>
+
     <div className="space-y-6 animate-in fade-in duration-700">
       {/* Tabs */}
       <div className="flex items-center justify-between">
@@ -277,7 +328,9 @@ const Reportes = () => {
             </div>
 
             {reporteError && (
-              <div className="mt-4 p-3 bg-red-50 text-red-700 text-xs font-bold rounded-lg border border-red-200">{reporteError}</div>
+              <div className="mt-4 p-4 bg-red-100 border-l-4 border-red-600 text-red-800 text-sm font-bold rounded-lg shadow-sm">
+                {reporteError}
+              </div>
             )}
           </div>
 
@@ -335,7 +388,7 @@ const Reportes = () => {
                             <><th className="px-6 py-3">Fecha</th><th className="px-6 py-3 text-right">Pedidos</th><th className="px-6 py-3 text-right">Total Vendido</th></>
                           )}
                           {reporteTipo === 'inventario' && (
-                            <><th className="px-6 py-3">Producto</th><th className="px-6 py-3">Categoría</th><th className="px-6 py-3 text-right">Stock</th><th className="px-6 py-3 text-right">Stock Mín</th><th className="px-6 py-3 text-right">Precio</th><th className="px-6 py-3">Lote</th><th className="px-6 py-3">Vencimiento</th></>
+                            <><th className="px-6 py-3">Producto</th><th className="px-6 py-3">Categoría</th><th className="px-6 py-3 text-right">Stock</th><th className="px-6 py-3 text-right">Stock Mín</th><th className="px-6 py-3 text-center">Estado</th><th className="px-6 py-3 text-right">Precio</th><th className="px-6 py-3">Lote</th><th className="px-6 py-3">Vencimiento</th></>
                           )}
                           {reporteTipo === 'mas_vendidos' && (
                             <><th className="px-6 py-3">Producto</th><th className="px-6 py-3 text-right">Unidades</th><th className="px-6 py-3 text-right">Total</th></>
@@ -346,13 +399,40 @@ const Reportes = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50 font-bold text-slate-600">
-                        {datosReporte.datos.map((d, i) => (
-                          <tr key={i} className="hover:bg-orange-100/70">
+                        {datosReporte.datos.map((d, i) => {
+                          const invStock = d.pro_cantidad_disponible || 0;
+                          const invMin = d.pro_stock_minimo || 0;
+                          const esCritico = reporteTipo === 'inventario' && invStock <= invMin;
+
+                          return (
+                          <tr key={i} className={`${esCritico ? 'bg-red-50 hover:bg-red-100/80' : 'hover:bg-orange-100/70'}`}>
                             {reporteTipo === 'ventas' && (
                               <><td className="px-6 py-3 text-slate-400 text-xs">{d.fecha}</td><td className="px-6 py-3 text-right">{d.cantidad_pedidos}</td><td className="px-6 py-3 text-right text-emerald-600">${Number(d.total_vendido).toLocaleString()}</td></>
                             )}
                             {reporteTipo === 'inventario' && (
-                              <><td className="px-6 py-3">{d.pro_nombre}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.pro_categoria}</td><td className="px-6 py-3 text-right">{d.pro_cantidad_disponible}</td><td className="px-6 py-3 text-right text-slate-400">{d.pro_stock_minimo}</td><td className="px-6 py-3 text-right text-emerald-600">${Number(d.pro_precio).toLocaleString()}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.lot_numero || d.lot_id || '-'}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.lot_fecha_vencimiento || '-'}</td></>
+                              <><td className="px-6 py-3 font-bold text-slate-800">{d.pro_nombre}</td>
+                                <td className="px-6 py-3">
+                                  <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded-md text-[10px] font-bold uppercase">{d.pro_categoria}</span>
+                                </td>
+                                <td className="px-6 py-3 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <span className={`text-sm font-bold ${esCritico ? 'text-red-600' : 'text-emerald-600'}`}>{invStock}</span>
+                                    <div className="w-14 h-1.5 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
+                                      <div className={`h-full rounded-full transition-all ${esCritico ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                        style={{ width: `${Math.min(100, (invStock / Math.max(invMin, 1)) * 100)}%` }} />
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-3 text-right text-slate-400 text-xs">{invMin}</td>
+                                <td className="px-6 py-3 text-center">
+                                  {esCritico
+                                    ? <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-red-500 rounded-full" /> Crítico</span>
+                                    : <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" /> Normal</span>
+                                  }
+                                </td>
+                                <td className="px-6 py-3 text-right text-emerald-600 font-bold">${Number(d.pro_precio).toLocaleString()}</td>
+                                <td className="px-6 py-3 text-slate-400 text-xs font-mono">{d.lot_numero || d.lot_id || '-'}</td>
+                                <td className={`px-6 py-3 text-xs ${d.lot_fecha_vencimiento ? 'text-slate-500' : 'text-slate-300'}`}>{d.lot_fecha_vencimiento || '—'}</td></>
                             )}
                             {reporteTipo === 'mas_vendidos' && (
                               <><td className="px-6 py-3">{d.nombre}</td><td className="px-6 py-3 text-right">{d.total_unidades}</td><td className="px-6 py-3 text-right text-emerald-600">${Number(d.total_vendido).toLocaleString()}</td></>
@@ -361,7 +441,8 @@ const Reportes = () => {
                               <><td className="px-6 py-3">{d.pro_nombre}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.pro_categoria}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.lot_numero || d.lot_id}</td><td className="px-6 py-3 text-slate-400 text-xs">{d.lot_fecha_vencimiento}</td><td className="px-6 py-3 text-right">{d.lot_cantidad_actual}</td><td className={`px-6 py-3 text-right font-bold ${d.dias_restantes <= 30 ? 'text-red-600' : d.dias_restantes <= 60 ? 'text-orange-600' : 'text-emerald-600'}`}>{d.dias_restantes}</td></>
                             )}
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -582,6 +663,7 @@ const Reportes = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

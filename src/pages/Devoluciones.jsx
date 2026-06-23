@@ -112,8 +112,22 @@ const Devoluciones = () => {
     };
     setEditData(edit);
     formSnapshotRef.current = JSON.parse(JSON.stringify(edit));
-    // Cargar el máximo disponible para validar en edición también
-    setMaxCantidad(dev.cantidad);
+    // Buscar el máximo disponible real desde el detalle de compra
+    (async () => {
+      try {
+        const res = await api.get('/detalles_compras/', { params: { dco_com_id_fk: dev.compra_id } });
+        const detalles = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+        const detalle = detalles.find(d => d.producto_id === dev.producto_id);
+        if (detalle?.cantidad) {
+          // El máximo disponible es lo que se compró en el detalle
+          setMaxCantidad(Number(detalle.cantidad));
+        } else {
+          setMaxCantidad(dev.cantidad);
+        }
+      } catch (_) {
+        setMaxCantidad(dev.cantidad);
+      }
+    })();
     setShowEditModal(true);
   };
 
