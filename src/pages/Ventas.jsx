@@ -2249,7 +2249,7 @@ const Ventas = () => {
                       <div className="hidden flex-col items-center gap-2 py-8 text-slate-400">
                         <FileText size={32} strokeWidth={1.5} />
                         <p className="text-sm font-medium">No se pudo cargar la vista previa</p>
-                        <a href={comprobanteUrl} download="comprobante" className="text-xs text-blue-500 hover:underline font-bold">Descargar archivo</a>
+                        <a href={comprobanteUrl} download={`comprobante.${pedidoAVerificar?.ped_comprobante_tipo?.split('/')[1] || 'png'}`} className="text-xs text-blue-500 hover:underline font-bold">Descargar archivo</a>
                       </div>
                     </>
                   ) : (
