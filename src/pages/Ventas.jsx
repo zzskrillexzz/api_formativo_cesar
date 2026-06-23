@@ -1992,10 +1992,10 @@ const Ventas = () => {
               {/* ════════════════════════════════════════════ */}
               {/* VERSIÓN PDF COMPLETA — Oculta en pantalla   */}
               {/* ════════════════════════════════════════════ */}
-              <div id="factura-print" className="bg-[#f7f3ed] p-8 text-[#2d2d2d] font-mono">
+              <div id="factura-print" className="bg-[#f7f3ed] p-6 text-[#2d2d2d] font-mono">
 
                 {/* ── ENCABEZADO ── */}
-                <div className="text-center relative mb-6">
+                <div className="text-center relative mb-4">
                   <div className="flex items-center justify-center gap-3 mb-1">
                     <span className="text-blue-600 text-xl">★</span>
                     <span className="text-blue-600 text-lg">✧</span>
@@ -2011,38 +2011,38 @@ const Ventas = () => {
                     <span>»</span>
                   </div>
                   <p className="text-lg font-black text-black uppercase tracking-[4px] mt-2">San Diego Distribuidora</p>
-                  <p className="text-sm text-blue-600 font-bold mt-1">NIT: 900.123.456-7 · Cali, Colombia</p>
-                  <p className="text-xs text-[#5a5a5a] mt-0.5">Calle 10 # 15-20 · Tel: (602) 555-0123</p>
+                  <p className="text-base text-blue-600 font-bold mt-1">NIT: 900.123.456-7 · Cali, Colombia</p>
+                  <p className="text-sm text-[#5a5a5a] mt-0.5">Calle 10 # 15-20 · Tel: (602) 555-0123</p>
                 </div>
 
                 {/* ── DATOS CLIENTE + FACTURA ── */}
-                <div className="flex items-stretch gap-0 mb-5 border border-[#d4c9b8] bg-white/40">
-                  <div className="flex-1 p-3 border-r border-dashed border-[#d4c9b8]">
-                    <p className="text-xs font-black text-blue-600 uppercase tracking-[2px] mb-1">Facturar a</p>
-                    <p className="text-base font-black text-[#2d2d2d]">
+                <div className="flex items-stretch gap-0 mb-4 border border-[#d4c9b8] bg-white/40">
+                  <div className="flex-1 p-2 border-r border-dashed border-[#d4c9b8]">
+                    <p className="text-sm font-black text-blue-600 uppercase tracking-[2px] mb-0.5">Facturar a</p>
+                    <p className="text-lg font-black text-[#2d2d2d]">
                       {detalleData.cliente?.cli_nombre
                         ? `${detalleData.cliente.cli_nombre} ${detalleData.cliente.cli_apellido || ''}`
                         : detalleData.pedidoRelacionado?.ped_cli_id_fk || 'Cliente'}
                     </p>
                     {detalleData.cliente?.cli_direccion && (
-                      <p className="text-xs text-[#5a5a5a] mt-0.5">{detalleData.cliente.cli_direccion}</p>
+                      <p className="text-sm text-[#5a5a5a] mt-0.5">{detalleData.cliente.cli_direccion}</p>
                     )}
                     {detalleData.cliente?.cli_telefono && (
-                      <p className="text-xs text-[#5a5a5a]">Tel: {detalleData.cliente.cli_telefono}</p>
+                      <p className="text-sm text-[#5a5a5a]">Tel: {detalleData.cliente.cli_telefono}</p>
                     )}
                     {detalleData.cliente?.cli_id && (
-                      <p className="text-xs text-[#5a5a5a]">
+                      <p className="text-sm text-[#5a5a5a]">
                         {detalleData.cliente.cli_tipo_documento || 'CC'}: {detalleData.cliente.cli_id}
                       </p>
                     )}
                   </div>
-                  <div className="w-56 p-3 text-right">
-                    <p className="text-xs font-black text-blue-600 uppercase tracking-[2px] mb-1">No. Factura</p>
-                    <p className="text-xl font-black text-[#2d2d2d]">{detalleData.id}</p>
-                    <p className="text-xs font-black text-blue-600 uppercase tracking-[2px] mt-2 mb-1">Fecha Emisión</p>
-                    <p className="text-sm font-bold">{detalleData.fecha_emision || '-'}</p>
-                    <p className="text-xs font-black text-blue-600 uppercase tracking-[2px] mt-2 mb-1">Vencimiento</p>
-                    <p className="text-sm font-bold">
+                  <div className="w-56 p-2 text-right">
+                    <p className="text-sm font-black text-blue-600 uppercase tracking-[2px] mb-0.5">No. Factura</p>
+                    <p className="text-2xl font-black text-[#2d2d2d]">{detalleData.id}</p>
+                    <p className="text-sm font-black text-blue-600 uppercase tracking-[2px] mt-1.5 mb-0.5">Fecha Emisión</p>
+                    <p className="text-base font-bold">{detalleData.fecha_emision || '-'}</p>
+                    <p className="text-sm font-black text-blue-600 uppercase tracking-[2px] mt-1.5 mb-0.5">Vencimiento</p>
+                    <p className="text-base font-bold">
                       {detalleData.fecha_emision
                         ? (() => {
                             const d = new Date(detalleData.fecha_emision);
@@ -2058,24 +2058,24 @@ const Ventas = () => {
                 <table className="w-full text-left mb-5 border border-[#d4c9b8]">
                   <thead>
                     <tr className="bg-blue-600 text-white">
-                      <th className="px-3 py-3 text-xs font-black uppercase tracking-wider w-16 text-center">Cant.</th>
-                      <th className="px-3 py-3 text-xs font-black uppercase tracking-wider">Descripción</th>
-                      <th className="px-3 py-3 text-xs font-black uppercase tracking-wider text-right w-32">Precio Unitario</th>
-                      <th className="px-3 py-3 text-xs font-black uppercase tracking-wider text-right w-28">Importe</th>
+                      <th className="px-2 py-2 text-sm font-black uppercase tracking-wider w-14 text-center">Cant.</th>
+                      <th className="px-2 py-2 text-sm font-black uppercase tracking-wider">Descripción</th>
+                      <th className="px-2 py-2 text-sm font-black uppercase tracking-wider text-right w-32">Precio Unitario</th>
+                      <th className="px-2 py-2 text-sm font-black uppercase tracking-wider text-right w-28">Importe</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e0d5c8]">
                     {detalleData.lineas && detalleData.lineas.length > 0 ? (
                       detalleData.lineas.map((l, i) => (
                         <tr key={i} className="bg-white/60">
-                          <td className="px-3 py-3 text-sm text-center font-bold text-[#5a5a5a]">{l.det_cantidad}</td>
-                          <td className="px-3 py-3 text-sm font-bold text-[#2d2d2d]">{l.producto_nombre || l.det_pro_id_fk}</td>
-                          <td className="px-3 py-3 text-sm text-right font-bold text-[#5a5a5a]">${parseFloat(l.det_precio_unitario || 0).toFixed(2)}</td>
-                          <td className="px-3 py-3 text-sm text-right font-bold text-[#2d2d2d]">${parseFloat(l.det_subtotal || 0).toFixed(2)}</td>
+                          <td className="px-2 py-2 text-base text-center font-bold text-[#5a5a5a]">{l.det_cantidad}</td>
+                          <td className="px-2 py-2 text-base font-bold text-[#2d2d2d]">{l.producto_nombre || l.det_pro_id_fk}</td>
+                          <td className="px-2 py-2 text-base text-right font-bold text-[#5a5a5a]">${parseFloat(l.det_precio_unitario || 0).toFixed(2)}</td>
+                          <td className="px-2 py-2 text-base text-right font-bold text-[#2d2d2d]">${parseFloat(l.det_subtotal || 0).toFixed(2)}</td>
                         </tr>
                       ))
                     ) : (
-                      <tr><td colSpan="4" className="px-3 py-4 text-center text-sm text-[#8a7e6b] italic bg-white/60">Sin productos registrados</td></tr>
+                      <tr><td colSpan="4" className="px-2 py-3 text-center text-base text-[#8a7e6b] italic bg-white/60">Sin productos registrados</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -2088,19 +2088,19 @@ const Ventas = () => {
                   const iva = subtotal * 0.19;
                   const total = parseFloat(detalleData.total || subtotal + iva);
                   return (
-                    <div className="flex justify-end mb-5">
+                    <div className="flex justify-end mb-4">
                       <div className="w-64 border border-[#d4c9b8] bg-white/40">
-                        <div className="px-4 py-3 flex justify-between text-sm border-b border-dashed border-[#e0d5c8]">
+                        <div className="px-3 py-2.5 flex justify-between text-base border-b border-dashed border-[#e0d5c8]">
                           <span className="font-bold text-[#5a5a5a] uppercase tracking-wider">Subtotal</span>
                           <span className="font-bold text-[#2d2d2d]">${subtotal.toFixed(2)}</span>
                         </div>
-                        <div className="px-4 py-3 flex justify-between text-sm border-b border-dashed border-[#e0d5c8]">
+                        <div className="px-3 py-2.5 flex justify-between text-base border-b border-dashed border-[#e0d5c8]">
                           <span className="font-bold text-[#5a5a5a] uppercase tracking-wider">IVA 19.0%</span>
                           <span className="font-bold text-[#2d2d2d]">${iva.toFixed(2)}</span>
                         </div>
-                        <div className="px-4 py-4 flex justify-between bg-blue-600/10">
-                          <span className="font-black text-blue-600 uppercase tracking-wider text-base">TOTAL</span>
-                          <span className="font-black text-blue-600 text-xl">${total.toFixed(2)}</span>
+                        <div className="px-3 py-3 flex justify-between bg-blue-600/10">
+                          <span className="font-black text-blue-600 uppercase tracking-wider text-lg">TOTAL</span>
+                          <span className="font-black text-blue-600 text-2xl">${total.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -2108,34 +2108,34 @@ const Ventas = () => {
                 })()}
 
                 {/* ── FIRMA ── */}
-                <div className="mb-5 text-right">
-                  <div className="inline-block border-b border-[#2d2d2d] pb-1 px-8">
-                    <p className="text-sm text-[#2d2d2d]" style={{fontFamily: "'Brush Script MT', 'Segoe Script', cursive", fontSize: '16px'}}>
+                <div className="mb-4 text-right">
+                  <div className="inline-block border-b border-[#2d2d2d] pb-0.5 px-8">
+                    <p className="text-base text-[#2d2d2d]" style={{fontFamily: "'Brush Script MT', 'Segoe Script', cursive", fontSize: '18px'}}>
                       {detalleData.usuario_id || '_________________'}
                     </p>
                   </div>
-                  <p className="text-xs text-[#5a5a5a] mt-1 uppercase tracking-wider">Firma Autorizada</p>
+                  <p className="text-sm text-[#5a5a5a] mt-0.5 uppercase tracking-wider">Firma Autorizada</p>
                 </div>
 
                 {/* ── LÍNEA SEPARADORA ── */}
-                <div className="flex items-center gap-2 text-blue-600 text-sm mb-5">
+                <div className="flex items-center gap-2 text-blue-600 text-sm mb-4">
                   <span>◄◄</span>
                   <div className="flex-1 border-t-2 border-dashed border-blue-600"></div>
                   <span>►►</span>
                 </div>
 
                 {/* ── PIE DE PÁGINA ── */}
-                <div className="flex gap-8">
+                <div className="flex gap-6">
                   <div className="flex-1">
-                    <p className="text-xs font-black text-blue-600 uppercase tracking-[2px] mb-1">Condiciones y Forma de Pago</p>
-                    <p className="text-sm text-[#5a5a5a]">Plazo: 15 días desde la fecha de emisión</p>
-                    <p className="text-sm text-[#5a5a5a]">
+                    <p className="text-sm font-black text-blue-600 uppercase tracking-[2px] mb-0.5">Condiciones y Forma de Pago</p>
+                    <p className="text-base text-[#5a5a5a]">Plazo: 15 días desde la fecha de emisión</p>
+                    <p className="text-base text-[#5a5a5a]">
                       {detalleData.cuenta_bancaria
                         ? `Banco Santander · Cuenta: ${detalleData.cuenta_bancaria}`
                         : `Método: ${detalleData.forma_pago || 'Efectivo'}`}
                     </p>
                     {detalleData.cliente?.cli_correo && (
-                      <p className="text-sm text-[#5a5a5a]">Email: {detalleData.cliente.cli_correo}</p>
+                      <p className="text-base text-[#5a5a5a]">Email: {detalleData.cliente.cli_correo}</p>
                     )}
                   </div>
                   <div className="text-right flex items-end">
