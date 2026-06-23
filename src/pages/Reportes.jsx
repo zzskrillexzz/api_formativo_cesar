@@ -56,9 +56,11 @@ const Reportes = () => {
   const [reporteError, setReporteError] = useState('');
   const [exportando, setExportando] = useState(false);
   const downloadRef = useRef(null);
+  const isFirstLoad = useRef(true);
+  const [animateCharts, setAnimateCharts] = useState(true);
 
   const fetchData = async () => {
-    setLoading(true);
+    if (isFirstLoad.current) setLoading(true);
     try {
       const [top, reps, anuls] = await Promise.all([
         masVendidosService.listar().catch(() => []),
@@ -72,6 +74,10 @@ const Reportes = () => {
       console.error('Error cargando reportes:', err);
     } finally {
       setLoading(false);
+      if (isFirstLoad.current) {
+        isFirstLoad.current = false;
+        setTimeout(() => setAnimateCharts(false), 900);
+      }
     }
   };
 
@@ -377,7 +383,7 @@ const Reportes = () => {
                           <XAxis type="number" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#94a3b8' }} />
                           <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11, fontWeight: 'bold', fill: '#475569' }} />
                           <Tooltip content={<CustomTooltip />} />
-                          <Bar dataKey="value" fill="url(#gradEmeraldR)" radius={[0, 8, 8, 0]} barSize={28} isAnimationActive={true} />
+                          <Bar dataKey="value" fill="url(#gradEmeraldR)" radius={[0, 8, 8, 0]} barSize={28} isAnimationActive={animateCharts} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -479,7 +485,7 @@ const Reportes = () => {
                   <XAxis type="number" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#94a3b8' }} />
                   <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fontWeight: 'bold', fill: '#475569' }} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="value" fill="url(#gradEmeraldR2)" radius={[0, 8, 8, 0]} barSize={28} isAnimationActive={true} />
+                  <Bar dataKey="value" fill="url(#gradEmeraldR2)" radius={[0, 8, 8, 0]} barSize={28} isAnimationActive={animateCharts} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -532,7 +538,7 @@ const Reportes = () => {
                   <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#475569' }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11, fontWeight: 'bold', fill: '#94a3b8' }} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="value" fill="url(#gradTealR)" radius={[8, 8, 0, 0]} barSize={48} isAnimationActive={true} />
+                  <Bar dataKey="value" fill="url(#gradTealR)" radius={[8, 8, 0, 0]} barSize={48} isAnimationActive={animateCharts} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -600,7 +606,7 @@ const Reportes = () => {
                       outerRadius={100}
                       innerRadius={50}
                       paddingAngle={3}
-                      isAnimationActive={true}
+                      isAnimationActive={animateCharts}
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                       labelLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
                     >
