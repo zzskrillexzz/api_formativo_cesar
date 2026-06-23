@@ -35,6 +35,18 @@ const Usuarios = () => {
     ? roles.map(r => r.rol_nombre)
     : ['Administrador', 'Vendedor', 'Bodeguero', 'Contador'];
 
+  // Detectar si hubo cambios reales en edición (ignorando contraseña que siempre inicia vacía)
+  const hasChanges = editingUserId ? (() => {
+    const snap = formSnapshotRef.current;
+    if (!snap || !snap.usu_id) return true;
+    if (formData.usu_nombre !== snap.usu_nombre) return true;
+    if (formData.usu_correo !== snap.usu_correo) return true;
+    if (formData.usu_rol !== snap.usu_rol) return true;
+    if (formData.usu_estado !== snap.usu_estado) return true;
+    if (formData.usu_contrasena && formData.usu_contrasena.trim() !== '') return true;
+    return false;
+  })() : true;
+
   // ── Modal crear/editar usuario ──
   const [showModal, setShowModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
@@ -46,6 +58,8 @@ const Usuarios = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [adminPasswordAttempts, setAdminPasswordAttempts] = useState(0);
+  const [adminPasswordError, setAdminPasswordError] = useState('');
 
   // ── Modal crear/editar rol ──
   const [showRolModal, setShowRolModal] = useState(false);
@@ -111,6 +125,8 @@ const Usuarios = () => {
         usu_estado: usr.usu_estado ?? 1
       });
       formSnapshotRef.current = JSON.parse(JSON.stringify(usr));
+      setAdminPasswordAttempts(0);
+      setAdminPasswordError('');
     } else {
       setEditingUserId(null);
       const nums = usuarios.map(u => { const m = (u.usu_id || '').match(/USU(\d+)/); return m ? parseInt(m[1]) : 0; });
@@ -146,10 +162,6 @@ const Usuarios = () => {
       setFormError('Nombre, correo y rol son obligatorios');
       return;
     }
-    if (editingUserId && JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
-      toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en el usuario' });
-      return;
-    }
     if (!editingUserId && !formData.usu_contrasena) {
       setFormError('La contraseña es obligatoria para nuevos usuarios');
       return;
@@ -158,12 +170,16 @@ const Usuarios = () => {
       setFormError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
-    if (!editingUserId && formData.usu_contrasena !== confirmPassword) {
+    if (formData.usu_contrasena !== confirmPassword) {
       setFormError('Las contraseñas no coinciden');
       return;
     }
     if (editingUserId && !adminPassword.trim()) {
       setFormError('Debes ingresar la contraseña de un administrador para autorizar los cambios');
+      return;
+    }
+    if (editingUserId && adminPasswordAttempts >= 3) {
+      setFormError('Has agotado los 3 intentos. Cierra y vuelve a abrir el modal.');
       return;
     }
     setFormSubmitting(true);
@@ -184,10 +200,23 @@ const Usuarios = () => {
       }
       setShowModal(false);
       setAdminPassword('');
+      setAdminPasswordAttempts(0);
+      setAdminPasswordError('');
       toast({ type: 'success', title: editingUserId ? 'Actualizado' : 'Creado', description: `Usuario ${editingUserId ? 'actualizado' : 'creado'} correctamente` });
       fetchData();
     } catch (err) {
-      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar usuario' });
+      if (editingUserId && err.response?.status === 401) {
+        const newAttempts = adminPasswordAttempts + 1;
+        setAdminPasswordAttempts(newAttempts);
+        setAdminPasswordError(`Contraseña incorrecta. Intentos restantes: ${3 - newAttempts}`);
+        if (newAttempts >= 3) {
+          toast({ type: 'error', title: 'Demasiados intentos', description: 'Has agotado los 3 intentos. Cierra y vuelve a abrir el modal para intentar de nuevo.' });
+        } else {
+          toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Contraseña incorrecta' });
+        }
+      } else {
+        toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar usuario' });
+      }
     } finally { setFormSubmitting(false); }
   };
 
@@ -505,7 +534,7 @@ const Usuarios = () => {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-slate-200 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">{editingUserId ? 'Editar Usuario' : 'Nuevo Usuario'}</h2>
-              <button onClick={() => { setShowModal(false); setAdminPassword(''); }} className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"><X size={20} /></button>
+              <button onClick={() => { setShowModal(false); setAdminPassword(''); setAdminPasswordAttempts(0); setAdminPasswordError(''); setConfirmPassword(''); }} className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"><X size={20} /></button>
             </div>
             <form onSubmit={handleUserSubmit} className="px-6 py-4 space-y-4">
               {formError && <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-bold px-4 py-2.5 rounded-lg">{formError}</div>}
@@ -558,7 +587,7 @@ const Usuarios = () => {
                   </button>
                 </div>
               </div>
-              {!editingUserId && (
+              {(!editingUserId || (formData.usu_contrasena && formData.usu_contrasena.trim() !== '')) && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Confirmar contraseña *</label>
                   <div className="relative">
@@ -584,9 +613,13 @@ const Usuarios = () => {
                     🔐 Contraseña de administrador *
                   </label>
                   <p className="text-[9px] text-slate-400 mb-1">Ingresa tu contraseña de administrador para autorizar los cambios</p>
+                  {adminPasswordError && (
+                    <p className="text-[10px] text-amber-600 font-medium">{adminPasswordError}</p>
+                  )}
                   <div className="relative">
                     <input type={showAdminPassword ? 'text' : 'password'} value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)}
-                      className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium pr-10" placeholder="••••••••" />
+                      className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium pr-10"
+                      placeholder="••••••••" disabled={adminPasswordAttempts >= 3} />
                     <button type="button" onClick={() => setShowAdminPassword(!showAdminPassword)}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
                       {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -595,9 +628,9 @@ const Usuarios = () => {
                 </div>
               )}
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => { setShowModal(false); setAdminPassword(''); setConfirmPassword(''); }}
+                <button type="button" onClick={() => { setShowModal(false); setAdminPassword(''); setAdminPasswordAttempts(0); setAdminPasswordError(''); setConfirmPassword(''); }}
                   className="px-4 py-2.5 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors uppercase tracking-wider">Cancelar</button>
-                <button type="submit" disabled={formSubmitting}
+                <button type="submit" disabled={formSubmitting || (editingUserId && !hasChanges)}
                   className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors uppercase tracking-wider disabled:opacity-50">
                   {formSubmitting ? <Loader2 size={14} className="animate-spin" /> : (editingUserId ? <Edit3 size={14} /> : <Plus size={14} />)}
                   {editingUserId ? 'Guardar' : 'Crear Usuario'}
