@@ -345,6 +345,7 @@ def exportar_reporte_pdf(tipo, fecha_desde=None, fecha_hasta=None, dias=None):
 
         from reportlab.platypus import Paragraph
         from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib import colors
         total = len(datos)
         resumen = [
             Paragraph(f"<b>Total productos:</b> {total}  |  <b>Stock crítico:</b> {criticos}  |  <b>Saludables:</b> {total - criticos}",
@@ -381,7 +382,7 @@ def exportar_reporte_excel(tipo, fecha_desde=None, fecha_hasta=None, dias=None):
         filas = [[d['fecha'], d['cantidad_pedidos'], float(d['total_vendido'])] for d in datos]
         titulo = 'Ventas'
     elif tipo == 'inventario':
-        from openpyxl.styles import PatternFill
+        from openpyxl.styles import PatternFill, Font
         from openpyxl.utils import get_column_letter
         datos = reporte_inventario()
         col = ['Producto', 'Categoría', 'Stock', 'Stock Mín', 'Estado', 'Precio', 'Lote', 'Vencimiento', 'Cant. Lote']
