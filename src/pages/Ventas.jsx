@@ -222,7 +222,14 @@ const Ventas = () => {
     setShowNewClientForm(false);
     setComprobanteFileName('');
     if (tab === 'pedidos') {
-      const defaultData = { ped_id: nextPedidoId };
+      // Obtener el siguiente ID real desde el backend (evita race condition con nextPedidoId)
+      let pedId = 'PED001';
+      try {
+        const resp = await pedidosService.siguienteId();
+        pedId = resp.next_id || pedId;
+      } catch { /* fallback al ID calculado localmente */ }
+      if (pedId === 'PED001') pedId = nextPedidoId; // fallback si la API falla
+      const defaultData = { ped_id: pedId };
       setFormData(defaultData);
       formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
       try {
@@ -914,7 +921,8 @@ const Ventas = () => {
           )}
           <button
             onClick={openModal}
-            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md btn-pulse"
+            disabled={loading}
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md btn-pulse disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
           >
             <Plus size={16} /> Nuevo {tab === 'pedidos' ? 'Pedido' : tab === 'facturas' ? 'Factura' : 'Cliente'}
           </button>

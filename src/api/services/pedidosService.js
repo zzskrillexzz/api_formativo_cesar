@@ -57,6 +57,10 @@ export const pedidosService = {
     }
     return res.data;
   },
+  siguienteId: async () => {
+    const res = await api.get('/pedidos/next-id');
+    return res.data;
+  },
   eliminar: async (id) => {
     const res = await api.delete(`/pedidos/${id}`);
     // El backend ahora retorna {data: [...], total, page, limit, pages}
