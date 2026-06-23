@@ -52,6 +52,16 @@ const Inventario = () => {
   const handleAddCategory = () => {
     const name = newCategoryName.trim();
     if (!name) return;
+    // Validar que no exista otra categoría con el mismo nombre (sin importar mayúsculas)
+    const duplicado = productos.some(p =>
+      p.categoria && p.categoria.toLowerCase() === name.toLowerCase()
+    );
+    if (duplicado) {
+      toast({ type: 'warning', title: 'Categoría duplicada', description: `La categoría "${name}" ya existe` });
+      setNewCategoryName('');
+      setShowNewCategoryForm(false);
+      return;
+    }
     setFormData(prev => ({ ...prev, categoria: name }));
     setNewCategoryName('');
     setShowNewCategoryForm(false);
@@ -329,6 +339,16 @@ const Inventario = () => {
     if (!formData.id || !formData.nombre || !formData.categoria) {
       setFormError('ID, Nombre y Categoría son obligatorios');
       return;
+    }
+    // Validar categoría duplicada (solo en creación, no en edición)
+    if (!isEditing) {
+      const catDuplicada = productos.some(p =>
+        p.categoria && p.categoria.toLowerCase() === formData.categoria.toLowerCase()
+      );
+      if (catDuplicada) {
+        setFormError(`La categoría "${formData.categoria}" ya existe. Selecciónala del listado o usa otro nombre.`);
+        return;
+      }
     }
     const precio = parseFloat(formData.precio);
     const cantidad = parseInt(formData.cantidad_disponible, 10);
