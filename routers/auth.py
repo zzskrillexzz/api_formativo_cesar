@@ -5,7 +5,6 @@ from services.auth_service import token_requerido, rate_limit, refrescarToken
 autenticacion_bp = Blueprint('autenticacion', __name__)
 
 @autenticacion_bp.route('/login', methods=['POST'])
-@rate_limit(max_requests=10, window_seconds=60)
 def login():
     # 1. Recibe los datos del frontend
     body = request.get_json()
