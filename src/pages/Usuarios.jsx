@@ -147,14 +147,14 @@ const Usuarios = () => {
     try {
       if (editingUserId) {
         // Solo enviar contraseña si el usuario escribió una nueva
-        const payload = { usu_id, usu_nombre, usu_correo, usu_rol, usu_estado: usu_estado ?? 1 };
+        const payload = { usu_id, usu_nombre, usu_correo: (usu_correo || '').trim().toLowerCase(), usu_rol, usu_estado: usu_estado ?? 1 };
         if (formData.usu_contrasena && formData.usu_contrasena.trim() !== '') {
           payload.usu_contrasena = formData.usu_contrasena;
         }
         await usuariosService.editar(payload);
       } else {
         await usuariosService.registrar({
-          usu_id, usu_nombre, usu_correo, usu_rol,
+          usu_id, usu_nombre, usu_correo: (usu_correo || '').trim().toLowerCase(), usu_rol,
           usu_contrasena: formData.usu_contrasena,
           usu_estado: usu_estado ?? 1
         });
