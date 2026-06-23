@@ -245,8 +245,24 @@ def cndescargarcomprobante(id):
             from flask import send_file
             return send_file(filepath, mimetype=mime)
         else:
-            # Es un blob binario (datos viejos guardados en DB)
-            binary = dato if isinstance(dato, bytes) else dato.encode('latin-1')
+            # Datos legacy guardados en la DB (blob o base64 string)
+            import base64 as b64
+            if isinstance(dato, bytes):
+                # Puede ser binario puro (blob) o base64 texto en bytes
+                # Detectamos: si empieza con magic bytes de PNG/JPEG/PDF es binario
+                if dato[:4] == b'\x89PNG' or dato[:2] == b'\xff\xd8' or dato[:4] == b'%PDF':
+                    binary = dato
+                else:
+                    try:
+                        binary = b64.b64decode(dato)
+                    except Exception:
+                        binary = dato
+            else:
+                # String largo: es base64 texto
+                try:
+                    binary = b64.b64decode(dato)
+                except Exception:
+                    binary = dato.encode('latin-1')
             return current_app.response_class(binary, mimetype=mime)
     except Exception as e:
         log.error(f"Error al descargar comprobante: {e}", exc_info=True)
