@@ -3,7 +3,8 @@ from services.auth_service import token_requerido, rol_requerido
 from controllers.pedidos_controllers import (
     cnlistadopedidos, cnregistrarpedidos, cnbuscarpedido,
     cneditarpedidos, cneliminarpedidos, cneverificarpago, cnnotificarpedido,
-    cnsubircomprobante, cndescargarcomprobante, cnavanzarestado, cnenviarfactura
+    cnsubircomprobante, cndescargarcomprobante, cnavanzarestado, cnenviarfactura,
+    cnsiguienteidpedido
 )
 
 pedidos_bp = Blueprint('pedidos', __name__)
@@ -12,6 +13,11 @@ pedidos_bp = Blueprint('pedidos', __name__)
 @token_requerido
 def listado_pedidos():
     return cnlistadopedidos()
+
+@pedidos_bp.route('/next-id')
+@token_requerido
+def siguiente_id_pedido():
+    return cnsiguienteidpedido()
 
 @pedidos_bp.route('/<string:id>', methods=["GET"])
 @token_requerido

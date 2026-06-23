@@ -706,3 +706,10 @@ def cnconfirmarentrega(token):
             mostrar_boton=False,
             mensaje_final=f'Error interno: {str(e)}'
         ), 500
+
+
+@safe_controller
+def cnsiguienteidpedido():
+    """Retorna el siguiente ID disponible para un nuevo pedido."""
+    next_id = generarIdSiguiente("t_pedido", "ped_id", "PED", 3)
+    return jsonify({"next_id": next_id}), 200
