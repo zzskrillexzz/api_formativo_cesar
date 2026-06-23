@@ -24,7 +24,7 @@ def buscar(ALV_ID):
 
 @alertas_vencimientos_bp.route('/<ALV_ID>', methods=["PUT"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def editar(ALV_ID):
     return cneditaralertasvencimientos(ALV_ID)
 

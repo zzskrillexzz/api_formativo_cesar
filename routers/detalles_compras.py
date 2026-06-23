@@ -14,7 +14,7 @@ def listado():
 
 @detalles_compras_bp.route('/', methods=["POST"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def registrar():
     return cnregistrardetallescompras()
 
@@ -25,7 +25,7 @@ def buscar(DCO_ID):
 
 @detalles_compras_bp.route('/<DCO_ID>', methods=["PUT"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def editar(DCO_ID):
     return cneditardetallescompras(DCO_ID)
 

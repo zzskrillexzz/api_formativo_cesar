@@ -11,13 +11,13 @@ def listado():
 
 @clientes_bp.route('/', methods=["POST"])
 @token_requerido
-@rol_requerido('Administrador', 'Vendedor')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def registrar():
     return cnregistrarclientes()
 
 @clientes_bp.route('/', methods=["PUT"])
 @token_requerido
-@rol_requerido('Administrador', 'Vendedor')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def editar():
     return cneditarclientes()
 

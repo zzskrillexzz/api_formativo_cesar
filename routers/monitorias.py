@@ -17,13 +17,13 @@ def listar():
 
 @monitoria_bp.route('/', methods=['POST'])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def registrar():
     return cnregistrarMonitoria()
 
 @monitoria_bp.route('/<id>', methods=['PUT'])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def editar(id):
     return cneditarMonitoria(id)
 

@@ -13,13 +13,13 @@ def listado():
 
 @lotes_bp.route('/', methods=["POST"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def registrar():
     return cnregistrarlotes()
 
 @lotes_bp.route('/', methods=["PUT"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def editar():
     return cnEditarlotes()
 

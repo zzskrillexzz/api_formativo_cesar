@@ -11,13 +11,13 @@ def listado():
 
 @productos_bp.route('/', methods=["POST"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def registrar():
     return cnRegistrarProductos()
 
 @productos_bp.route('/', methods=["PUT"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def editar():
     return cnEditarProductos()
 

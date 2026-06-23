@@ -17,14 +17,14 @@ def listado():
 
 @proveedores_productos_bp.route('/', methods=["POST"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def registrar():
     return cnregistrarproveedoresproductos()
 
 # BUG-019: Rutas que estaban definidas en el controller pero sin conexión HTTP
 @proveedores_productos_bp.route('/', methods=["DELETE"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def eliminar():
     return cneliminarproveedoresproductos()
 

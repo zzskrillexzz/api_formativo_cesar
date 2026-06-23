@@ -531,8 +531,7 @@ CREATE TABLE `t_rol` (
 insert  into `t_rol`(`rol_id`,`rol_nombre`,`rol_descripcion`,`rol_estado`) values 
 ('ROL001','Administrador','Acceso total al sistema, gestion de usuarios y configuracion',1),
 ('ROL002','Vendedor','Gestion de ventas, pedidos y facturacion',1),
-('ROL003','Bodeguero','Gestion de inventario, compras y lotes',1),
-('ROL004','Gerente','Visualizacion de reportes e indicadores',1);
+('ROL003','Bodeguero','Gestion de inventario, compras y lotes',1);
 
 /*Table structure for table `t_sesion` */
 
@@ -599,7 +598,7 @@ insert  into `t_usuario`(`usu_id`,`usu_nombre`,`usu_rol_id_fk`,`usu_correo`,`usu
 ('USU002','Pedro Vargas','ROL002','p.vargas@sd.com','$2b$12$TX8izXrpNEFbDR1dE5qVBeJ5v51dXXhccldogD0dT6tuMFVoAh39W',1,'2025-03-19 08:05:00'),
 ('USU003','Sandra Nino','ROL002','s.nino@sd.com','$2b$12$Gm5hGB1ELP41oc0NohHM9OtrcNpdZP75Mxxaxb96HFdSgsGUPEYW2',1,'2025-03-19 08:10:00'),
 ('USU004','Camilo Ruiz','ROL003','c.ruiz@sd.com','$2b$12$C/3B2eDPwo0L49tYymBp/.jDU.qNA3fIAy1R.cCE8mz0J2d/6bjsi',1,'2025-03-12 07:55:00'),
-('USU005','Luisa Mora','ROL004','l.mora@sd.com','$2b$12$VaCU2NL494ycZp.BG1X70e3bkZc.Wosoi2e.XiXJzF/.e.2zlQJkq',1,NULL),
+('USU005','Luisa Mora','ROL003','l.mora@sd.com','$2b$12$VaCU2NL494ycZp.BG1X70e3bkZc.Wosoi2e.XiXJzF/.e.2zlQJkq',1,NULL),
 ('USU050','Andres Gomez','ROL002','andres.gomez@farmacia.com','$2b$12$HKI94lfawJsY1EENyeKBBu2cJgQAwnD6OyU8JrF9PDtBFhVZWUBZ6',1,NULL),
 ('USU051','Maria Torres','ROL001','maria.torres@farmacia.com','$2b$12$QPLMu0R/x.p2wIrCQv2E1.BGPfGwLAHV2pEa7mti.iy9RskmQJ20i',1,NULL),
 ('USU052','Pedro Ruiz','ROL003','pedro.ruiz@farmacia.com','$2b$12$mABNj6826p/AP1ubQlFZm.n2F6n0msL2gzVdRthlIxAPTIP/GtQaa',1,NULL),

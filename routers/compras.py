@@ -11,7 +11,7 @@ def listado():
 
 @compras_bp.route('/', methods=["POST"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def registrar():
     return cnregistrarcompras()
 
@@ -22,7 +22,7 @@ def buscar(COM_ID):
 
 @compras_bp.route('/<COM_ID>', methods=["PUT"])
 @token_requerido
-@rol_requerido('Administrador', 'Bodeguero')
+@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
 def editar(COM_ID):
     return cneditarcompras(COM_ID)
 
