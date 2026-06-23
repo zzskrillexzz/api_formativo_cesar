@@ -37,6 +37,8 @@ const Usuarios = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formData, setFormData] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   // ── Modal crear/editar rol ──
   const [showRolModal, setShowRolModal] = useState(false);
@@ -147,11 +149,15 @@ const Usuarios = () => {
       setFormError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
+    if (editingUserId && !adminPassword.trim()) {
+      setFormError('Debes ingresar la contraseña de un administrador para autorizar los cambios');
+      return;
+    }
     setFormSubmitting(true);
     try {
       if (editingUserId) {
         // Solo enviar contraseña si el usuario escribió una nueva
-        const payload = { usu_id, usu_nombre, usu_correo: (usu_correo || '').trim().toLowerCase(), usu_rol, usu_estado: usu_estado ?? 1 };
+        const payload = { usu_id, usu_nombre, usu_correo: (usu_correo || '').trim().toLowerCase(), usu_rol, usu_estado: usu_estado ?? 1, admin_contrasena: adminPassword };
         if (formData.usu_contrasena && formData.usu_contrasena.trim() !== '') {
           payload.usu_contrasena = formData.usu_contrasena;
         }
@@ -164,6 +170,7 @@ const Usuarios = () => {
         });
       }
       setShowModal(false);
+      setAdminPassword('');
       toast({ type: 'success', title: editingUserId ? 'Actualizado' : 'Creado', description: `Usuario ${editingUserId ? 'actualizado' : 'creado'} correctamente` });
       fetchData();
     } catch (err) {
@@ -485,7 +492,7 @@ const Usuarios = () => {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-slate-200 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">{editingUserId ? 'Editar Usuario' : 'Nuevo Usuario'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"><X size={20} /></button>
+              <button onClick={() => { setShowModal(false); setAdminPassword(''); }} className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"><X size={20} /></button>
             </div>
             <form onSubmit={handleUserSubmit} className="px-6 py-4 space-y-4">
               {formError && <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-bold px-4 py-2.5 rounded-lg">{formError}</div>}
@@ -536,8 +543,24 @@ const Usuarios = () => {
                   </button>
                 </div>
               </div>
+              {editingUserId && (
+                <div className="space-y-1 border-t border-slate-100 pt-3 mt-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                    🔐 Contraseña de administrador *
+                  </label>
+                  <p className="text-[9px] text-slate-400 mb-1">Ingresa tu contraseña de administrador para autorizar los cambios</p>
+                  <div className="relative">
+                    <input type={showAdminPassword ? 'text' : 'password'} value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)}
+                      className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium pr-10" placeholder="••••••••" />
+                    <button type="button" onClick={() => setShowAdminPassword(!showAdminPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                      {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
+                <button type="button" onClick={() => { setShowModal(false); setAdminPassword(''); }}
                   className="px-4 py-2.5 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors uppercase tracking-wider">Cancelar</button>
                 <button type="submit" disabled={formSubmitting}
                   className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors uppercase tracking-wider disabled:opacity-50">
