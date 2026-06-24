@@ -184,8 +184,8 @@ const Compras = () => {
     setProdSelector(selectedId);
     if (!selectedId) { setProdPrecio(''); return; }
     const prod = productosDelProveedor.find(p => String(p.id) === String(selectedId));
-    if (prod && prod.pro_precio) {
-      setProdPrecio(prod.pro_precio.toString());
+    if (prod && prod.precio) {
+      setProdPrecio(prod.precio.toString());
     } else {
       setProdPrecio('');
     }
@@ -965,7 +965,7 @@ const Compras = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha <span className="required-star">*</span></label>
-                      <input name="com_fecha" type="date" value={formData.com_fecha || ''} onChange={handleChange} max={new Date().toISOString().split('T')[0]}
+                      <input name="com_fecha" type="date" value={formData.com_fecha || ''} onChange={handleChange}
                         className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_fecha ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.com_fecha && <p className="text-red-500 text-xs mt-1">{errors.com_fecha}</p>}
                     </div>
@@ -1136,7 +1136,7 @@ const Compras = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha</label>
-                  <input name="comp_fecha" type="date" value={editData.comp_fecha || ''} onChange={handleEditChange} max={new Date().toISOString().split('T')[0]}
+                  <input name="comp_fecha" type="date" value={editData.comp_fecha || ''} onChange={handleEditChange}
                     className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                 </div>
                 <div>
