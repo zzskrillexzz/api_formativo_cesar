@@ -57,6 +57,7 @@ const Compras = () => {
   const [editProveedorData, setEditProveedorData] = useState({});
   const [showViewProveedorModal, setShowViewProveedorModal] = useState(false);
   const [viewProveedorData, setViewProveedorData] = useState(null);
+  const [productosProveedor, setProductosProveedor] = useState([]);
   const [confirmDeleteProveedor, setConfirmDeleteProveedor] = useState(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -570,6 +571,9 @@ const Compras = () => {
     try {
       const detalle = await proveedoresService.buscar(prov.prov_id);
       setViewProveedorData(detalle);
+      // Cargar productos de este proveedor
+      const prods = await productosService.listar({ pro_prov_id_fk: prov.prov_id }).catch(() => []);
+      setProductosProveedor(Array.isArray(prods) ? prods : []);
       setShowViewProveedorModal(true);
     } catch (_) {
       toast({ type: 'error', title: 'Error', description: 'Error al cargar datos del proveedor' });
@@ -1311,11 +1315,11 @@ const Compras = () => {
       {/* Modal Ver Proveedor */}
       {showViewProveedorModal && viewProveedorData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowViewProveedorModal(false); setViewProveedorData(null); }} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowViewProveedorModal(false); setViewProveedorData(null); setProductosProveedor([]); }} />
           <div className="relative bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Detalle del Proveedor</h3>
-              <button onClick={() => { setShowViewProveedorModal(false); setViewProveedorData(null); }} className="p-2 hover:bg-slate-100 rounded-md transition-colors"><X size={18} className="text-slate-400" /></button>
+              <button onClick={() => { setShowViewProveedorModal(false); setViewProveedorData(null); setProductosProveedor([]); }} className="p-2 hover:bg-slate-100 rounded-md transition-colors"><X size={18} className="text-slate-400" /></button>
             </div>
             <div className="p-5 space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -1351,6 +1355,23 @@ const Compras = () => {
               <div className="p-3 bg-slate-50 rounded-lg">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Email</p>
                 <p className="text-sm font-bold text-slate-700 mt-0.5">{viewProveedorData.prov_email || '-'}</p>
+              </div>
+
+              {/* Productos del proveedor */}
+              <div className="border-t border-slate-100 pt-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Productos que vende</p>
+                {productosProveedor.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">Sin productos asignados</p>
+                ) : (
+                  <div className="max-h-28 overflow-y-auto space-y-1">
+                    {productosProveedor.map(p => (
+                      <div key={p.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
+                        <span className="text-xs font-medium text-slate-700">{p.id} — {p.nombre}</span>
+                        <span className="text-[11px] font-bold text-emerald-600">${p.precio?.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
