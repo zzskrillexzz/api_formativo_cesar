@@ -52,16 +52,6 @@ const Inventario = () => {
   const handleAddCategory = () => {
     const name = newCategoryName.trim();
     if (!name) return;
-    // Validar que no exista otra categoría con el mismo nombre (sin importar mayúsculas)
-    const duplicado = productos.some(p =>
-      p.categoria && p.categoria.toLowerCase() === name.toLowerCase()
-    );
-    if (duplicado) {
-      toast({ type: 'warning', title: 'Categoría duplicada', description: `La categoría "${name}" ya existe` });
-      setNewCategoryName('');
-      setShowNewCategoryForm(false);
-      return;
-    }
     setFormData(prev => ({ ...prev, categoria: name }));
     setNewCategoryName('');
     setShowNewCategoryForm(false);
