@@ -651,55 +651,11 @@ const Usuarios = () => {
         </div>
       )}
 
-      {/* ── MODAL: Rol ── */}
-      {showRolModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" ref={focusTrapRef}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-800">{editingRolId ? 'Editar Rol' : 'Nuevo Rol'}</h2>
-              <button onClick={() => setShowRolModal(false)} className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"><X size={20} /></button>
-            </div>
-            <form onSubmit={handleRolSubmit} className="px-6 py-4 space-y-4">
-              {formError && <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-bold px-4 py-2.5 rounded-lg">{formError}</div>}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">ID *</label>
-                <input type="text" name="rol_id" value={rolFormData.rol_id || ''} onChange={handleRolChange}
-                  disabled={!!editingRolId}
-                  className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium disabled:bg-slate-100 disabled:text-slate-400" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Nombre *</label>
-                <input type="text" name="rol_nombre" value={rolFormData.rol_nombre || ''} onChange={handleRolChange}
-                  className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Descripción</label>
-                <textarea name="rol_descripcion" value={rolFormData.rol_descripcion || ''} onChange={handleRolChange}
-                  rows="2" className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium resize-none" />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowRolModal(false)}
-                  className="px-4 py-2.5 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors uppercase tracking-wider">Cancelar</button>
-                <button type="submit" disabled={formSubmitting}
-                  className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors uppercase tracking-wider disabled:opacity-50">
-                  {formSubmitting ? <Loader2 size={14} className="animate-spin" /> : (editingRolId ? <Edit3 size={14} /> : <Plus size={14} />)}
-                  {editingRolId ? 'Guardar' : 'Crear Rol'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Confirmación de eliminación — Usuario */}
       <ConfirmModal open={!!confirmDelete} title="Eliminar Usuario"
         message={`¿Está seguro de eliminar el usuario ${confirmDelete}? Esta acción no se puede deshacer.`}
         onConfirm={handleDeleteUser} onCancel={() => setConfirmDelete(null)} confirmText="Eliminar" danger />
 
-      {/* Confirmación de eliminación — Rol */}
-      <ConfirmModal open={!!confirmDeleteRol} title="Eliminar Rol"
-        message={`¿Está seguro de eliminar el rol ${confirmDeleteRol}? Esta acción no se puede deshacer.`}
-        onConfirm={handleDeleteRol} onCancel={() => setConfirmDeleteRol(null)} confirmText="Eliminar" danger />
     </div>
   );
 };
