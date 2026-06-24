@@ -42,9 +42,9 @@ CREATE TABLE `t_alerta_vencimiento` (
 
 insert  into `t_alerta_vencimiento`(`alv_id`,`alv_pro_id_fk`,`alv_lot_id_fk`,`alv_fecha_generacion`,`alv_fecha_vencimiento`,`alv_dias_restantes`,`alv_estado`,`alv_usu_id_fk`) values 
 ('ALV001','PRO002','LOT002','2025-03-19','2026-06-30',468,'Pendiente',NULL),
-('ALV050','PRO050','LOT050','2026-04-09','2027-06-30',447,'Pendiente',NULL),
-('ALV051','PRO051','LOT051','2026-04-09','2027-09-15',524,'Pendiente',NULL),
-('ALV052','PRO052','LOT052','2026-04-09','2028-01-20',651,'Gestionada',NULL),
+('ALV050','PRO006','LOT050','2026-04-09','2027-06-30',447,'Pendiente',NULL),
+('ALV051','PRO007','LOT051','2026-04-09','2027-09-15',524,'Pendiente',NULL),
+('ALV052','PRO008','LOT052','2026-04-09','2028-01-20',651,'Gestionada',NULL),
 ('ALV099','PRO001','LOT001','2026-04-09','2026-08-31',144,'Pendiente',NULL);
 
 /*Table structure for table `t_anulacion_venta` */
@@ -154,9 +154,9 @@ CREATE TABLE `t_detalle_compra` (
 insert  into `t_detalle_compra`(`dco_id`,`dco_com_id_fk`,`dco_pro_id_fk`,`dco_lot_id_fk`,`dco_cantidad`,`dco_precio_compra`,`dco_subtotal`) values 
 ('DCO001','COM001','PRO001','LOT001',100,850.00,85000.00),
 ('DCO002','COM002','PRO003','LOT003',50,980.00,49000.00),
-('DCO050','COM050','PRO050','LOT050',100,8500.00,850000.00),
-('DCO051','COM051','PRO051','LOT051',30,15000.00,450000.00),
-('DCO052','COM052','PRO052','LOT052',50,5200.00,260000.00);
+('DCO050','COM050','PRO006','LOT050',100,8500.00,850000.00),
+('DCO051','COM051','PRO007','LOT051',30,15000.00,450000.00),
+('DCO052','COM052','PRO008','LOT052',50,5200.00,260000.00);
 
 /*Table structure for table `t_detalle_pedido` */
 
@@ -186,10 +186,10 @@ insert  into `t_detalle_pedido`(`det_id`,`det_ped_id_fk`,`det_pro_id_fk`,`det_lo
 ('DET004','PED002','PRO003','LOT003',2,980.00,1960.00),
 ('DET005','PED005','PRO004','LOT004',1,3500.00,3500.00),
 ('DET006','PED005','PRO005','LOT005',2,4200.00,8400.00),
-('DET007','PED005','PRO200','LOT200',1,2500.00,2500.00),
-('DET051','PED051','PRO050','LOT050',2,8500.00,17000.00),
-('DET052','PED052','PRO052',NULL,1,5200.00,5200.00),
-('DET053','PED051','PRO051','LOT051',1,15000.00,15000.00),
+('DET007','PED005','PRO009','LOT200',1,2500.00,2500.00),
+('DET051','PED051','PRO006','LOT050',2,8500.00,17000.00),
+('DET052','PED052','PRO008',NULL,1,5200.00,5200.00),
+('DET053','PED051','PRO007','LOT051',1,15000.00,15000.00),
 ('PED053-DET001','PED053','PRO001','LOT001',1,850.00,850.00),
 ('PED054-DET001','PED054','PRO001','LOT001',1,850.00,850.00);
 
@@ -285,14 +285,14 @@ insert  into `t_inventario_movimiento`(`inm_id`,`inm_tipo_movimiento`,`inm_pro_i
 ('INM003','Salida','PRO002','LOT002',3,'2025-03-16','Venta PED002','USU003'),
 ('INM004','Entrada','PRO003','LOT003',50,'2025-03-12','Compra proveedor COM002','USU004'),
 ('INM005','Salida','PRO005','LOT005',1,'2025-03-18','Venta PED004','USU003'),
-('INM050','Entrada','PRO050','LOT050',100,'2026-04-09','Compra COM050','USU051'),
-('INM051','Entrada','PRO051','LOT051',150,'2026-04-09','Compra COM051','USU051'),
-('INM052','Salida','PRO052','LOT052',10,'2026-04-09','Venta PED052','USU052'),
-('INM053','Salida ','PRO052','LOT099',1,'2026-04-09','Venta PED052','USU052'),
+('INM050','Entrada','PRO006','LOT050',100,'2026-04-09','Compra COM050','USU051'),
+('INM051','Entrada','PRO007','LOT051',150,'2026-04-09','Compra COM051','USU051'),
+('INM052','Salida','PRO008','LOT052',10,'2026-04-09','Venta PED052','USU052'),
+('INM053','Salida ','PRO008','LOT099',1,'2026-04-09','Venta PED052','USU052'),
 ('INM054','Salida','PRO001','LOT001',1,'2026-06-15','Venta PED053',NULL),
 ('INM055','Entrada','PRO002',NULL,3,'2026-06-23','Anulacion venta PED002',NULL),
 ('INM056','Entrada','PRO005',NULL,1,'2026-06-23','Anulacion venta PED005',NULL),
-('INM057','Entrada','PRO051',NULL,2,'2026-06-23','Anulacion venta PED051',NULL),
+('INM057','Entrada','PRO007',NULL,2,'2026-06-23','Anulacion venta PED051',NULL),
 ('INM058','Salida','PRO001','LOT001',1,'2026-06-23','Venta PED054',NULL),
 ('INM059','Entrada','PRO001','LOT001',1,'2026-06-23','Reversion venta PED054',NULL),
 ('INM060','Salida','PRO001','LOT001',1,'2026-06-23','Venta PED054',NULL);
@@ -326,11 +326,11 @@ insert  into `t_lote`(`lot_id`,`lot_numero`,`lot_fecha_fabricacion`,`lot_fecha_v
 ('LOT003','LT-LOR-2025-001','2025-01-20','2027-01-31',80,80,'PRO003','PROV003','Activo'),
 ('LOT004','LT-SUE-2025-001','2025-03-01','2026-12-15',60,60,'PRO004','PROV004','Activo'),
 ('LOT005','LT-ALC-2025-001','2025-02-15','2027-05-20',45,44,'PRO005','PROV005','Activo'),
-('LOT050','LT-IBU-2026-050','2026-01-15','2027-06-30',100,100,'PRO050','PROV050','Activo'),
-('LOT051','LT-AMO-2026-051','2026-02-01','2027-09-15',150,150,'PRO051','PROV051','Activo'),
-('LOT052','LT-LOR-2026-052','2026-03-10','2028-01-20',300,300,'PRO052','PROV052','Activo'),
+('LOT050','LT-IBU-2026-050','2026-01-15','2027-06-30',100,100,'PRO006','PROV050','Activo'),
+('LOT051','LT-AMO-2026-051','2026-02-01','2027-09-15',150,150,'PRO007','PROV051','Activo'),
+('LOT052','LT-LOR-2026-052','2026-03-10','2028-01-20',300,300,'PRO008','PROV052','Activo'),
 ('LOT099','LT-TEST-2026','2026-01-01','2027-06-30',100,100,'PRO001','PROV002','Activo'),
-('LOT200','LOT200','2026-06-01','2027-06-01',100,100,'PRO200','PROV001','Activo');
+('LOT200','LOT200','2026-06-01','2027-06-01',100,100,'PRO009','PROV001','Activo');
 
 /*Table structure for table `t_monitoria` */
 
@@ -365,17 +365,17 @@ insert  into `t_monitoria`(`mon_id`,`mon_pro_id_fk`,`mon_lot_id_fk`,`mon_inm_id_
 ('MON003','PRO002','LOT002','INM003','2025-03-16','Salida',3,150,147,1200.00,3600.00),
 ('MON004','PRO003','LOT003','INM004','2025-03-12','Entrada',50,30,80,980.00,49000.00),
 ('MON005','PRO005','LOT005','INM005','2025-03-18','Salida',1,45,44,4200.00,4200.00),
-('MON050','PRO050','LOT050','INM050','2026-04-09','Entrada',100,200,300,8500.00,850000.00),
-('MON051','PRO051','LOT051','INM051','2026-04-09','Entrada',150,150,300,15000.00,2250000.00),
-('MON052','PRO052','LOT052','INM052','2026-04-09','Salida',10,300,290,5200.00,52000.00),
+('MON050','PRO006','LOT050','INM050','2026-04-09','Entrada',100,200,300,8500.00,850000.00),
+('MON051','PRO007','LOT051','INM051','2026-04-09','Entrada',150,150,300,15000.00,2250000.00),
+('MON052','PRO008','LOT052','INM052','2026-04-09','Salida',10,300,290,5200.00,52000.00),
 ('MON26061515571266','PRO001','LOT001','INM054','2026-06-15','Salida',1,199,198,850.00,850.00),
 ('MON26061515571267','PRO001','LOT001','INM054','2026-06-15','Salida',1,200,199,850.00,850.00),
 ('MON26062309330782','PRO002',NULL,'INM055','2026-06-23','Entrada',3,153,156,1200.00,3600.00),
 ('MON26062309330783','PRO002',NULL,'INM055','2026-06-23','Entrada',3,150,153,1200.00,3600.00),
 ('MON26062309343169','PRO005',NULL,'INM056','2026-06-23','Entrada',1,46,47,4200.00,4200.00),
 ('MON26062309343170','PRO005',NULL,'INM056','2026-06-23','Entrada',1,45,46,4200.00,4200.00),
-('MON26062309381172','PRO051',NULL,'INM057','2026-06-23','Entrada',2,152,154,15000.00,30000.00),
-('MON26062309381173','PRO051',NULL,'INM057','2026-06-23','Entrada',2,150,152,15000.00,30000.00),
+('MON26062309381172','PRO007',NULL,'INM057','2026-06-23','Entrada',2,152,154,15000.00,30000.00),
+('MON26062309381173','PRO007',NULL,'INM057','2026-06-23','Entrada',2,150,152,15000.00,30000.00),
 ('MON26062311311025','PRO001','LOT001','INM058','2026-06-23','Salida',1,197,196,850.00,850.00),
 ('MON26062311311026','PRO001','LOT001','INM058','2026-06-23','Salida',1,198,197,850.00,850.00),
 ('MON26062311312220','PRO001','LOT001','INM059','2026-06-23','Entrada',1,197,198,850.00,850.00),
@@ -454,12 +454,37 @@ insert  into `t_producto`(`pro_id`,`pro_nombre`,`pro_categoria`,`pro_descripcion
 ('PRO003','Loratadina 10mg','Antihistaminico','Caja x 10 tab',980.00,80,10,'2027-01-31',NULL,NULL,0,NULL,'Activo','PROV003',NULL,NULL),
 ('PRO004','Suero oral 500ml','Hidratacion','Electrolitos',3500.00,60,10,'2026-12-15',NULL,NULL,0,NULL,'Activo','PROV004',NULL,NULL),
 ('PRO005','Alcohol 70% 250ml','Antiseptico','Uso externo',4200.00,47,8,'2027-05-20',NULL,NULL,0,NULL,'Activo','PROV005',NULL,NULL),
-('PRO050','Ibuprofeno 400mg','Analgesico','Tabletas x 20 unidades',8500.00,200,20,'2027-06-30',NULL,NULL,0,NULL,'Activo','PROV050',NULL,NULL),
-('PRO051','Amoxicilina 500mg','Antibiotico','Capsulas x 30 unidades',15000.00,154,15,'2027-09-15',NULL,NULL,0,NULL,'Activo','PROV051',NULL,NULL),
-('PRO052','Loratadina 10mg','Antialergico','Tabletas x 10 unidades',5200.00,300,25,'2028-01-20',NULL,NULL,0,NULL,'Activo','PROV052',NULL,NULL),
-('PRO099','Producto Test','Analgesico','Test desc',500.00,50,5,'2027-12-31',NULL,NULL,0,NULL,'Activo','PROV099',NULL,NULL),
-('PRO100','test','Analgesico','test',1000.00,10,1,NULL,NULL,NULL,0,NULL,'Activo','PROV001',NULL,NULL),
-('PRO200','Ibuprofeno 600mg','Analgesicos','Ibuprofeno generico 600mg x 30 tabs',2500.00,3,1,NULL,NULL,NULL,0,NULL,'Activo','PROV001',NULL,NULL);
+('PRO006','Ibuprofeno 400mg','Analgesico','Tabletas x 20 unidades',8500.00,200,20,'2027-06-30',NULL,NULL,0,NULL,'Activo','PROV050',NULL,NULL),
+('PRO007','Amoxicilina 500mg','Antibiotico','Capsulas x 30 unidades',15000.00,154,15,'2027-09-15',NULL,NULL,0,NULL,'Activo','PROV051',NULL,NULL),
+('PRO008','Loratadina 10mg','Antialergico','Tabletas x 10 unidades',5200.00,300,25,'2028-01-20',NULL,NULL,0,NULL,'Activo','PROV052',NULL,NULL),
+('PRO009','Ibuprofeno 600mg','Analgesicos','Ibuprofeno generico 600mg x 30 tabs',2500.00,3,1,NULL,NULL,NULL,0,NULL,'Activo','PROV001',NULL,NULL),
+('PRO010','Aspirina 100mg','Analgesico',NULL,2500.00,100,10,NULL,NULL,NULL,0,NULL,'Activo','PROV001','Tabletas','Bayer'),
+('PRO011','Naproxeno 500mg','Antiinflamatorio',NULL,3800.00,80,10,NULL,NULL,NULL,0,NULL,'Activo','PROV001','Tabletas','Bayer'),
+('PRO012','Diclofenaco 50mg','Antiinflamatorio',NULL,2200.00,90,10,NULL,NULL,NULL,0,NULL,'Activo','PROV001','Tabletas','Bayer'),
+('PRO013','Vitamina C 1000mg','Vitaminas',NULL,4500.00,60,10,NULL,NULL,NULL,0,NULL,'Activo','PROV001','Efervescente','Bayer'),
+('PRO014','Dolex 500mg','Analgesico',NULL,3200.00,120,10,NULL,NULL,NULL,0,NULL,'Activo','PROV002','Tabletas','Tecnoquimicas'),
+('PRO015','Metamizol 500mg','Analgesico',NULL,2800.00,75,10,NULL,NULL,NULL,0,NULL,'Activo','PROV002','Tabletas','Tecnoquimicas'),
+('PRO016','Omeprazol 20mg','Gastrointestinal',NULL,3500.00,95,10,NULL,NULL,NULL,0,NULL,'Activo','PROV002','Capsulas','Tecnoquimicas'),
+('PRO017','Captopril 25mg','Cardiovascular',NULL,1800.00,110,10,NULL,NULL,NULL,0,NULL,'Activo','PROV003','Tabletas','Genfar'),
+('PRO018','Losartan 50mg','Cardiovascular',NULL,2200.00,100,10,NULL,NULL,NULL,0,NULL,'Activo','PROV003','Tabletas','Genfar'),
+('PRO019','Metformina 850mg','Antidiabetico',NULL,2500.00,85,10,NULL,NULL,NULL,0,NULL,'Activo','PROV003','Tabletas','Genfar'),
+('PRO020','Salbutamol 100mcg','Respiratorio',NULL,5200.00,50,10,NULL,NULL,NULL,0,NULL,'Activo','PROV003','Inhalador','Genfar'),
+('PRO021','Complejo B inyectable','Vitaminas',NULL,8500.00,40,10,NULL,NULL,NULL,0,NULL,'Activo','PROV004','Ampolla 2ml','La Sante'),
+('PRO022','Suero fisiologico 500ml','Solucion',NULL,4200.00,70,10,NULL,NULL,NULL,0,NULL,'Activo','PROV004','Bolsa','La Sante'),
+('PRO023','Multivitaminico jarabe','Vitaminas',NULL,12500.00,30,10,NULL,NULL,NULL,0,NULL,'Activo','PROV004','Frasco 120ml','La Sante'),
+('PRO024','Alcohol antiséptico 500ml','Antiseptico',NULL,6800.00,65,10,NULL,NULL,NULL,0,NULL,'Activo','PROV005','Frasco','Cofarma'),
+('PRO025','Gasa esteril 10x10cm','Insumo',NULL,1500.00,200,10,NULL,NULL,NULL,0,NULL,'Activo','PROV005','Paquete x5','Cofarma'),
+('PRO026','Jeringa 5ml','Insumo',NULL,800.00,300,10,NULL,NULL,NULL,0,NULL,'Activo','PROV005','Unidad','Cofarma'),
+('PRO027','Guantes latex talla M','Insumo',NULL,3500.00,150,10,NULL,NULL,NULL,0,NULL,'Activo','PROV005','Caja x100','Cofarma'),
+('PRO028','Dexametasona 4mg','Antiinflamatorio',NULL,2100.00,60,10,NULL,NULL,NULL,0,NULL,'Activo','PROV050','Tabletas','MedPlus'),
+('PRO029','Hidroxicloroquina 200mg','Antimalarico',NULL,9500.00,45,10,NULL,NULL,NULL,0,NULL,'Activo','PROV050','Tabletas','MedPlus'),
+('PRO030','Azitromicina 500mg','Antibiotico',NULL,7800.00,55,10,NULL,NULL,NULL,0,NULL,'Activo','PROV051','Tabletas','FarmaExpress'),
+('PRO031','Cefalexina 500mg','Antibiotico',NULL,6200.00,50,10,NULL,NULL,NULL,0,NULL,'Activo','PROV051','Capsulas','FarmaExpress'),
+('PRO032','Sildenafil 50mg','Impotencia',NULL,15000.00,35,10,NULL,NULL,NULL,0,NULL,'Activo','PROV052','Tabletas','Global Pharma'),
+('PRO033','Enalapril 10mg','Cardiovascular',NULL,3200.00,80,10,NULL,NULL,NULL,0,NULL,'Activo','PROV052','Tabletas','Global Pharma'),
+('PRO034','Parche curitas surtido','Insumo',NULL,2500.00,100,10,NULL,NULL,NULL,0,NULL,'Activo','PROV200','Caja x50','Salud SAS'),
+('PRO035','Venda elastica 10cm','Insumo',NULL,1800.00,90,10,NULL,NULL,NULL,0,NULL,'Activo','PROV200','Unidad','Salud SAS'),
+('PRO036','Bajalenguas','Insumo',NULL,500.00,250,10,NULL,NULL,NULL,0,NULL,'Activo','PROV200','Paquete x100','Salud SAS');
 
 /*Table structure for table `t_proveedor` */
 
@@ -512,9 +537,9 @@ insert  into `t_proveedor_producto`(`ppp_prov_id_fk`,`ppp_pro_id_fk`) values
 ('PROV004','PRO004'),
 ('PROV005','PRO005'),
 ('PROV001','PRO001'),
-('PROV050','PRO050'),
-('PROV051','PRO051'),
-('PROV052','PRO052');
+('PROV050','PRO006'),
+('PROV051','PRO007'),
+('PROV052','PRO008');
 
 /*Table structure for table `t_reporte` */
 
