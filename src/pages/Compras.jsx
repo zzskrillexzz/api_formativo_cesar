@@ -5,6 +5,8 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { useToast } from '../components/Toast';
 import { comprasService } from '../api/services/comprasService';
 import { proveedoresService } from '../api/services/proveedoresService';
+import { productosService } from '../api/services/productosService';
+import { detallesComprasService } from '../api/services/detallesComprasService';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
@@ -44,6 +46,9 @@ const Compras = () => {
   const [formData, setFormData] = useState({});
   const [editData, setEditData] = useState({});
   const [comprobanteFile, setComprobanteFile] = useState(null);
+  const [productosDisponibles, setProductosDisponibles] = useState([]);
+  const [productosSeleccionados, setProductosSeleccionados] = useState([]);
+  const [buscadorProducto, setBuscadorProducto] = useState('');
   const [showEditProveedorModal, setShowEditProveedorModal] = useState(false);
   const [editProveedorData, setEditProveedorData] = useState({});
   const [showViewProveedorModal, setShowViewProveedorModal] = useState(false);
@@ -79,7 +84,10 @@ const Compras = () => {
       const max = nums.length > 0 ? Math.max(...nums) : 0;
       const defaultData = { com_id: 'COM' + String(max + 1).padStart(3, '0') };
       setFormData(defaultData);
+      setProductosSeleccionados([]);
+      setBuscadorProducto('');
       formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
+      productosService.listar().then(prods => setProductosDisponibles(prods.filter(p => p.estado === 'Activo'))).catch(() => setProductosDisponibles([]));
     } else {
       // El ID lo genera el backend automáticamente; el frontend solo muestra una previsualización
       const nums = proveedores.map(p => { const m = (p.prov_id || '').match(/PROV(\d+)/); return m ? parseInt(m[1]) : 0; });
@@ -96,9 +104,32 @@ const Compras = () => {
   const openEditModal = async (compra) => {
     setFormError('');
     setComprobanteFile(null);
+    setBuscadorProducto('');
     try {
-      const detalle = await comprasService.buscar(compra.comp_id);
+      const [detalle, todosDetalles, prods] = await Promise.all([
+        comprasService.buscar(compra.comp_id),
+        detallesComprasService.listar().catch(() => []),
+        productosService.listar().catch(() => [])
+      ]);
       setEditData(detalle);
+      setProductosDisponibles(prods.filter(p => p.estado === 'Activo'));
+      // Cargar detalles existentes
+      const misDetalles = todosDetalles.filter(d => d.dco_com_id_fk === compra.comp_id);
+      if (misDetalles.length > 0) {
+        const prodsMap = {};
+        prods.forEach(p => { prodsMap[p.id] = p.nombre; });
+        const items = misDetalles.map(d => ({
+          pro_id: d.dco_pro_id_fk,
+          pro_nombre: prodsMap[d.dco_pro_id_fk] || d.dco_pro_id_fk,
+          cantidad: d.dco_cantidad,
+          precio_unitario: d.dco_precio_compra,
+          subtotal: d.dco_subtotal,
+          dco_id: d.dco_id
+        }));
+        setProductosSeleccionados(items);
+      } else {
+        setProductosSeleccionados([]);
+      }
       formSnapshotRef.current = JSON.parse(JSON.stringify(detalle));
       setShowEditModal(true);
     } catch (_) {
@@ -196,24 +227,103 @@ const Compras = () => {
     reader.readAsDataURL(file);
   };
 
+  // ── Manejo de productos seleccionados en la compra ──
+  const agregarProductoCompra = () => {
+    const prodId = document.getElementById('prod-selector')?.value;
+    const cantidad = parseInt(document.getElementById('prod-cantidad')?.value, 10);
+    const precio = parseFloat(document.getElementById('prod-precio')?.value);
+    if (!prodId) { setFormError('Selecciona un producto'); return; }
+    if (!cantidad || cantidad <= 0) { setFormError('La cantidad debe ser mayor a 0'); return; }
+    if (!precio || precio <= 0) { setFormError('El precio unitario debe ser mayor a 0'); return; }
+    setFormError('');
+    const producto = productosDisponibles.find(p => p.id === prodId);
+    if (!producto) return;
+    const yaExiste = productosSeleccionados.find(p => p.pro_id === prodId);
+    if (yaExiste) { setFormError('El producto ya está agregado'); return; }
+    const subtotal = cantidad * precio;
+    const nuevo = { pro_id: prodId, pro_nombre: producto.nombre, cantidad, precio_unitario: precio, subtotal };
+    const actualizados = [...productosSeleccionados, nuevo];
+    setProductosSeleccionados(actualizados);
+    const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
+    setFormData(prev => ({ ...prev, com_total: String(totalCalculado) }));
+    setBuscadorProducto('');
+    // Reset inputs
+    const sel = document.getElementById('prod-selector');
+    const cant = document.getElementById('prod-cantidad');
+    const prec = document.getElementById('prod-precio');
+    if (sel) sel.value = '';
+    if (cant) cant.value = '';
+    if (prec) prec.value = '';
+  };
+
+  const quitarProductoCompra = (proId) => {
+    const actualizados = productosSeleccionados.filter(p => p.pro_id !== proId);
+    setProductosSeleccionados(actualizados);
+    const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
+    setFormData(prev => ({ ...prev, com_total: String(totalCalculado) }));
+  };
+
+  // ── Manejo de productos en editar compra ──
+  const agregarProductoEditCompra = () => {
+    const prodId = document.getElementById('edit-prod-selector')?.value;
+    const cantidad = parseInt(document.getElementById('edit-prod-cantidad')?.value, 10);
+    const precio = parseFloat(document.getElementById('edit-prod-precio')?.value);
+    if (!prodId) { setFormError('Selecciona un producto'); return; }
+    if (!cantidad || cantidad <= 0) { setFormError('La cantidad debe ser mayor a 0'); return; }
+    if (!precio || precio <= 0) { setFormError('El precio unitario debe ser mayor a 0'); return; }
+    setFormError('');
+    const producto = productosDisponibles.find(p => p.id === prodId);
+    if (!producto) return;
+    const yaExiste = productosSeleccionados.find(p => p.pro_id === prodId);
+    if (yaExiste) { setFormError('El producto ya está agregado'); return; }
+    const subtotal = cantidad * precio;
+    const nuevo = { pro_id: prodId, pro_nombre: producto.nombre, cantidad, precio_unitario: precio, subtotal };
+    const actualizados = [...productosSeleccionados, nuevo];
+    setProductosSeleccionados(actualizados);
+    const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
+    setEditData(prev => ({ ...prev, comp_total: totalCalculado }));
+    setBuscadorProducto('');
+    const sel = document.getElementById('edit-prod-selector');
+    const cant = document.getElementById('edit-prod-cantidad');
+    const prec = document.getElementById('edit-prod-precio');
+    if (sel) sel.value = '';
+    if (cant) cant.value = '';
+    if (prec) prec.value = '';
+  };
+
+  const quitarProductoEditCompra = (proId) => {
+    const actualizados = productosSeleccionados.filter(p => p.pro_id !== proId);
+    setProductosSeleccionados(actualizados);
+    const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
+    setEditData(prev => ({ ...prev, comp_total: totalCalculado }));
+  };
+
+  const productosFiltrados = buscadorProducto
+    ? productosDisponibles.filter(p =>
+        (p.id || '').toLowerCase().includes(buscadorProducto.toLowerCase()) ||
+        (p.nombre || '').toLowerCase().includes(buscadorProducto.toLowerCase())
+      )
+    : productosDisponibles;
+
   const handleSubmitCompra = async (e) => {
     e.preventDefault();
     setFormError('');
+    if (productosSeleccionados.length === 0) {
+      setFormError('Debes agregar al menos un producto a la compra');
+      return;
+    }
+    if (!formData.com_fecha || !formData.com_prov_id_fk) {
+      setFormError('Completa los campos obligatorios: Fecha y Proveedor');
+      return;
+    }
+    const total = productosSeleccionados.reduce((sum, p) => sum + p.subtotal, 0);
+    if (total <= 0) {
+      setFormError('El total debe ser mayor a 0');
+      return;
+    }
     setFormSubmitting(true);
     try {
-      if (JSON.stringify(formData) === JSON.stringify(formSnapshotRef.current)) {
-        setFormError('Completa los campos de la compra antes de guardar');
-        return;
-      }
-      if (!formData.com_id || !formData.com_fecha || !formData.com_prov_id_fk || !formData.com_total) {
-        setFormError('Los campos con * son obligatorios');
-        return;
-      }
-      const total = parseFloat(formData.com_total);
-      if (isNaN(total) || total <= 0) {
-        setFormError('El total debe ser un número mayor a 0');
-        return;
-      }
+      // 1. Crear la compra
       await comprasService.registrar({
         com_id: formData.com_id,
         com_fecha: formData.com_fecha,
@@ -225,7 +335,23 @@ const Compras = () => {
         com_comprobante: formData.com_comprobante || null,
         com_comprobante_tipo: formData.com_comprobante_tipo || null
       });
+
+      // 2. Registrar cada detalle de compra
+      for (let i = 0; i < productosSeleccionados.length; i++) {
+        const p = productosSeleccionados[i];
+        const dcoId = 'DCO' + formData.com_id.replace('COM', '') + String(i + 1).padStart(2, '0');
+        await detallesComprasService.registrar({
+          dco_id: dcoId,
+          dco_com_id_fk: formData.com_id,
+          dco_pro_id_fk: p.pro_id,
+          dco_cantidad: p.cantidad,
+          dco_precio_compra: p.precio_unitario,
+          dco_subtotal: p.subtotal
+        });
+      }
+
       setShowModal(false);
+      setProductosSeleccionados([]);
       toast({ type: 'success', title: 'Creada', description: 'Compra registrada correctamente' });
       fetchData();
     } catch (err) {
@@ -238,17 +364,18 @@ const Compras = () => {
   const handleEditCompra = async (e) => {
     e.preventDefault();
     setFormError('');
+    if (productosSeleccionados.length === 0) {
+      setFormError('Debes agregar al menos un producto a la compra');
+      return;
+    }
+    const total = productosSeleccionados.reduce((sum, p) => sum + p.subtotal, 0);
+    if (total <= 0) {
+      setFormError('El total debe ser mayor a 0');
+      return;
+    }
     setFormSubmitting(true);
     try {
-      if (JSON.stringify(editData) === JSON.stringify(formSnapshotRef.current)) {
-        toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en la compra' });
-        return;
-      }
-      const total = parseFloat(editData.comp_total);
-      if (isNaN(total) || total <= 0) {
-        setFormError('El total debe ser un número mayor a 0');
-        return;
-      }
+      // 1. Actualizar la compra
       const payload = {
         com_fecha: editData.comp_fecha,
         com_prov_id_fk: editData.comp_prov_id_fk,
@@ -262,7 +389,32 @@ const Compras = () => {
         payload.com_comprobante_tipo = editData.comp_comprobante_tipo;
       }
       await comprasService.editar(editData.comp_id, payload);
+
+      // 2. Eliminar detalles existentes y recrearlos
+      const todosDetalles = await detallesComprasService.listar().catch(() => []);
+      const viejosDetalles = todosDetalles.filter(d => d.dco_com_id_fk === editData.comp_id);
+      for (const v of viejosDetalles) {
+        try {
+          await detallesComprasService.eliminar(v.dco_id);
+        } catch { /* si falla, continuar */ }
+      }
+
+      // 3. Registrar los nuevos detalles
+      for (let i = 0; i < productosSeleccionados.length; i++) {
+        const p = productosSeleccionados[i];
+        const dcoId = 'DCO' + editData.comp_id.replace('COM', '') + String(i + 1).padStart(2, '0');
+        await detallesComprasService.registrar({
+          dco_id: dcoId,
+          dco_com_id_fk: editData.comp_id,
+          dco_pro_id_fk: p.pro_id,
+          dco_cantidad: p.cantidad,
+          dco_precio_compra: p.precio_unitario,
+          dco_subtotal: p.subtotal
+        });
+      }
+
       setShowEditModal(false);
+      setProductosSeleccionados([]);
       toast({ type: 'success', title: 'Actualizada', description: 'Compra actualizada correctamente' });
       fetchData();
     } catch (err) {
@@ -806,12 +958,62 @@ const Compras = () => {
                       {proveedores.map(p => <option key={p.prov_id} value={p.prov_id}>{p.prov_nombre} ({p.prov_id})</option>)}
                     </select>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  {/* ── Productos ── */}
+                  <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/30">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Productos</label>
+                    <div className="grid grid-cols-4 gap-2 mb-2">
+                      <div className="col-span-1">
+                        <select id="prod-selector" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500">
+                          <option value="">Seleccionar...</option>
+                          {productosFiltrados.map(p => (
+                            <option key={p.id} value={p.id}>{p.id} — {p.nombre}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <input id="prod-cantidad" type="number" min="1" placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <input id="prod-precio" type="number" step="0.01" min="0.01" placeholder="Precio U." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <button type="button" onClick={agregarProductoCompra} className="w-full p-2 text-xs font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all flex items-center justify-center gap-1">
+                          <Plus size={14} /> Agregar
+                        </button>
+                      </div>
+                    </div>
+                    {productosSeleccionados.length > 0 && (
+                      <div className="max-h-28 overflow-y-auto border border-slate-200 rounded-md bg-white">
+                        <table className="w-full text-xs">
+                          <thead className="bg-slate-100 text-slate-500 font-bold uppercase">
+                            <tr><th className="p-2 text-left">Producto</th><th className="p-2 text-right">Cant.</th><th className="p-2 text-right">P/U</th><th className="p-2 text-right">Subtotal</th><th className="p-2 w-8"></th></tr>
+                          </thead>
+                          <tbody>
+                            {productosSeleccionados.map(p => (
+                              <tr key={p.pro_id} className="border-t border-slate-100">
+                                <td className="p-2 text-slate-700">{p.pro_nombre}</td>
+                                <td className="p-2 text-right text-slate-600">{p.cantidad}</td>
+                                <td className="p-2 text-right text-slate-600">${p.precio_unitario.toFixed(2)}</td>
+                                <td className="p-2 text-right text-slate-800 font-bold">${p.subtotal.toFixed(2)}</td>
+                                <td className="p-2 text-center">
+                                  <button type="button" onClick={() => quitarProductoCompra(p.pro_id)} className="text-red-400 hover:text-red-600 transition-colors"><X size={14} /></button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {productosSeleccionados.length === 0 && (
+                      <p className="text-xs text-slate-400 italic">Agrega al menos un producto a la compra</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total <span className="required-star">*</span></label>
-                      <input name="com_total" type="number" step="0.01" min="0.01" max="9999999.99" value={formData.com_total || ''} onChange={handleChange}
-                        className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_total ? 'border-red-400' : 'border-slate-300'}`} />
-                      {errors.com_total && <p className="text-red-500 text-xs mt-1">{errors.com_total}</p>}
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total</label>
+                      <input name="com_total" type="text" value={formData.com_total ? `$${parseFloat(formData.com_total).toFixed(2)}` : '$0.00'} readOnly
+                        className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-bold text-blue-700 mt-1" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
@@ -820,12 +1022,12 @@ const Compras = () => {
                         {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
                       </select>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Observación</label>
-                    <textarea name="com_observacion" rows="2" value={formData.com_observacion || ''} onChange={handleChange}
-                      placeholder="Notas adicionales..."
-                      className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 resize-none" />
+                    <div>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Observación</label>
+                      <textarea name="com_observacion" rows="1" value={formData.com_observacion || ''} onChange={handleChange}
+                        placeholder="Notas..."
+                        className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 resize-none" />
+                    </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Comprobante de pago (PDF / imagen)</label>
@@ -929,11 +1131,62 @@ const Compras = () => {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              {/* ── Productos (editar) ── */}
+              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/30">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Productos</label>
+                <div className="grid grid-cols-4 gap-2 mb-2">
+                  <div className="col-span-1">
+                    <select id="edit-prod-selector" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="">Seleccionar...</option>
+                      {productosFiltrados.map(p => (
+                        <option key={p.id} value={p.id}>{p.id} — {p.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <input id="edit-prod-cantidad" type="number" min="1" placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <input id="edit-prod-precio" type="number" step="0.01" min="0.01" placeholder="Precio U." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <button type="button" onClick={() => agregarProductoEditCompra()} className="w-full p-2 text-xs font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all flex items-center justify-center gap-1">
+                      <Plus size={14} /> Agregar
+                    </button>
+                  </div>
+                </div>
+                {productosSeleccionados.length > 0 && (
+                  <div className="max-h-28 overflow-y-auto border border-slate-200 rounded-md bg-white">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-100 text-slate-500 font-bold uppercase">
+                        <tr><th className="p-2 text-left">Producto</th><th className="p-2 text-right">Cant.</th><th className="p-2 text-right">P/U</th><th className="p-2 text-right">Subtotal</th><th className="p-2 w-8"></th></tr>
+                      </thead>
+                      <tbody>
+                        {productosSeleccionados.map(p => (
+                          <tr key={p.pro_id} className="border-t border-slate-100">
+                            <td className="p-2 text-slate-700">{p.pro_nombre}</td>
+                            <td className="p-2 text-right text-slate-600">{p.cantidad}</td>
+                            <td className="p-2 text-right text-slate-600">${p.precio_unitario.toFixed(2)}</td>
+                            <td className="p-2 text-right text-slate-800 font-bold">${p.subtotal.toFixed(2)}</td>
+                            <td className="p-2 text-center">
+                              <button type="button" onClick={() => quitarProductoEditCompra(p.pro_id)} className="text-red-400 hover:text-red-600 transition-colors"><X size={14} /></button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {productosSeleccionados.length === 0 && (
+                  <p className="text-xs text-slate-400 italic">Agrega al menos un producto a la compra</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total</label>
-                  <input name="comp_total" type="number" step="0.01" value={editData.comp_total || ''} onChange={handleEditChange}
-                    className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
+                  <input name="comp_total" type="text" value={editData.comp_total ? `$${parseFloat(editData.comp_total).toFixed(2)}` : '$0.00'} readOnly
+                    className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-bold text-blue-700 mt-1" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
@@ -942,12 +1195,12 @@ const Compras = () => {
                     {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
                   </select>
                 </div>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Observación</label>
-                <textarea name="comp_observacion" rows="2" value={editData.comp_observacion || ''} onChange={handleEditChange}
-                  placeholder="Notas adicionales..."
-                  className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 resize-none" />
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Observación</label>
+                  <textarea name="comp_observacion" rows="2" value={editData.comp_observacion || ''} onChange={handleEditChange}
+                    placeholder="Notas adicionales..."
+                    className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 resize-none" />
+                </div>
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Comprobante de pago (PDF / imagen)</label>
