@@ -1313,13 +1313,11 @@ const Ventas = () => {
             const cc = clientes.filter(c => c.cli_tipo_documento === 'CC').length;
             const nit = clientes.filter(c => c.cli_tipo_documento === 'NIT').length;
             const ce = clientes.filter(c => c.cli_tipo_documento === 'CE').length;
-            const ti = clientes.filter(c => c.cli_tipo_documento === 'TI').length;
             const cards = [
               { label: 'Todos', count: clientes.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
               { label: 'CC', count: cc, icon: '🪪', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'CC' },
               { label: 'NIT', count: nit, icon: '🏢', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', filtro: 'NIT' },
               { label: 'CE', count: ce, icon: '🛂', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-600', filtro: 'CE' },
-              { label: 'TI', count: ti, icon: '🧒', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'TI' },
             ];
             return (
               <div className="grid grid-cols-5 gap-2 px-6 pt-4 pb-2">
@@ -1473,7 +1471,6 @@ const Ventas = () => {
                             <option value="CC">CC</option>
                             <option value="NIT">NIT</option>
                             <option value="CE">CE</option>
-                            <option value="TI">TI</option>
                           </select>
                         </div>
                         <div>
@@ -1797,7 +1794,6 @@ const Ventas = () => {
                         <option value="CC">CC</option>
                         <option value="NIT">NIT</option>
                         <option value="CE">CE</option>
-                        <option value="TI">TI</option>
                       </select>
                     </div>
                   </div>
