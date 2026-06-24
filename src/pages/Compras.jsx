@@ -152,21 +152,20 @@ const Compras = () => {
     setViewLoading(true);
     setViewData(null);
     try {
-      const [detalle, todosDetalles, prods] = await Promise.all([
+      const [detalle, detalles, prods] = await Promise.all([
         comprasService.buscar(compra.comp_id),
-        detallesComprasService.listar().catch(() => []),
+        detallesComprasService.listar({ dco_com_id_fk: compra.comp_id }).catch(() => []),
         productosService.listar().catch(() => [])
       ]);
       const prov = proveedores.find(p => p.prov_id === detalle.comp_prov_id_fk);
       const prodsMap = {};
       prods.forEach(p => { prodsMap[p.id] = p.nombre; });
-      const misDetalles = todosDetalles.filter(d => d.dco_com_id_fk === compra.comp_id);
-      const items = misDetalles.map(d => ({
-        pro_id: d.dco_pro_id_fk,
-        pro_nombre: prodsMap[d.dco_pro_id_fk] || d.dco_pro_id_fk,
-        cantidad: d.dco_cantidad,
-        precio_unitario: d.dco_precio_compra,
-        subtotal: d.dco_subtotal
+      const items = (detalles || []).map(d => ({
+        pro_id: d.producto_id,
+        pro_nombre: prodsMap[d.producto_id] || d.producto_id,
+        cantidad: d.cantidad,
+        precio_unitario: d.precio_compra,
+        subtotal: d.subtotal
       }));
       setViewData({ ...detalle, proveedor: prov || null, productos: items });
       setShowViewModal(compra.comp_id);

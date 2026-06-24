@@ -1,8 +1,8 @@
 import api from '../axios';
 
 export const detallesComprasService = {
-  listar: async () => {
-    const res = await api.get('/detalles_compras/');
+  listar: async (params = {}) => {
+    const res = await api.get('/detalles_compras/', { params });
     // El backend ahora retorna {data: [...], total, page, limit, pages}
     if (res.data && Array.isArray(res.data.data)) {
       return res.data.data;
