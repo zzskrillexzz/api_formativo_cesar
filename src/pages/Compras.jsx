@@ -151,6 +151,8 @@ const Compras = () => {
       if (name === 'id' && !value) newErrors.id = 'El ID es obligatorio';
       else if (name === 'id') delete newErrors.id;
       if (name === 'nit' && !value) newErrors.nit = 'El NIT es obligatorio';
+      else if (name === 'nit' && /^0/.test(value)) newErrors.nit = 'El NIT no puede comenzar con cero';
+      else if (name === 'nit' && value.length < 6) newErrors.nit = 'El NIT debe tener al menos 6 dígitos';
       else if (name === 'nit') delete newErrors.nit;
       if (name === 'nombre' && !value) newErrors.nombre = 'El nombre es obligatorio';
       else if (name === 'nombre') delete newErrors.nombre;
@@ -341,8 +343,12 @@ const Compras = () => {
       setFormError('Todos los campos son obligatorios');
       return;
     }
-    if (/^0+$/.test(editProveedorData.nit)) {
-      setFormError('El NIT no puede ser todo ceros');
+    if (/^0/.test(editProveedorData.nit)) {
+      setFormError('El NIT no puede comenzar con cero');
+      return;
+    }
+    if (editProveedorData.nit.length < 6) {
+      setFormError('El NIT debe tener al menos 6 dígitos');
       return;
     }
     if (editProveedorData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editProveedorData.email)) {
@@ -409,9 +415,14 @@ const Compras = () => {
       setFormError('Todos los campos son obligatorios');
       return;
     }
-    // Validar NIT — no puede ser todo ceros
-    if (/^0+$/.test(formData.nit)) {
-      setFormError('El NIT no puede ser todo ceros');
+    // Validar NIT — no ceros a la izquierda y longitud mínima
+    if (/^0/.test(formData.nit)) {
+      setFormError('El NIT no puede comenzar con cero');
+      setFormSubmitting(false);
+      return;
+    }
+    if (formData.nit.length < 6) {
+      setFormError('El NIT debe tener al menos 6 dígitos');
       setFormSubmitting(false);
       return;
     }
