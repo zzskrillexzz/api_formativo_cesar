@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Shield, Search, Plus, X, RefreshCw, Edit3, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Users, Search, Plus, X, RefreshCw, Edit3, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useToast } from '../components/Toast';
@@ -16,10 +16,6 @@ const Usuarios = () => {
   const isAdmin = user?.role === 'Administrador';
   const [tab, setTab] = useState('usuarios');
 
-  // Si el usuario no es admin, forzar pestaña 'usuarios'
-  useEffect(() => {
-    if (!isAdmin && tab === 'roles') setTab('usuarios');
-  }, [isAdmin, tab]);
   const [usuarios, setUsuarios] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +24,7 @@ const Usuarios = () => {
   const [filtroEstado, setFiltroEstado] = useState('');
   const POR_PAGINA = 10;
   const [paginaUsuarios, setPaginaUsuarios] = useState(1);
-  const [paginaRoles, setPaginaRoles] = useState(1);
+
 
   // Roles desde BD (cargados en fetchData), con fallback para primer render
   const rolesDisponibles = roles.length > 0
@@ -109,7 +105,6 @@ const Usuarios = () => {
 
   useEffect(() => { fetchData(); }, []);
   useEffect(() => { setPaginaUsuarios(1); }, [searchTerm, filtroRol, filtroEstado]);
-  useEffect(() => { setPaginaRoles(1); }, [searchTerm]);
 
   // ═══════════════════ USUARIOS ═══════════════════
 
@@ -252,16 +247,6 @@ const Usuarios = () => {
     (paginaUsuarios - 1) * POR_PAGINA, paginaUsuarios * POR_PAGINA
   );
 
-  const filteredRoles = roles.filter(r => {
-    const busca = [r.rol_id, r.rol_nombre, r.rol_descripcion]
-      .filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
-    return busca;
-  });
-
-  const paginatedRoles = filteredRoles.slice(
-    (paginaRoles - 1) * POR_PAGINA, paginaRoles * POR_PAGINA
-  );
-
   const estadoBadge = (estado) => {
     const activo = estado === 1 || estado === '1' || estado === true;
     return activo
@@ -271,7 +256,6 @@ const Usuarios = () => {
 
   const tabs = [
     { id: 'usuarios', label: 'Usuarios', icon: Users },
-    ...(isAdmin ? [{ id: 'roles', label: 'Roles', icon: Shield }] : []),
   ];
 
   if (loading) return <ThemeLoader module="Usuarios" />;
@@ -414,49 +398,7 @@ const Usuarios = () => {
         </div>
       )}
 
-      {/* ── Tabla de Roles ── */}
-      {tab === 'roles' && (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-indigo-400 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 text-slate-400 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
-                <tr>
-                  <th className="px-5 py-3">ID</th>
-                  <th className="px-5 py-3">Nombre</th>
-                  <th className="px-5 py-3">Descripción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50 text-sm font-medium text-slate-600">
-                {filteredRoles.length === 0 ? (
-                  <tr><td colSpan="3" className="px-5 py-12 text-center text-slate-400">
-                    {searchTerm ? 'Sin resultados' : 'No hay roles registrados'}
-                  </td></tr>
-                ) : (
-                  paginatedRoles.map((r, i) => (
-                    <tr key={i} className="hover:bg-indigo-50/70">
-                      <td className="px-5 py-3 text-slate-400 text-xs">{r.rol_id}</td>
-                      <td className="px-5 py-3">
-                        <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md text-[10px] font-bold uppercase">{r.rol_nombre}</span>
-                      </td>
-                      <td className="px-5 py-3 text-slate-400 text-xs">{r.rol_descripcion || '-'}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-400 font-medium">
-            <span>{filteredRoles.length} roles</span>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setPaginaRoles(p => Math.max(1, p - 1))} disabled={paginaRoles <= 1}
-                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Anterior</button>
-              <span className="text-slate-500">{paginaRoles} / {Math.max(1, Math.ceil(filteredRoles.length / POR_PAGINA))}</span>
-              <button onClick={() => setPaginaRoles(p => p + 1)} disabled={paginaRoles >= Math.ceil(filteredRoles.length / POR_PAGINA)}
-                className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider">Siguiente</button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* ── MODAL: Usuario ── */}
       {showModal && (
