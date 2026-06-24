@@ -47,9 +47,10 @@ def cnregistrarcompras():
     if errores:
         return jsonify({"mensaje": " | ".join(errores)}), 400
 
-    estados_validos = ["Pendiente", "Recibida", "Cancelada"]
+    # En POST (crear) no se permite "Cancelada" - solo al editar (PUT)
+    estados_validos = ["Pendiente", "Recibida"]
     if data["com_estado"] not in estados_validos:
-        return jsonify({"mensaje": f"Estado inválido. Valores permitidos: {estados_validos}"}), 400
+        return jsonify({"mensaje": f"Estado inválido al crear. Valores permitidos: {estados_validos}"}), 400
 
     TOTAL_MAXIMO = 9999999.99
     try:
