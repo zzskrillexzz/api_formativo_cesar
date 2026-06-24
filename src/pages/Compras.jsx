@@ -12,6 +12,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
 
 const ESTADOS = ['Pendiente', 'Recibida', 'Cancelada'];
+const ESTADOS_CREAR = ['Pendiente', 'Recibida'];
 
 // Elimina emojis y caracteres especiales que rompen la BD
 const stripEmojis = (str) => {
@@ -49,6 +50,9 @@ const Compras = () => {
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [productosSeleccionados, setProductosSeleccionados] = useState([]);
   const [buscadorProducto, setBuscadorProducto] = useState('');
+  const [prodSelector, setProdSelector] = useState('');
+  const [prodCantidad, setProdCantidad] = useState('');
+  const [prodPrecio, setProdPrecio] = useState('');
   const [showEditProveedorModal, setShowEditProveedorModal] = useState(false);
   const [editProveedorData, setEditProveedorData] = useState({});
   const [showViewProveedorModal, setShowViewProveedorModal] = useState(false);
@@ -127,9 +131,12 @@ const Compras = () => {
           dco_id: d.dco_id
         }));
         setProductosSeleccionados(items);
+        detalle.comp_tiene_detalles = true;
       } else {
         setProductosSeleccionados([]);
+        detalle.comp_tiene_detalles = false;
       }
+      setEditData({ ...detalle });
       formSnapshotRef.current = JSON.parse(JSON.stringify(detalle));
       setShowEditModal(true);
     } catch (_) {
@@ -164,6 +171,24 @@ const Compras = () => {
     if (max && cleanValue.length > max) return;
     setEditData({ ...editData, [name]: cleanValue });
     validateField(name, cleanValue);
+  };
+
+  // Productos filtrados por proveedor seleccionado
+  const productosDelProveedor = useMemo(() => {
+    const provId = formData.com_prov_id_fk || editData.comp_prov_id_fk;
+    if (!provId) return [];
+    return (productosDisponibles || []).filter(p => String(p.pro_prov_id_fk) === String(provId));
+  }, [productosDisponibles, formData.com_prov_id_fk, editData.comp_prov_id_fk]);
+
+  const handleProductSelect = (selectedId) => {
+    setProdSelector(selectedId);
+    if (!selectedId) { setProdPrecio(''); return; }
+    const prod = productosDelProveedor.find(p => String(p.id) === String(selectedId));
+    if (prod && prod.pro_precio) {
+      setProdPrecio(prod.pro_precio.toString());
+    } else {
+      setProdPrecio('');
+    }
   };
 
   const validateField = (name, value) => {
@@ -229,16 +254,16 @@ const Compras = () => {
 
   // ── Manejo de productos seleccionados en la compra ──
   const agregarProductoCompra = () => {
-    const prodId = document.getElementById('prod-selector')?.value;
-    const cantidad = parseInt(document.getElementById('prod-cantidad')?.value, 10);
-    const precio = parseFloat(document.getElementById('prod-precio')?.value);
+    const prodId = prodSelector;
+    const cantidad = parseInt(prodCantidad, 10);
+    const precio = parseFloat(prodPrecio);
     if (!prodId) { setFormError('Selecciona un producto'); return; }
     if (!cantidad || cantidad <= 0) { setFormError('La cantidad debe ser mayor a 0'); return; }
     if (!precio || precio <= 0) { setFormError('El precio unitario debe ser mayor a 0'); return; }
     setFormError('');
-    const producto = productosDisponibles.find(p => p.id === prodId);
+    const producto = productosDisponibles.find(p => String(p.id) === String(prodId));
     if (!producto) return;
-    const yaExiste = productosSeleccionados.find(p => p.pro_id === prodId);
+    const yaExiste = productosSeleccionados.find(p => String(p.pro_id) === String(prodId));
     if (yaExiste) { setFormError('El producto ya está agregado'); return; }
     const subtotal = cantidad * precio;
     const nuevo = { pro_id: prodId, pro_nombre: producto.nombre, cantidad, precio_unitario: precio, subtotal };
@@ -247,13 +272,9 @@ const Compras = () => {
     const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
     setFormData(prev => ({ ...prev, com_total: String(totalCalculado) }));
     setBuscadorProducto('');
-    // Reset inputs
-    const sel = document.getElementById('prod-selector');
-    const cant = document.getElementById('prod-cantidad');
-    const prec = document.getElementById('prod-precio');
-    if (sel) sel.value = '';
-    if (cant) cant.value = '';
-    if (prec) prec.value = '';
+    setProdSelector('');
+    setProdCantidad('');
+    setProdPrecio('');
   };
 
   const quitarProductoCompra = (proId) => {
@@ -265,16 +286,16 @@ const Compras = () => {
 
   // ── Manejo de productos en editar compra ──
   const agregarProductoEditCompra = () => {
-    const prodId = document.getElementById('edit-prod-selector')?.value;
-    const cantidad = parseInt(document.getElementById('edit-prod-cantidad')?.value, 10);
-    const precio = parseFloat(document.getElementById('edit-prod-precio')?.value);
+    const prodId = prodSelector;
+    const cantidad = parseInt(prodCantidad, 10);
+    const precio = parseFloat(prodPrecio);
     if (!prodId) { setFormError('Selecciona un producto'); return; }
     if (!cantidad || cantidad <= 0) { setFormError('La cantidad debe ser mayor a 0'); return; }
     if (!precio || precio <= 0) { setFormError('El precio unitario debe ser mayor a 0'); return; }
     setFormError('');
-    const producto = productosDisponibles.find(p => p.id === prodId);
+    const producto = productosDisponibles.find(p => String(p.id) === String(prodId));
     if (!producto) return;
-    const yaExiste = productosSeleccionados.find(p => p.pro_id === prodId);
+    const yaExiste = productosSeleccionados.find(p => String(p.pro_id) === String(prodId));
     if (yaExiste) { setFormError('El producto ya está agregado'); return; }
     const subtotal = cantidad * precio;
     const nuevo = { pro_id: prodId, pro_nombre: producto.nombre, cantidad, precio_unitario: precio, subtotal };
@@ -283,12 +304,9 @@ const Compras = () => {
     const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
     setEditData(prev => ({ ...prev, comp_total: totalCalculado }));
     setBuscadorProducto('');
-    const sel = document.getElementById('edit-prod-selector');
-    const cant = document.getElementById('edit-prod-cantidad');
-    const prec = document.getElementById('edit-prod-precio');
-    if (sel) sel.value = '';
-    if (cant) cant.value = '';
-    if (prec) prec.value = '';
+    setProdSelector('');
+    setProdCantidad('');
+    setProdPrecio('');
   };
 
   const quitarProductoEditCompra = (proId) => {
@@ -364,7 +382,8 @@ const Compras = () => {
   const handleEditCompra = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (productosSeleccionados.length === 0) {
+    const tieneProductosBD = editData.comp_tiene_detalles;
+    if (productosSeleccionados.length === 0 && !tieneProductosBD) {
       setFormError('Debes agregar al menos un producto a la compra');
       return;
     }
@@ -390,27 +409,29 @@ const Compras = () => {
       }
       await comprasService.editar(editData.comp_id, payload);
 
-      // 2. Eliminar detalles existentes y recrearlos
-      const todosDetalles = await detallesComprasService.listar().catch(() => []);
-      const viejosDetalles = todosDetalles.filter(d => d.dco_com_id_fk === editData.comp_id);
-      for (const v of viejosDetalles) {
-        try {
-          await detallesComprasService.eliminar(v.dco_id);
-        } catch { /* si falla, continuar */ }
-      }
+      // 2. Solo si hay productos nuevos, reemplazar los existentes
+      if (productosSeleccionados.length > 0) {
+        const todosDetalles = await detallesComprasService.listar().catch(() => []);
+        const viejosDetalles = todosDetalles.filter(d => d.dco_com_id_fk === editData.comp_id);
+        for (const v of viejosDetalles) {
+          try {
+            await detallesComprasService.eliminar(v.dco_id);
+          } catch { /* si falla, continuar */ }
+        }
 
-      // 3. Registrar los nuevos detalles
-      for (let i = 0; i < productosSeleccionados.length; i++) {
-        const p = productosSeleccionados[i];
-        const dcoId = 'DCO' + editData.comp_id.replace('COM', '') + String(i + 1).padStart(2, '0');
-        await detallesComprasService.registrar({
-          dco_id: dcoId,
-          dco_com_id_fk: editData.comp_id,
-          dco_pro_id_fk: p.pro_id,
-          dco_cantidad: p.cantidad,
-          dco_precio_compra: p.precio_unitario,
-          dco_subtotal: p.subtotal
-        });
+        // 3. Registrar los nuevos detalles
+        for (let i = 0; i < productosSeleccionados.length; i++) {
+          const p = productosSeleccionados[i];
+          const dcoId = 'DCO' + editData.comp_id.replace('COM', '') + String(i + 1).padStart(2, '0');
+          await detallesComprasService.registrar({
+            dco_id: dcoId,
+            dco_com_id_fk: editData.comp_id,
+            dco_pro_id_fk: p.pro_id,
+            dco_cantidad: p.cantidad,
+            dco_precio_compra: p.precio_unitario,
+            dco_subtotal: p.subtotal
+          });
+        }
       }
 
       setShowEditModal(false);
@@ -963,18 +984,18 @@ const Compras = () => {
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Productos</label>
                     <div className="grid grid-cols-4 gap-2 mb-2">
                       <div className="col-span-1">
-                        <select id="prod-selector" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500">
+                        <select value={prodSelector} onChange={(e) => handleProductSelect(e.target.value)} className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500">
                           <option value="">Seleccionar...</option>
-                          {productosFiltrados.map(p => (
+                          {(productosDelProveedor || []).map(p => (
                             <option key={p.id} value={p.id}>{p.id} — {p.nombre}</option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <input id="prod-cantidad" type="number" min="1" placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
+                        <input value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} type="number" min="1" placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
-                        <input id="prod-precio" type="number" step="0.01" min="0.01" placeholder="Precio U." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
+                        <input value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} type="number" step="0.01" min="0.01" placeholder="Precio U." readOnly className="w-full p-2 text-xs border border-slate-200 rounded-md outline-none bg-slate-50 text-slate-500 cursor-not-allowed" />
                       </div>
                       <div>
                         <button type="button" onClick={agregarProductoCompra} className="w-full p-2 text-xs font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all flex items-center justify-center gap-1">
@@ -1019,12 +1040,12 @@ const Compras = () => {
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
                       <select name="com_estado" value={formData.com_estado || 'Pendiente'} onChange={handleChange}
                         className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
-                        {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
+                        {ESTADOS_CREAR.map(e => <option key={e} value={e}>{e}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Observación</label>
-                      <textarea name="com_observacion" rows="1" value={formData.com_observacion || ''} onChange={handleChange}
+                      <textarea name="com_observacion" rows="3" value={formData.com_observacion || ''} onChange={handleChange}
                         placeholder="Notas..."
                         className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 resize-none" />
                     </div>
@@ -1136,18 +1157,18 @@ const Compras = () => {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Productos</label>
                 <div className="grid grid-cols-4 gap-2 mb-2">
                   <div className="col-span-1">
-                    <select id="edit-prod-selector" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500">
+                    <select value={prodSelector} onChange={(e) => handleProductSelect(e.target.value)} className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500">
                       <option value="">Seleccionar...</option>
-                      {productosFiltrados.map(p => (
+                      {(productosDelProveedor || []).map(p => (
                         <option key={p.id} value={p.id}>{p.id} — {p.nombre}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <input id="edit-prod-cantidad" type="number" min="1" placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} type="number" min="1" placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
                   <div>
-                    <input id="edit-prod-precio" type="number" step="0.01" min="0.01" placeholder="Precio U." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} type="number" step="0.01" min="0.01" placeholder="Precio U." readOnly className="w-full p-2 text-xs border border-slate-200 rounded-md outline-none bg-slate-50 text-slate-500 cursor-not-allowed" />
                   </div>
                   <div>
                     <button type="button" onClick={() => agregarProductoEditCompra()} className="w-full p-2 text-xs font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all flex items-center justify-center gap-1">
@@ -1197,7 +1218,7 @@ const Compras = () => {
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Observación</label>
-                  <textarea name="comp_observacion" rows="2" value={editData.comp_observacion || ''} onChange={handleEditChange}
+                  <textarea name="comp_observacion" rows="3" value={editData.comp_observacion || ''} onChange={handleEditChange}
                     placeholder="Notas adicionales..."
                     className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 resize-none" />
                 </div>
