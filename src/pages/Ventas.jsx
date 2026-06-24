@@ -688,6 +688,9 @@ const Ventas = () => {
 
   const abrirEditarFactura = async (factura) => {
     try {
+      const clienteNombre = factura.cli_nombre
+        ? `${factura.cli_nombre}${factura.cli_apellido ? ' ' + factura.cli_apellido : ''}`
+        : `Cliente #${factura.cli_id_fk || '?'}`;
       const editData = {
         id: factura.id,
         fecha_emision: factura.fecha_emision,
@@ -696,7 +699,10 @@ const Ventas = () => {
         cuenta_bancaria: factura.cuenta_bancaria || '',
         total: factura.total,
         estado: factura.estado || 'Vigente',
-        cli_id_fk: factura.cli_id_fk || null
+        cli_id_fk: factura.cli_id_fk || null,
+        pedido_seleccionado: factura.id,
+        cli_nombre_mostrar: clienteNombre,
+        cli_correo_mostrar: factura.cli_correo || ''
       };
       setFormData(editData);
       formSnapshotRef.current = JSON.parse(JSON.stringify(editData));
