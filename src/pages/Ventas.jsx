@@ -688,25 +688,27 @@ const Ventas = () => {
 
   const abrirEditarFactura = async (factura) => {
     try {
-      const clienteNombre = factura.cli_nombre
-        ? `${factura.cli_nombre}${factura.cli_apellido ? ' ' + factura.cli_apellido : ''}`
-        : `Cliente #${factura.cli_id_fk || '?'}`;
+      // Traer datos completos desde el backend para asegurar campos correctos
+      const detalle = await facturasService.buscar(factura.id);
+      const clienteNombre = detalle.cli_nombre
+        ? `${detalle.cli_nombre}${detalle.cli_apellido ? ' ' + detalle.cli_apellido : ''}`
+        : `Cliente #${detalle.cli_id_fk || '?'}`;
       const editData = {
-        id: factura.id,
-        fecha_emision: factura.fecha_emision,
-        email_enviado: factura.email_enviado,
-        forma_pago: factura.forma_pago,
-        cuenta_bancaria: factura.cuenta_bancaria || '',
-        total: factura.total,
-        estado: factura.estado || 'Vigente',
-        cli_id_fk: factura.cli_id_fk || null,
-        pedido_seleccionado: factura.id,
+        id: detalle.id,
+        fecha_emision: detalle.fecha_emision,
+        email_enviado: detalle.email_enviado,
+        forma_pago: detalle.forma_pago,
+        cuenta_bancaria: detalle.cuenta_bancaria || '',
+        total: detalle.total,
+        estado: detalle.estado || 'Vigente',
+        cli_id_fk: detalle.cli_id_fk || null,
+        pedido_seleccionado: detalle.id,
         cli_nombre_mostrar: clienteNombre,
-        cli_correo_mostrar: factura.cli_correo || ''
+        cli_correo_mostrar: detalle.cli_correo || ''
       };
       setFormData(editData);
       formSnapshotRef.current = JSON.parse(JSON.stringify(editData));
-      setEditingFacturaId(factura.id);
+      setEditingFacturaId(detalle.id);
       setFormError('');
       setShowModal(true);
     } catch (err) {
