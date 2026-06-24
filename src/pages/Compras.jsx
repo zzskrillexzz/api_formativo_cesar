@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Truck, Package, Search, Plus, X, RefreshCw, Loader2, Edit3, Trash2, FileText, Download, Eye } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { ConfirmModal } from '../components/ConfirmModal';

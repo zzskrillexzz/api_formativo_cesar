@@ -546,7 +546,7 @@ const Usuarios = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">ID *</label>
-                  <input type="text" name="usu_id" value={formData.usu_id || ''} disabled={!!editingUserId}
+                  <input type="text" name="usu_id" value={formData.usu_id || ''} disabled={!!editingUserId} readOnly
                     className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium disabled:bg-slate-100 disabled:text-slate-400" />
                 </div>
                 <div className="space-y-1">
