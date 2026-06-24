@@ -550,8 +550,7 @@ CREATE TABLE `t_rol` (
   `rol_nombre` varchar(50) NOT NULL COMMENT 'Nombre del rol (Administrador, Vendedor, Bodeguero)',
   `rol_descripcion` varchar(255) DEFAULT NULL COMMENT 'Descripción del rol y sus permisos',
   `rol_estado` tinyint(1) DEFAULT 1 COMMENT '1=Activo / 0=Inactivo',
-  PRIMARY KEY (`rol_id`),
-  CONSTRAINT `t_rol_ibfk_1` FOREIGN KEY (`rol_id`) REFERENCES `t_usuario` (`usu_rol_id_fk`)
+  PRIMARY KEY (`rol_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Tabla de roles de usuarios';
 
 /*Data for the table `t_rol` */
@@ -620,7 +619,8 @@ CREATE TABLE `t_usuario` (
   `usu_ultimo_acceso` datetime DEFAULT NULL COMMENT 'Fecha y hora del último login',
   PRIMARY KEY (`usu_id`),
   UNIQUE KEY `usu_correo_unique` (`usu_correo`),
-  KEY `usu_rol_id_fk` (`usu_rol_id_fk`)
+  KEY `usu_rol_id_fk` (`usu_rol_id_fk`),
+  CONSTRAINT `fk_usuario_rol` FOREIGN KEY (`usu_rol_id_fk`) REFERENCES `t_rol` (`rol_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 /*Data for the table `t_usuario` */
@@ -637,8 +637,7 @@ insert  into `t_usuario`(`usu_id`,`usu_nombre`,`usu_rol_id_fk`,`usu_correo`,`usu
 ('USU099','Test User','ROL002','test@sd.com','$2b$12$D1AyTMydROT/YU9H5QHfwOZIyI1VOtn3mQSGGPZhTxeL/04aCN2li',1,NULL),
 ('USU200','Test Admin','ROL001','test@test.com','$2b$12$uVM.9BYpeNcsFEb/cDRvMOM94XD3/0dnPFjh7flZXe1Im8RayCZK.',1,NULL),
 ('USU201','Vendedor Test','ROL002','vendedor@test.com','$2b$12$.vy3DcTkOHGv0/HqbeG1PO8GovPD9up6Yyezyo/4066XCp1lCjmGS',1,NULL),
-('USU202','TEST','ROL002','test123@sd.com','$2b$12$bQX.cszMT0b.CI0JAfXP5OFqvkxwVATPak83uBYVd1FnFpEmDSxpe',1,NULL),
-('USU203','TEST1','ROL002','test1234@sd.com','$2b$12$TXH0.MFi/XQsrE.3m/IkU.YG2YZKKtFr0RohFPBgYCq.IewteA.p2',1,NULL);
+('USU202','TEST','ROL002','test123@sd.com','$2b$12$bQX.cszMT0b.CI0JAfXP5OFqvkxwVATPak83uBYVd1FnFpEmDSxpe',1,NULL);
 
 /*Table structure for table `t_usuario_factura` */
 
