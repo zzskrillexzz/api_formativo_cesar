@@ -25,3 +25,6 @@
 6. **Factura no se puede crear Anulada + editar factura (PUT)**: Backend fuerza `estado = 'Vigente'` en POST. Frontend: oculta "Anulada" al crear, la muestra solo al editar; se agregó `editingFacturaId` + función `abrirEditarFactura` + botón Edit3 en tabla. Archivos: `Backend/controllers/facturas_controllers.py`, `Frontend/src/pages/Ventas.jsx`
 7. **Total compra auto-calculado desde productos**: Se agregó sección de productos (selector, cantidad, precio, subtotal) al formulario de crear y editar compra. El total es readonly y se calcula como suma de subtotales. Al guardar crea compra + detalles. Archivos: `Frontend/src/pages/Compras.jsx`, `Frontend/src/api/services/detallesComprasService.js`
 8. **Campos fecha y cliente vacíos al editar factura**: Faltaban `pedido_seleccionado`, `cli_nombre_mostrar` y `cli_correo_mostrar` en `abrirEditarFactura`. Archivo: `Frontend/src/pages/Ventas.jsx`
+
+## Fix aplicado — sesión 2026-06-25
+9. **Más Vendidos — Decimal/None sin convertir causa datos erróneos en Dashboard**: `total_unidades_vendidas` desde vista `v_mas_vendidos` llega como `decimal.Decimal` o `None`. Se agregó `int()` forzoso en el constructor del modelo y se añadió `total_ingresos` (float). Archivos: `Backend/models/mas_vendidos_model.py`, `Backend/services/mas_vendidos_service.py`

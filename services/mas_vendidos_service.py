@@ -17,7 +17,8 @@ def listarMasVendidos(page=1, limit=50, q=None, order_by=None, **filters):
         lista.append(mas_vendidos(
             item['pro_id'],
             item['pro_nombre'],
-            item.get('total_unidades_vendidas', item.get('total_vendido', 0))
+            item.get('total_unidades_vendidas', 0),
+            item.get('total_ingresos', 0)
         ).todic())
 
     result['data'] = lista
