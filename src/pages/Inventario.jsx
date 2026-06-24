@@ -340,16 +340,7 @@ const Inventario = () => {
       setFormError('ID, Nombre y Categoría son obligatorios');
       return;
     }
-    // Validar categoría duplicada (solo en creación, no en edición)
-    if (!isEditing) {
-      const catDuplicada = productos.some(p =>
-        p.categoria && p.categoria.toLowerCase() === formData.categoria.toLowerCase()
-      );
-      if (catDuplicada) {
-        setFormError(`La categoría "${formData.categoria}" ya existe. Selecciónala del listado o usa otro nombre.`);
-        return;
-      }
-    }
+    // Las categorías no son únicas — varios productos pueden compartir la misma categoría
     const precio = parseFloat(formData.precio);
     const cantidad = parseInt(formData.cantidad_disponible, 10);
     const stockMin = parseInt(formData.stock_minimo, 10);
