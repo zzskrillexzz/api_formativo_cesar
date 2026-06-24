@@ -21,7 +21,7 @@ def cnregistrardetallescompras():
     if not data:
         return jsonify({"mensaje": "No se enviaron datos JSON"}), 400
 
-    requerido = ["dco_id", "dco_com_id_fk", "dco_pro_id_fk", "dco_lot_id_fk", "dco_cantidad", "dco_precio_compra", "dco_subtotal"]
+    requerido = ["dco_id", "dco_com_id_fk", "dco_pro_id_fk", "dco_cantidad", "dco_precio_compra", "dco_subtotal"]
     faltantes = [x for x in requerido if x not in data]
     if faltantes:
         return jsonify({"mensaje": f"Faltan los siguientes campos: {faltantes}"}), 400
@@ -61,16 +61,18 @@ def cnregistrardetallescompras():
         c.close()
         return jsonify({"mensaje": f"No existe un producto con el ID {data['dco_pro_id_fk']}"}), 404
 
-    # Validar que el lote exista
-    c.execute("SELECT lot_id FROM t_lote WHERE lot_id = %s", (data["dco_lot_id_fk"],))
-    if not c.fetchone():
-        c.close()
-        return jsonify({"mensaje": f"No existe un lote con el ID {data['dco_lot_id_fk']}"}), 404
+    # Validar que el lote exista (si se proporcionó)
+    dco_lot_id = data.get("dco_lot_id_fk")
+    if dco_lot_id:
+        c.execute("SELECT lot_id FROM t_lote WHERE lot_id = %s", (dco_lot_id,))
+        if not c.fetchone():
+            c.close()
+            return jsonify({"mensaje": f"No existe un lote con el ID {dco_lot_id}"}), 404
     c.close()
 
     resultado = registrarDetallesCompras(
         data["dco_id"], data["dco_com_id_fk"], data["dco_pro_id_fk"],
-        data["dco_lot_id_fk"], data["dco_cantidad"], data["dco_precio_compra"], data["dco_subtotal"]
+        dco_lot_id, data["dco_cantidad"], data["dco_precio_compra"], data["dco_subtotal"]
     )
     return jsonify({"mensaje": "Detalle de compra registrado correctamente (inventario actualizado)", "datos": resultado}), 201
 
