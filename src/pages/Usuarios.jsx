@@ -38,6 +38,7 @@ const Usuarios = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formData, setFormData] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
@@ -45,18 +46,12 @@ const Usuarios = () => {
   const [adminPasswordAttempts, setAdminPasswordAttempts] = useState(0);
   const [adminPasswordError, setAdminPasswordError] = useState('');
 
-  // ── Modal crear/editar rol ──
-  const [showRolModal, setShowRolModal] = useState(false);
-  const [editingRolId, setEditingRolId] = useState(null);
-  const [rolFormData, setRolFormData] = useState({});
-
   // ── Confirmación de eliminación ──
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [confirmDeleteRol, setConfirmDeleteRol] = useState(null);
   const { toast } = useToast();
 
   const formSnapshotRef = useRef({});
-  const focusTrapRef = useFocusTrap(showModal || showRolModal);
+  const focusTrapRef = useFocusTrap(showModal);
 
   // Detectar si hubo cambios reales en edición (ignorando contraseña que siempre inicia vacía)
   // NOTA: debe ir DESPUÉS de editingUserId, formData y formSnapshotRef para evitar TDZ
@@ -136,6 +131,7 @@ const Usuarios = () => {
     }
     setShowModal(true);
     setShowPassword(false);
+    setChangingPassword(false);
     setConfirmPassword('');
     setShowConfirmPassword(false);
   };
@@ -157,6 +153,10 @@ const Usuarios = () => {
   const handleUserSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
+    if (editingUserId && !hasChanges) {
+      toast({ type: 'info', title: 'Sin cambios', description: 'No se han producido cambios en el usuario' });
+      return;
+    }
     const { usu_id, usu_nombre, usu_correo, usu_rol, usu_estado } = formData;
     if (!usu_nombre || !usu_correo || !usu_rol) {
       setFormError('Nombre, correo y rol son obligatorios');
@@ -446,38 +446,54 @@ const Usuarios = () => {
                   </div>
                 )}
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                  Contraseña {editingUserId ? '(dejar vacío para no cambiar)' : '*'}
-                </label>
-                <div className="relative">
-                  <input type={showPassword ? 'text' : 'password'} name="usu_contrasena" value={formData.usu_contrasena || ''} onChange={handleUserChange}
-                    className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium pr-10" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              {editingUserId && !changingPassword ? (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Contraseña</label>
+                  <button type="button" onClick={() => setChangingPassword(true)}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 transition-colors">
+                    <Edit3 size={15} /> Cambiar contraseña
                   </button>
                 </div>
-              </div>
-              {(!editingUserId || (formData.usu_contrasena && formData.usu_contrasena.trim() !== '')) && (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Confirmar contraseña *</label>
-                  <div className="relative">
-                    <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium pr-10"
-                      placeholder="Repite la contraseña" />
-                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      {editingUserId ? 'Nueva contraseña' : 'Contraseña'} *
+                    </label>
+                    <div className="relative">
+                      <input type={showPassword ? 'text' : 'password'} name="usu_contrasena" value={formData.usu_contrasena || ''} onChange={handleUserChange}
+                        className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium pr-10" />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
-                  {confirmPassword && formData.usu_contrasena !== confirmPassword && (
-                    <p className="text-[10px] text-red-500 font-medium mt-1">⚠ Las contraseñas no coinciden</p>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Confirmar contraseña *</label>
+                    <div className="relative">
+                      <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full text-sm border border-slate-300 rounded-md px-3 py-2.5 bg-white outline-none font-medium pr-10"
+                        placeholder="Repite la contraseña" />
+                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {confirmPassword && formData.usu_contrasena !== confirmPassword && (
+                      <p className="text-[10px] text-red-500 font-medium mt-1">⚠ Las contraseñas no coinciden</p>
+                    )}
+                    {confirmPassword && formData.usu_contrasena === confirmPassword && formData.usu_contrasena?.length >= 6 && (
+                      <p className="text-[10px] text-emerald-500 font-medium mt-1">✓ Las contraseñas coinciden</p>
+                    )}
+                  </div>
+                  {editingUserId && (
+                    <button type="button" onClick={() => { setChangingPassword(false); setShowPassword(false); setConfirmPassword(''); setShowConfirmPassword(false); handleUserChange({ target: { name: 'usu_contrasena', value: '' } }); }}
+                      className="text-[10px] font-medium text-slate-400 hover:text-red-500 transition-colors">
+                      ✕ Cancelar cambio de contraseña
+                    </button>
                   )}
-                  {confirmPassword && formData.usu_contrasena === confirmPassword && formData.usu_contrasena?.length >= 6 && (
-                    <p className="text-[10px] text-emerald-500 font-medium mt-1">✓ Las contraseñas coinciden</p>
-                  )}
-                </div>
+                </>
               )}
               {editingUserId && (
                 <div className="space-y-1 border-t border-slate-100 pt-3 mt-1">

@@ -414,6 +414,10 @@ const Compras = () => {
   const handleEditCompra = async (e) => {
     e.preventDefault();
     setFormError('');
+    if (JSON.stringify(editData) === JSON.stringify(formSnapshotRef.current)) {
+      toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en la compra' });
+      return;
+    }
     const tieneProductosBD = editData.comp_tiene_detalles;
     if (productosSeleccionados.length === 0 && !tieneProductosBD) {
       setFormError('Debes agregar al menos un producto a la compra');
