@@ -238,69 +238,6 @@ const Usuarios = () => {
     } finally { setFormSubmitting(false); }
   };
 
-  // ═══════════════════ ROLES ═══════════════════
-
-  const openRolModal = (rol = null) => {
-    setFormError('');
-    if (rol) {
-      setEditingRolId(rol.rol_id);
-      setRolFormData({
-        rol_id: rol.rol_id,
-        rol_nombre: rol.rol_nombre || '',
-        rol_descripcion: rol.rol_descripcion || ''
-      });
-    } else {
-      setEditingRolId(null);
-      setRolFormData({ rol_id: '', rol_nombre: '', rol_descripcion: '' });
-    }
-    setShowRolModal(true);
-  };
-
-  const handleRolChange = (e) => {
-    const { name, value } = e.target;
-    setRolFormData({ ...rolFormData, [name]: value });
-  };
-
-  const handleRolSubmit = async (e) => {
-    e.preventDefault();
-    setFormError('');
-    if (!rolFormData.rol_id || !rolFormData.rol_nombre) {
-      setFormError('ID y nombre del rol son obligatorios');
-      return;
-    }
-    setFormSubmitting(true);
-    try {
-      const payload = {
-        id: rolFormData.rol_id,
-        nombre: rolFormData.rol_nombre,
-        descripcion: rolFormData.rol_descripcion || ''
-      };
-      if (editingRolId) {
-        await api.put('/roles/', payload);
-      } else {
-        await api.post('/roles/', payload);
-      }
-      setShowRolModal(false);
-      toast({ type: 'success', title: editingRolId ? 'Actualizado' : 'Creado', description: `Rol ${editingRolId ? 'actualizado' : 'creado'} correctamente` });
-      fetchData();
-    } catch (err) {
-      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar rol' });
-    } finally { setFormSubmitting(false); }
-  };
-
-  const handleDeleteRol = async () => {
-    if (!confirmDeleteRol) return;
-    setFormSubmitting(true);
-    try {
-      await api.delete(`/roles/eliminar/${confirmDeleteRol}`);
-      setConfirmDeleteRol(null);
-      toast({ type: 'success', title: 'Eliminado', description: 'Rol eliminado correctamente' });
-      fetchData();
-    } catch (err) {
-      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al eliminar rol' });
-    } finally { setFormSubmitting(false); }
-  };
-
   // ═══════════════════ FILTROS Y PAGINACIÓN ═══════════════════
 
   const filteredUsuarios = usuarios.filter(u => {
@@ -384,10 +321,10 @@ const Usuarios = () => {
           <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
             <RefreshCw size={18} className="text-slate-500" />
           </button>
-          {isAdmin && (
-            <button onClick={() => tab === 'usuarios' ? openUserModal() : openRolModal()}
+          {isAdmin && tab === 'usuarios' && (
+            <button onClick={() => openUserModal()}
               className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-md">
-              <Plus size={16} /> {tab === 'usuarios' ? 'Nuevo Usuario' : 'Nuevo Rol'}
+              <Plus size={16} /> Nuevo Usuario
             </button>
           )}
         </div>
@@ -487,12 +424,11 @@ const Usuarios = () => {
                   <th className="px-5 py-3">ID</th>
                   <th className="px-5 py-3">Nombre</th>
                   <th className="px-5 py-3">Descripción</th>
-                  <th className="px-5 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 text-sm font-medium text-slate-600">
                 {filteredRoles.length === 0 ? (
-                  <tr><td colSpan="4" className="px-5 py-12 text-center text-slate-400">
+                  <tr><td colSpan="3" className="px-5 py-12 text-center text-slate-400">
                     {searchTerm ? 'Sin resultados' : 'No hay roles registrados'}
                   </td></tr>
                 ) : (
@@ -503,22 +439,6 @@ const Usuarios = () => {
                         <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md text-[10px] font-bold uppercase">{r.rol_nombre}</span>
                       </td>
                       <td className="px-5 py-3 text-slate-400 text-xs">{r.rol_descripcion || '-'}</td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {isAdmin && (
-                            <>
-                              <button onClick={() => openRolModal(r)} title="Editar rol"
-                                className="p-1.5 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
-                                <Edit3 size={15} />
-                              </button>
-                              <button onClick={() => setConfirmDeleteRol(r.rol_id)} title="Eliminar rol"
-                                className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-                                <Trash2 size={15} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
                     </tr>
                   ))
                 )}
