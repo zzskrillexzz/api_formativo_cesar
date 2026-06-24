@@ -270,10 +270,15 @@ const Usuarios = () => {
     }
     setFormSubmitting(true);
     try {
+      const payload = {
+        id: rolFormData.rol_id,
+        nombre: rolFormData.rol_nombre,
+        descripcion: rolFormData.rol_descripcion || ''
+      };
       if (editingRolId) {
-        await api.put('/roles/', rolFormData);
+        await api.put('/roles/', payload);
       } else {
-        await api.post('/roles/', rolFormData);
+        await api.post('/roles/', payload);
       }
       setShowRolModal(false);
       toast({ type: 'success', title: editingRolId ? 'Actualizado' : 'Creado', description: `Rol ${editingRolId ? 'actualizado' : 'creado'} correctamente` });
