@@ -117,6 +117,8 @@ const Compras = () => {
       cleanValue = cleanValue.replace(/[^0-9+\- ]/g, '');
     } else if (name === 'nombre') {
       cleanValue = cleanValue.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]/g, '');
+    } else if (name === 'nit') {
+      cleanValue = cleanValue.replace(/[^0-9]/g, '');
     }
     const max = FIELD_LIMITS[name];
     if (max && cleanValue.length > max) return;
@@ -320,6 +322,8 @@ const Compras = () => {
       cleaned = cleaned.replace(/[^0-9+\- ]/g, '');
     } else if (name === 'nombre') {
       cleaned = cleaned.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]/g, '');
+    } else if (name === 'nit') {
+      cleaned = cleaned.replace(/[^0-9]/g, '');
     }
     const max = FIELD_LIMITS[name];
     if (max && cleaned.length > max) return;
