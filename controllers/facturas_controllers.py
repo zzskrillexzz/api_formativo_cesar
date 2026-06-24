@@ -24,6 +24,9 @@ def cnRegistrarFacturas():
     if faltantes:
         return jsonify({"mensaje": f"Faltan los siguientes campos: {faltantes}"}), 400
 
+    # Forzar estado Vigente en creación — una factura no se crea anulada
+    data['estado'] = 'Vigente'
+
     # Validar longitud de campos de texto
     errores = validar_campos_texto(data, "forma_pago", "cuenta_bancaria")
     if errores:
