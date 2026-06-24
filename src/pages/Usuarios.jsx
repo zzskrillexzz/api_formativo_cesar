@@ -222,6 +222,21 @@ const Usuarios = () => {
 
   const handleDeleteUser = async () => {
     if (!confirmDelete) return;
+
+    // No permitir eliminarse a sí mismo
+    if (confirmDelete === user?.id) {
+      setConfirmDelete(null);
+      toast({ type: 'error', title: 'Operación no permitida', description: 'No puedes eliminar tu propio usuario mientras estás en sesión' });
+      return;
+    }
+
+    // No permitir eliminar al administrador líder (USU001)
+    if (confirmDelete === 'USU001') {
+      setConfirmDelete(null);
+      toast({ type: 'error', title: 'Operación no permitida', description: 'El administrador principal Diana Lopez no puede ser eliminado' });
+      return;
+    }
+
     setFormSubmitting(true);
     try {
       await usuariosService.eliminar(confirmDelete);
@@ -369,10 +384,12 @@ const Usuarios = () => {
                                 className="p-1.5 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
                                 <Edit3 size={15} />
                               </button>
-                              <button onClick={() => setConfirmDelete(u.usu_id)} title="Eliminar usuario"
-                                className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-                                <Trash2 size={15} />
-                              </button>
+                              {(u.usu_id !== user?.id && u.usu_id !== 'USU001') && (
+                                <button onClick={() => setConfirmDelete(u.usu_id)} title="Eliminar usuario"
+                                  className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                  <Trash2 size={15} />
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
