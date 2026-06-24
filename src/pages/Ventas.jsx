@@ -41,6 +41,7 @@ const Ventas = () => {
 
   const [editingPedidoId, setEditingPedidoId] = useState(null);
   const [editingClienteId, setEditingClienteId] = useState(null);
+  const [editingFacturaId, setEditingFacturaId] = useState(null);
   const [clienteTarjeta, setClienteTarjeta] = useState(null);
   const [showClienteTarjeta, setShowClienteTarjeta] = useState(false);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
@@ -215,6 +216,7 @@ const Ventas = () => {
   const eliminarCliente = (id) => confirmarEliminar('cliente', id, 'cliente');
 
   const openModal = async () => {
+    setEditingFacturaId(null);
     setEditingClienteId(null);
     setFormError('');
     setErrors({});
@@ -614,7 +616,7 @@ const Ventas = () => {
     }
     setFormSubmitting(true);
     try {
-      await facturasService.registrar({
+      const payload = {
         id: formData.id,
         fecha_emision: formData.fecha_emision,
         email_enviado: emailEnviado,
@@ -624,12 +626,18 @@ const Ventas = () => {
         usuario_id: user?.id || '',
         estado: formData.estado || 'Vigente',
         cli_id_fk: formData.cli_id_fk || null
-      });
+      };
+      if (editingFacturaId) {
+        await facturasService.editar(editingFacturaId, payload);
+      } else {
+        await facturasService.registrar(payload);
+      }
       setShowModal(false);
-      toast({ type: 'success', title: 'Creada', description: 'Factura creada correctamente' });
+      setEditingFacturaId(null);
+      toast({ type: 'success', title: editingFacturaId ? 'Actualizada' : 'Creada', description: `Factura ${editingFacturaId ? 'actualizada' : 'creada'} correctamente` });
       refreshData();
     } catch (err) {
-      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al crear factura' });
+      toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar factura' });
     } finally {
       setFormSubmitting(false);
     }
@@ -675,6 +683,28 @@ const Ventas = () => {
       setShowModal(true);
     } catch (err) {
       toast({ type: 'error', title: 'Error', description: 'Error al cargar pedido: ' + (err.response?.data?.mensaje || err.message) });
+    }
+  };
+
+  const abrirEditarFactura = async (factura) => {
+    try {
+      const editData = {
+        id: factura.id,
+        fecha_emision: factura.fecha_emision,
+        email_enviado: factura.email_enviado,
+        forma_pago: factura.forma_pago,
+        cuenta_bancaria: factura.cuenta_bancaria || '',
+        total: factura.total,
+        estado: factura.estado || 'Vigente',
+        cli_id_fk: factura.cli_id_fk || null
+      };
+      setFormData(editData);
+      formSnapshotRef.current = JSON.parse(JSON.stringify(editData));
+      setEditingFacturaId(factura.id);
+      setFormError('');
+      setShowModal(true);
+    } catch (err) {
+      toast({ type: 'error', title: 'Error', description: 'Error al cargar factura: ' + (err.response?.data?.mensaje || err.message) });
     }
   };
 
@@ -1219,6 +1249,9 @@ const Ventas = () => {
                       </td>
                       <td className="px-6 py-4">{f.email_enviado === 1 ? '✅ Enviado' : '❌ Pendiente'}</td>
                       <td className="px-6 py-4 text-right">
+                        <button onClick={() => abrirEditarFactura(f)} className="p-2 text-slate-400 hover:text-amber-600 transition-colors" title="Editar factura">
+                          <Edit3 size={16} />
+                        </button>
                         <button onClick={() => abrirDetalleFactura(f)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Ver factura">
                           <Eye size={16} />
                         </button>
@@ -1363,9 +1396,9 @@ const Ventas = () => {
           <div ref={focusTrapRef} className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">
-                {(editingPedidoId || editingClienteId) ? 'Editar' : 'Nuevo'} {tab === 'pedidos' ? 'Pedido' : tab === 'facturas' ? 'Factura' : 'Cliente'}
+                {(editingPedidoId || editingClienteId || editingFacturaId) ? 'Editar' : 'Nuevo'} {tab === 'pedidos' ? 'Pedido' : tab === 'facturas' ? 'Factura' : 'Cliente'}
               </h2>
-              <button onClick={() => { setShowModal(false); setEditingPedidoId(null); setEditingClienteId(null); }} className="p-2 hover:bg-slate-100 rounded-md transition-colors">
+              <button onClick={() => { setShowModal(false); setEditingPedidoId(null); setEditingClienteId(null); setEditingFacturaId(null); }} className="p-2 hover:bg-slate-100 rounded-md transition-colors">
                 <X size={20} className="text-slate-400" />
               </button>
             </div>
@@ -1731,7 +1764,7 @@ const Ventas = () => {
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
                       <select name="estado" value={formData.estado || 'Vigente'} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
                         <option value="Vigente">Vigente</option>
-                        <option value="Anulada">Anulada</option>
+                        {editingFacturaId && <option value="Anulada">Anulada</option>}
                       </select>
                     </div>
                   </div>
