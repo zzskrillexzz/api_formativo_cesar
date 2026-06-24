@@ -1320,7 +1320,7 @@ const Ventas = () => {
               { label: 'CE', count: ce, icon: '🛂', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-600', filtro: 'CE' },
             ];
             return (
-              <div className="grid grid-cols-5 gap-2 px-6 pt-4 pb-2">
+              <div className="grid grid-cols-4 gap-2 px-6 pt-4 pb-2">
                 {cards.map((c, idx) => (
                   <button
                     key={idx}
