@@ -33,12 +33,14 @@ def cnregistrarproveedores():
     data["nombre"] = re.sub(r'\s+', ' ', (data.get("nombre") or "").strip().title())
     data["contacto"] = re.sub(r'\s+', ' ', (data.get("contacto") or "").strip().title())
 
-    # Validar NIT — solo dígitos y no puede ser todo ceros
+    # Validar NIT — solo dígitos, sin ceros a la izquierda y longitud mínima
     nit = data.get("nit", "")
     if not re.match(r'^\d+$', nit):
         return jsonify({"mensaje": "El NIT debe contener solo números"}), 400
-    if re.match(r'^0+$', nit):
-        return jsonify({"mensaje": "El NIT no puede ser todo ceros"}), 400
+    if re.match(r'^0', nit):
+        return jsonify({"mensaje": "El NIT no puede comenzar con cero"}), 400
+    if len(nit) < 6:
+        return jsonify({"mensaje": "El NIT debe tener al menos 6 dígitos"}), 400
 
     # Auto-generar ID siempre (el backend es la autoridad, ignora lo que envíe el frontend)
     from utils.id_generator import generarIdSiguiente
@@ -103,12 +105,14 @@ def cneditarproveedores():
     data["nombre"] = re.sub(r'\s+', ' ', (data.get("nombre") or "").strip().title())
     data["contacto"] = re.sub(r'\s+', ' ', (data.get("contacto") or "").strip().title())
 
-    # Validar NIT — solo dígitos y no puede ser todo ceros
+    # Validar NIT — solo dígitos, sin ceros a la izquierda y longitud mínima
     nit = data.get("nit", "")
     if not re.match(r'^\d+$', nit):
         return jsonify({"mensaje": "El NIT debe contener solo números"}), 400
-    if re.match(r'^0+$', nit):
-        return jsonify({"mensaje": "El NIT no puede ser todo ceros"}), 400
+    if re.match(r'^0', nit):
+        return jsonify({"mensaje": "El NIT no puede comenzar con cero"}), 400
+    if len(nit) < 6:
+        return jsonify({"mensaje": "El NIT debe tener al menos 6 dígitos"}), 400
 
     requerido = ["nit", "nombre", "tipo", "contacto", "direccion", "email"]
     faltantes = [x for x in requerido if x not in data or str(data[x]).strip() == ""]
