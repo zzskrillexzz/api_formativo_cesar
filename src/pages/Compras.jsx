@@ -303,6 +303,7 @@ const Compras = () => {
 
   const openEditProveedorModal = async (prov) => {
     setFormError('');
+    setErrors({});
     setEditProveedorData({
       id: prov.prov_id,
       nit: prov.prov_nit,
@@ -330,6 +331,7 @@ const Compras = () => {
     const max = FIELD_LIMITS[name];
     if (max && cleaned.length > max) return;
     setEditProveedorData({ ...editProveedorData, [name]: cleaned });
+    validateField(name, cleaned);
   };
 
   const handleEditProveedor = async (e) => {
