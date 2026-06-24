@@ -779,7 +779,7 @@ const Inventario = () => {
                           <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full ${getStockBarColor(p.cantidad_disponible, p.stock_minimo)}`}
-                              style={{ width: `${Math.min((p.cantidad_disponible || 0) / Math.max(p.stock_minimo || 10, 10) * 100, 100)}%` }}
+                              style={{ width: `${Math.min((p.cantidad_disponible || 0) / (Math.max(p.stock_minimo || 10, 10) * 2) * 100, 100)}%` }}
                             />
                           </div>
                           <span className={`font-bold text-xs ${(p.cantidad_disponible || 0) <= (p.stock_minimo || 0) ? 'text-red-600' : 'text-slate-800'}`}>
