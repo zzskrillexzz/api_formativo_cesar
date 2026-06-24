@@ -37,6 +37,8 @@ def cnregistrarcompras():
             fecha_obj = date(año, mes, dia)
             if año < 2020:
                 return jsonify({"mensaje": "La fecha de la compra no es válida (año muy antiguo)"}), 400
+            if fecha_obj < date.today():
+                return jsonify({"mensaje": "La fecha de la compra no puede ser anterior a hoy"}), 400
     except (ValueError, TypeError):
         return jsonify({"mensaje": "El formato de la fecha no es válido (use YYYY-MM-DD)"}), 400
 
@@ -106,6 +108,8 @@ def cneditarcompras(COM_ID):
                 fecha_obj = date(año, mes, dia)
                 if año < 2020:
                     return jsonify({"mensaje": "La fecha de la compra no es válida (año muy antiguo)"}), 400
+                if fecha_obj < date.today():
+                    return jsonify({"mensaje": "La fecha de la compra no puede ser anterior a hoy"}), 400
         except (ValueError, TypeError):
             return jsonify({"mensaje": "El formato de la fecha no es válido (use YYYY-MM-DD)"}), 400
 
