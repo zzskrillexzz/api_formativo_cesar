@@ -149,7 +149,11 @@ const Usuarios = () => {
 
   const handleUserChange = (e) => {
     const { name, value } = e.target;
-    const cleanValue = stripEmojis(value);
+    let cleanValue = stripEmojis(value);
+    // El nombre solo debe contener letras, espacios, tildes y ñ
+    if (name === 'usu_nombre') {
+      cleanValue = cleanValue.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+    }
     const max = FIELD_LIMITS[name];
     if (max && cleanValue.length > max) return;
     setFormData({ ...formData, [name]: cleanValue });
