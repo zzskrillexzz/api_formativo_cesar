@@ -177,7 +177,7 @@ const Compras = () => {
   const productosDelProveedor = useMemo(() => {
     const provId = formData.com_prov_id_fk || editData.comp_prov_id_fk;
     if (!provId) return [];
-    return (productosDisponibles || []).filter(p => String(p.pro_prov_id_fk) === String(provId));
+    return (productosDisponibles || []).filter(p => String(p.proveedor_id) === String(provId));
   }, [productosDisponibles, formData.com_prov_id_fk, editData.comp_prov_id_fk]);
 
   const handleProductSelect = (selectedId) => {
