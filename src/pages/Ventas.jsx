@@ -5,6 +5,7 @@ import { pedidosService } from '../api/services/pedidosService';
 import { facturasService } from '../api/services/facturasService';
 import { clientesService } from '../api/services/clientesService';
 import { productosService } from '../api/services/productosService';
+import { lotesService } from '../api/services/lotesService';
 import { detallesPedidosService } from '../api/services/detallesPedidosService';
 import { devolucionesService } from '../api/services/devolucionesService';
 import { anulacionesService } from '../api/services/anulacionesService';
@@ -32,6 +33,8 @@ const Ventas = () => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
   const [productosDisponibles, setProductosDisponibles] = useState([]);
+  const [lotesVentas, setLotesVentas] = useState([]);
+  const getStockVentas = (prodId) => lotesVentas.filter(l => l.lot_pro_id_fk === prodId && l.lot_estado === 'Activo').reduce((s, l) => s + (l.lot_cantidad_actual || 0), 0);
   const focusTrapRef = useFocusTrap(showModal);
   const [productosSeleccionados, setProductosSeleccionados] = useState([]);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
@@ -235,10 +238,15 @@ const Ventas = () => {
       setFormData(defaultData);
       formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
       try {
-        const prods = await productosService.listar();
+        const [prods, lots] = await Promise.all([
+          productosService.listar(),
+          lotesService.listar()
+        ]);
         setProductosDisponibles(prods.filter(p => p.estado === 'Activo'));
+        setLotesVentas(lots);
       } catch {
         setProductosDisponibles([]);
+        setLotesVentas([]);
       }
     } else if (tab === 'facturas') {
       const defaultData = { id: nextFacturaId, email_enviado: '0' };
@@ -327,7 +335,7 @@ const Ventas = () => {
     if (yaExiste) { setErrorProducto('Ese producto ya esta agregado'); return; }
     const cantidad = parseInt(nuevoProducto.cantidad, 10) || 1;
     if (cantidad <= 0) { setErrorProducto('La cantidad debe ser mayor a 0'); return; }
-    const stock = parseInt(prod.cantidad_disponible, 10) || 0;
+    const stock = getStockVentas(prod.id);
     if (cantidad > stock) {
       setErrorProducto('Stock insuficiente: hay ' + stock + ' unidades de ' + prod.nombre);
       return;
@@ -663,8 +671,12 @@ const Ventas = () => {
       setComprobanteFileName('');
 
       // Cargar productos disponibles
-      const prods = await productosService.listar().catch(() => []);
+      const [prods, lots] = await Promise.all([
+        productosService.listar().catch(() => []),
+        lotesService.listar().catch(() => [])
+      ]);
       setProductosDisponibles(prods.filter(p => p.estado === 'Activo'));
+      setLotesVentas(lots);
 
       // Cargar detalles del pedido
       const detalles = await detallesPedidosService.listar().catch(() => []);
@@ -1590,7 +1602,7 @@ const Ventas = () => {
                           <option value="">Seleccionar producto...</option>
                           {productosDisponibles.map(prod => (
                             <option key={prod.id} value={prod.id}>
-                              {prod.id} — {prod.nombre} ({prod.cantidad_disponible || 0} uds.)
+                              {prod.id} — {prod.nombre} ({getStockVentas(prod.id)} uds.)
                             </option>
                           ))}
                         </select>

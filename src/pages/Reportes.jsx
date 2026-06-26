@@ -417,9 +417,8 @@ const Reportes = () => {
                       </thead>
                       <tbody className="divide-y divide-slate-50 font-bold text-slate-600">
                         {datosReporte.datos.map((d, i) => {
-                          const invStock = d.pro_cantidad_disponible || 0;
-                          const invMin = d.pro_stock_minimo || 0;
-                          const esCritico = reporteTipo === 'inventario' && invStock <= invMin;
+                          const invStock = d.stock_total || 0;
+                          const esCritico = reporteTipo === 'inventario' && invStock <= 0;
 
                           return (
                           <tr key={i} className={`${esCritico ? 'bg-red-50 hover:bg-red-100/80' : 'hover:bg-orange-100/70'}`}>
@@ -434,9 +433,9 @@ const Reportes = () => {
                                 <td className="px-6 py-3 text-right">
                                   <div className="flex items-center justify-end gap-2">
                                     <span className={`text-sm font-bold ${esCritico ? 'text-red-600' : 'text-emerald-600'}`}>{invStock}</span>
-                                    <div className="w-14 h-1.5 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
-                                      <div className={`h-full rounded-full transition-all ${esCritico ? 'bg-red-500' : 'bg-emerald-500'}`}
-                                        style={{ width: `${Math.min(100, (invStock / Math.max(invMin, 1)) * 100)}%` }} />
+                                      <div className="w-14 h-1.5 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
+                                        <div className={`h-full rounded-full transition-all ${esCritico ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                          style={{ width: `${Math.min(invStock, 100)}%` }} />
                                     </div>
                                   </div>
                                 </td>

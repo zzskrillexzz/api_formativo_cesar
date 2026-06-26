@@ -6,6 +6,7 @@ import { lotesService } from '../api/services/lotesService';
 import { monitoriasService } from '../api/services/monitoriasService';
 import { inventariosMovimientosService } from '../api/services/inventariosMovimientosService';
 import { proveedoresService } from '../api/services/proveedoresService';
+import { proveedoresProductosService } from '../api/services/proveedoresProductosService';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -40,6 +41,16 @@ const Inventario = () => {
   const [filtroCategoriaProducto, setFiltroCategoriaProducto] = useState('');
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [prodsBySupplier, setProdsBySupplier] = useState([]);
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
+  const [showNewProductForm, setShowNewProductForm] = useState(false);
+  const [productosProveedor, setProductosProveedor] = useState([]);
+
+  const getProductStock = (prodId) => {
+    return lotes
+      .filter(l => l.lot_pro_id_fk === prodId && l.lot_estado === 'Activo')
+      .reduce((sum, l) => sum + (l.lot_cantidad_actual || 0), 0);
+  };
   const [pagina, setPagina] = useState(1);
   const [totalMovimientos, setTotalMovimientos] = useState(0);
   const [paginaProductos, setPaginaProductos] = useState(1);
@@ -57,12 +68,26 @@ const Inventario = () => {
     setShowNewCategoryForm(false);
   };
 
+  const loadProductsBySupplier = async (provId) => {
+    if (!provId) { setProdsBySupplier([]); return; }
+    try {
+      const data = await proveedoresProductosService.buscarPorProveedorConDatos(provId);
+      setProdsBySupplier(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error cargando productos del proveedor:', err?.response?.data || err);
+      setProdsBySupplier([]);
+    }
+  };
+
   const openModal = () => {
     let defaultData = {};
     if (tab === 'productos') {
       const nums = productos.map(p => { const m = (p.id || '').match(/PRO(\d+)/); return m ? parseInt(m[1]) : 0; });
       const next = 'PRO' + String((nums.length > 0 ? Math.max(...nums) : 0) + 1).padStart(3, '0');
-      defaultData = { id: next };
+      defaultData = { id: next, estado: 'Activo' };
+      setSelectedSupplierId('');
+      setProdsBySupplier([]);
+      setShowNewProductForm(false);
     } else if (tab === 'lotes') {
       const nums = lotes
         .map(l => { const m = (l.lot_id || '').match(/LOT(\d+)/); return m ? parseInt(m[1]) : 0; })
@@ -95,17 +120,18 @@ const Inventario = () => {
     try {
       if (!prod) return;
       const editData = {
-        id: prod.id, nombre: prod.nombre, categoria: prod.categoria || '',
+        id: prod.id, nombre: prod.nombre || '', categoria: prod.categoria || '',
         descripcion: prod.descripcion || '', precio: prod.precio || '',
-        cantidad_disponible: prod.cantidad_disponible != null ? prod.cantidad_disponible : '',
-        stock_minimo: prod.stock_minimo != null ? prod.stock_minimo : '',
-        estado: prod.estado || 'Activo', proveedor_id: prod.proveedor_id || ''
+        estado: prod.estado || 'Activo'
       };
       setFormData(editData);
       formSnapshotRef.current = JSON.parse(JSON.stringify(editData));
       setFormError('');
       setErrors({});
       setEditingId(prod.id);
+      setSelectedSupplierId('');
+      setProdsBySupplier([]);
+      setShowNewProductForm(false);
       setShowModal(true);
     } catch (e) { console.error('Error al editar:', e); }
   };
@@ -237,7 +263,6 @@ const Inventario = () => {
       if (name === 'precio' && value && parseFloat(value) < 100) newErrors.precio = 'Mínimo $100 COP';
       else if (name === 'precio' && value && parseFloat(value) > 999999.99) newErrors.precio = 'Máximo $999,999.99';
       else if (name === 'precio' && value) delete newErrors.precio;
-      if (name === 'proveedor_id' && value) delete newErrors.proveedor_id;
     }
 
     if (tabActual === 'lotes') {
@@ -330,24 +355,9 @@ const Inventario = () => {
       setFormError('ID, Nombre y Categoría son obligatorios');
       return;
     }
-    // Las categorías no son únicas — varios productos pueden compartir la misma categoría
     const precio = parseFloat(formData.precio);
-    const cantidad = parseInt(formData.cantidad_disponible, 10);
-    const stockMin = parseInt(formData.stock_minimo, 10);
     if (isNaN(precio) || precio <= 0) {
       setFormError('El precio debe ser un número mayor a 0');
-      return;
-    }
-    if (isNaN(cantidad) || cantidad < 0) {
-      setFormError('La cantidad disponible debe ser un número entero válido');
-      return;
-    }
-    if (isNaN(stockMin) || stockMin < 0) {
-      setFormError('El stock mínimo debe ser un número entero válido');
-      return;
-    }
-    if (stockMin > cantidad) {
-      setFormError('El stock mínimo no puede ser mayor que el stock disponible');
       return;
     }
     setFormSubmitting(true);
@@ -358,19 +368,20 @@ const Inventario = () => {
         categoria: formData.categoria || '',
         descripcion: formData.descripcion || '',
         precio: precio,
-        cantidad_disponible: cantidad,
-        stock_minimo: stockMin,
-        fecha_caducidad: formData.fecha_caducidad || null,
-        estado: formData.estado || 'Activo',
-        proveedor_id: formData.proveedor_id || null
+        estado: formData.estado || 'Activo'
       };
       if (isEditing) {
         await productosService.editar(payload.id, payload);
         toast({ type: 'success', title: 'Actualizado', description: 'Producto actualizado correctamente' });
       } else {
-        await productosService.registrar(payload);
+        const provId = isEditing ? null : (selectedSupplierId || formData.proveedor_id || null);
+        await productosService.registrar({ ...payload, proveedor_id: provId });
+        if (provId) {
+          await loadProductsBySupplier(provId);
+        }
         toast({ type: 'success', title: 'Creado', description: 'Producto registrado correctamente' });
       }
+      setShowNewProductForm(false);
       setShowModal(false);
       fetchData();
     } catch (err) {
@@ -495,16 +506,17 @@ const Inventario = () => {
   const fetchData = async (movParams = {}) => {
     setLoading(true);
     try {
-      const [prods, lots, monsRes, provs] = await Promise.all([
+      const [prods, lots, monsRes, provs, provProds] = await Promise.all([
         productosService.listar().catch(() => []),
         lotesService.listar().catch(() => []),
         monitoriasService.listar(movParams).catch(() => ({ data: [], total: 0 })),
-        proveedoresService.listar().catch(() => [])
+        proveedoresService.listar().catch(() => []),
+        proveedoresProductosService.listar().catch(() => [])
       ]);
       setProductos(prods);
       setLotes(lots);
       setProveedores(provs);
-      // monsRes siempre viene como {data: [...], total, page, limit, pages}
+      setProductosProveedor(provProds);
       setMonitorias(monsRes.data || []);
       setTotalMovimientos(monsRes.total ?? 0);
     } catch (err) {
@@ -542,8 +554,7 @@ const Inventario = () => {
   ];
 
   const filteredProductos = productos.filter(p => {
-    const busca = [p.id, p.nombre, p.categoria, p.descripcion, p.precio, p.estado,
-      p.cantidad_disponible, p.stock_minimo, p.proveedor_id
+    const busca = [p.id, p.nombre, p.categoria, p.descripcion, p.estado
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     const porEstado = !filtroEstadoProducto || p.estado === filtroEstadoProducto;
     const porCategoria = !filtroCategoriaProducto || p.categoria === filtroCategoriaProducto;
@@ -726,7 +737,7 @@ const Inventario = () => {
                   <th className="px-6 py-4">Categoría</th>
                   <th className="px-6 py-4 text-right">Precio</th>
                   <th className="px-6 py-4 text-right">Stock</th>
-                  <th className="px-6 py-4">Lote</th>
+                  <th className="px-6 py-4">Proveedores</th>
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4 text-right">Acción</th>
                 </tr>
@@ -756,29 +767,31 @@ const Inventario = () => {
                       <td className="px-6 py-4 text-slate-400">{p.categoria || '-'}</td>
                       <td className="px-6 py-4 text-right">${parseFloat(p.precio || 0).toLocaleString()}</td>
                       <td className="px-6 py-4 text-right">
-                        <div className="flex items-center gap-2 justify-end">
-                          <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${getStockBarColor(p.cantidad_disponible, p.stock_minimo)}`}
-                              style={{ width: `${Math.min((p.cantidad_disponible || 0) / (Math.max(p.stock_minimo || 10, 10) * 2) * 100, 100)}%` }}
-                            />
-                          </div>
-                          <span className={`font-bold text-xs ${(p.cantidad_disponible || 0) <= (p.stock_minimo || 0) ? 'text-red-600' : 'text-slate-800'}`}>
-                            {p.cantidad_disponible || 0}
-                          </span>
-                        </div>
+                        {(() => {
+                          const stock = getProductStock(p.id);
+                          return (
+                            <div className="flex items-center gap-2 justify-end">
+                              <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full ${stock > 0 ? 'bg-emerald-400' : 'bg-red-400'}`}
+                                  style={{ width: `${Math.min(stock / 200 * 100, 100)}%` }} />
+                              </div>
+                              <span className={`font-bold text-xs ${stock <= 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                                {stock}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-xs text-slate-400">
                         {(() => {
-                          const lots = lotes.filter(l => l.lot_pro_id_fk === p.id);
-                          if (lots.length === 0) return <span className="text-slate-300">—</span>;
-                          const mostrados = lots.slice(0, 2).map(l => l.lot_id).join(', ');
-                          const restantes = lots.length - 2;
-                          return (
-                            <span title={lots.map(l => `${l.lot_id} (${l.lot_cantidad_actual || 0} uds)`).join(' | ')}>
-                              {mostrados}{restantes > 0 ? ` +${restantes} más` : ''}
-                            </span>
-                          );
+                          if (!productosProveedor || productosProveedor.length === 0) return <span className="text-slate-300">—</span>;
+                          const rels = productosProveedor.filter(pp => pp.ppp_pro_id_fk === p.id);
+                          if (rels.length === 0) return <span className="text-slate-300">—</span>;
+                          const provNames = rels.map(r => {
+                            const prov = proveedores.find(pr => pr.prov_id === r.ppp_prov_id_fk);
+                            return prov ? prov.prov_nombre : r.ppp_prov_id_fk;
+                          });
+                          return provNames.join(', ');
                         })()}
                       </td>
                       <td className="px-6 py-4">
@@ -1212,105 +1225,162 @@ const Inventario = () => {
               {/* ─── PRODUCTO ─── */}
               {tab === 'productos' && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
+                  {!isEditing && (
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="id" value={formData.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" autoFocus />
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor <span className="required-star">*</span></label>
+                      <select
+                        value={selectedSupplierId}
+                        onChange={async (e) => {
+                          setSelectedSupplierId(e.target.value);
+                          setShowNewProductForm(false);
+                          await loadProductsBySupplier(e.target.value);
+                        }}
+                        className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
+                      >
+                        <option value="">Seleccionar proveedor...</option>
+                        {proveedores.map(p => (
+                          <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
+                        ))}
+                      </select>
                     </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
-                      <input name="nombre" value={formData.nombre || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nombre ? 'border-red-400' : 'border-slate-300'}`} />
-                      {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
-                    </div>
-                  </div>
-                  <div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Categoría</label>
-                      <div className="flex gap-2 mt-1">
-                        <select name="categoria" value={formData.categoria || ''} onChange={handleChange} className={`flex-1 p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium ${errors.categoria ? 'border-red-400' : 'border-slate-300'}`}>
-                          <option value="">Seleccionar categoría...</option>
-                          {errors.categoria && <p className="text-red-500 text-xs mt-1">{errors.categoria}</p>}
-                          {[...new Set([...productos.map(p => p.categoria), formData.categoria].filter(Boolean))].sort().map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
+                  )}
+
+                  {!isEditing && selectedSupplierId && (
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-md">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Productos de este proveedor</label>
+                      {prodsBySupplier.length > 0 ? (
+                        <ul className="mt-2 space-y-1">
+                          {prodsBySupplier.map(prod => (
+                            <li key={prod.id} className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                              {prod.id} — {prod.nombre}
+                            </li>
                           ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => setShowNewCategoryForm(!showNewCategoryForm)}
-                          className="px-2.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-sm font-bold flex items-center gap-1 shrink-0"
-                          title="Agregar nueva categoría"
-                        >
-                          <Plus size={16} />
-                        </button>
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-slate-500 mt-2 italic">No hay productos registrados para este proveedor</p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowNewProductForm(!showNewProductForm)}
+                        className="mt-3 flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-2 rounded-md hover:bg-emerald-700 transition-all text-xs font-bold uppercase tracking-wider"
+                      >
+                        <Plus size={14} /> {showNewProductForm ? 'Cancelar' : 'Agregar nuevo producto'}
+                      </button>
+                    </div>
+                  )}
+
+                  {(showNewProductForm || isEditing) && (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
+                          <input name="id" value={formData.id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre <span className="required-star">*</span></label>
+                          <input name="nombre" value={formData.nombre || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.nombre ? 'border-red-400' : 'border-slate-300'}`} />
+                          {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
+                        </div>
                       </div>
-                      {showNewCategoryForm && (
-                        <div className="flex gap-2 mt-2 p-2 bg-slate-50 rounded-md border border-slate-200">
-                          <input
-                            type="text"
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            placeholder="Nombre de la categoría..."
-                            className="flex-1 p-2 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                            autoFocus
-                          />
+                      <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Categoría</label>
+                        <div className="flex gap-2 mt-1">
+                          <select name="categoria" value={formData.categoria || ''} onChange={handleChange} className={`flex-1 p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium ${errors.categoria ? 'border-red-400' : 'border-slate-300'}`}>
+                            <option value="">Seleccionar categoría...</option>
+                            {[
+                              ...new Set(
+                                [...productos.map(p => p.categoria), formData.categoria].filter(Boolean)
+                              ),
+                            ]
+                              .sort()
+                              .map(cat => (
+                                <option key={cat} value={cat}>
+                                  {cat}
+                                </option>
+                              ))}
+                          </select>
                           <button
                             type="button"
-                            onClick={handleAddCategory}
-                            className="px-3 py-2 text-xs font-bold text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-all"
+                            onClick={() => setShowNewCategoryForm(!showNewCategoryForm)}
+                            className="px-2.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-sm font-bold flex items-center gap-1 shrink-0"
+                            title="Agregar nueva categoría"
                           >
-                            Crear
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { setShowNewCategoryForm(false); setNewCategoryName(''); }}
-                            className="px-3 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-100 transition-all"
-                          >
-                            Cancelar
+                            <Plus size={16} />
                           </button>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Precio</label>
-                      <input name="precio" type="number" step="0.01" min="100" max="999999.99" value={formData.precio || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.precio ? 'border-red-400' : 'border-slate-300'}`} />
-                      {errors.precio && <p className="text-red-500 text-xs mt-1">{errors.precio}</p>}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Descripción</label>
-                    <input name="descripcion" value={formData.descripcion || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Stock</label>
-                      <input name="cantidad_disponible" type="number" value={formData.cantidad_disponible || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Stock Mín.</label>
-                      <input name="stock_minimo" type="number" min="0" max="999999" value={formData.stock_minimo || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
-                      <select name="estado" value={formData.estado || 'Activo'} onChange={handleChange} disabled={!editingId}
-                        className={`w-full p-3 border-2 rounded-md outline-none text-sm font-medium mt-1 ${editingId ? 'bg-white border-slate-300 focus:ring-2 focus:ring-blue-500' : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'}`}>
-                        <option value="Activo">Activo</option>
-                        <option value="Descontinuado">Descontinuado</option>
-                        <option value="Suspendido">Suspendido</option>
-                      </select>
-                      {!editingId && <p className="text-[10px] text-amber-600 font-medium mt-0.5">Solo editable al modificar</p>}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID</label>
-                    <select name="proveedor_id" value={formData.proveedor_id || ''} onChange={handleChange} className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1">
-                      <option value="">Seleccionar proveedor...</option>
-                      {proveedores.map(p => (
-                        <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
-                      ))}
-                    </select>
-                  </div>
+                        {showNewCategoryForm && (
+                          <div className="flex gap-2 mt-2 p-2 bg-slate-50 rounded-md border border-slate-200">
+                            <input
+                              type="text"
+                              value={newCategoryName}
+                              onChange={e => setNewCategoryName(e.target.value)}
+                              placeholder="Nombre de la categoría..."
+                              className="flex-1 p-2 bg-white border border-slate-300 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddCategory}
+                              className="px-3 py-2 text-xs font-bold text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-all"
+                            >
+                              Crear
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowNewCategoryForm(false);
+                                setNewCategoryName('');
+                              }}
+                              className="px-3 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-100 transition-all"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Precio</label>
+                        <input
+                          name="precio"
+                          type="number"
+                          step="0.01"
+                          min="100"
+                          max="999999.99"
+                          value={formData.precio || ''}
+                          onChange={handleChange}
+                          className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.precio ? 'border-red-400' : 'border-slate-300'}`}
+                        />
+                        {errors.precio && <p className="text-red-500 text-xs mt-1">{errors.precio}</p>}
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Descripción</label>
+                        <input
+                          name="descripcion"
+                          value={formData.descripcion || ''}
+                          onChange={handleChange}
+                          className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
+                        <select
+                          name="estado"
+                          value={formData.estado || 'Activo'}
+                          onChange={handleChange}
+                          disabled={!editingId}
+                          className={`w-full p-3 border-2 rounded-md outline-none text-sm font-medium mt-1 ${editingId ? 'bg-white border-slate-300 focus:ring-2 focus:ring-blue-500' : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'}`}
+                        >
+                          <option value="Activo">Activo</option>
+                          <option value="Descontinuado">Descontinuado</option>
+                          <option value="Suspendido">Suspendido</option>
+                        </select>
+                        {!editingId && (
+                          <p className="text-[10px] text-amber-600 font-medium mt-0.5">Siempre Activo al crear</p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
 
@@ -1457,7 +1527,7 @@ const Inventario = () => {
 
               <button
                 type="submit"
-                disabled={formSubmitting || Object.keys(errors).length > 0}
+                disabled={formSubmitting || Object.keys(errors).length > 0 || (tab === 'productos' && !isEditing && !showNewProductForm)}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-3.5 rounded-lg shadow-sm shadow-blue-100 transition-all active:scale-95 uppercase tracking-wider text-xs flex items-center justify-center gap-2"
               >
                 {formSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}

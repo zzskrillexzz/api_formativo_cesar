@@ -2,23 +2,30 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, X, AlertTriangle, Package, Clock } from 'lucide-react';
 import { alertasService } from '../api/services/alertasService';
 import { productosService } from '../api/services/productosService';
+import { lotesService } from '../api/services/lotesService';
 
 export const Notificaciones = () => {
   const [open, setOpen] = useState(false);
   const [alertas, setAlertas] = useState([]);
   const [stockBajo, setStockBajo] = useState([]);
+  const [lotes, setLotes] = useState([]);
   const [visto, setVisto] = useState(true);
   const panelRef = useRef(null);
   const btnRef = useRef(null);
 
   const fetchNotificaciones = async () => {
     try {
-      const [alts, prods] = await Promise.all([
+      const [alts, prods, lots] = await Promise.all([
         alertasService.listar().catch(() => []),
-        productosService.listar().catch(() => [])
+        productosService.listar().catch(() => []),
+        lotesService.listar().catch(() => [])
       ]);
+      setLotes(lots);
       const criticas = alts.filter(a => a.dias_restantes <= 30);
-      const bajo = prods.filter(p => (p.cantidad_disponible || 0) <= (p.stock_minimo || 0));
+      const bajo = prods.filter(p => {
+        const stock = lots.filter(l => l.lot_pro_id_fk === p.id && l.lot_estado === 'Activo').reduce((s, l) => s + (l.lot_cantidad_actual || 0), 0);
+        return stock <= 0;
+      });
       setAlertas(criticas);
       setStockBajo(bajo);
 
@@ -95,7 +102,7 @@ export const Notificaciones = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800">{p.nombre || p.id}</p>
                       <p className="text-xs text-red-500 mt-0.5">
-                        Stock bajo: {p.cantidad_disponible} de {p.stock_minimo} min
+                        Sin stock disponible
                       </p>
                     </div>
                   </div>

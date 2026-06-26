@@ -66,8 +66,9 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const stockTotal = productos.reduce((sum, p) => sum + (p.cantidad_disponible || 0), 0);
-  const stockBajo = productos.filter(p => (p.cantidad_disponible || 0) <= (p.stock_minimo || 0));
+  const getStock = (prodId) => lotes.filter(l => l.lot_pro_id_fk === prodId && l.lot_estado === 'Activo').reduce((s, l) => s + (l.lot_cantidad_actual || 0), 0);
+  const stockTotal = productos.reduce((sum, p) => sum + getStock(p.id), 0);
+  const stockBajo = productos.filter(p => getStock(p.id) <= 0);
   const ultimosMovimientos = monitorias.slice(0, 5);
 
   // ── Vencimientos computados en tiempo real desde lotes ──
@@ -129,18 +130,13 @@ const Dashboard = () => {
   );
 
   const totalProductos = productos.length;
-  const stockMedio = productos.filter(p => {
-    const disp = p.cantidad_disponible || 0;
-    const min = p.stock_minimo || 0;
-    return disp > min && disp <= min * 2;
-  }).length;
-  const stockOptimo = totalProductos - stockBajo.length - stockMedio;
+  const sinStock = productos.filter(p => getStock(p.id) <= 0);
+  const conStock = productos.filter(p => getStock(p.id) > 0);
 
   const stockPieData = useMemo(() => [
-    { name: 'Stock Bajo', value: Math.max(stockBajo.length, 0), color: 'url(#pieRed)' },
-    { name: 'Stock Medio', value: Math.max(stockMedio, 0), color: 'url(#pieAmber)' },
-    { name: 'Stock Óptimo', value: Math.max(stockOptimo, 0), color: 'url(#pieOrange)' },
-  ], [stockBajo, stockMedio, stockOptimo]);
+    { name: 'Sin Stock', value: Math.max(sinStock.length, 0), color: 'url(#pieRed)' },
+    { name: 'Con Stock', value: Math.max(conStock.length, 0), color: 'url(#pieOrange)' },
+  ], [sinStock, conStock]);
 
   const movimientosChartData = useMemo(() => {
     const agrupado = {};
@@ -160,19 +156,14 @@ const Dashboard = () => {
   const fecha = today.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const saludo = today.getHours() < 12 ? 'Buenos días' : today.getHours() < 18 ? 'Buenas tardes' : 'Buenas noches';
 
-  const getProgressColor = (current, min) => {
-    if (min <= 0) return 'bg-emerald-400';
-    const ratio = current / min;
-    if (ratio >= 1.5) return 'bg-emerald-400';
-    if (ratio >= 1) return 'bg-blue-400';
-    if (ratio >= 0.5) return 'bg-amber-400';
-    return 'bg-red-400';
+  const getStockColor = (stock) => {
+    if (stock <= 0) return 'bg-red-400';
+    if (stock <= 50) return 'bg-amber-400';
+    return 'bg-emerald-400';
   };
 
-  const getProgressWidth = (current, min) => {
-    if (min <= 0) return 100;
-    const ratio = (current / min) * 100;
-    return Math.min(ratio, 100);
+  const getStockWidth = (stock) => {
+    return Math.min(stock, 100);
   };
 
   if (loading) return <ThemeLoader module="Dashboard" />;
@@ -581,7 +572,7 @@ const Dashboard = () => {
 
                 <div className="flex justify-center gap-4 mb-3 text-[10px] font-medium">
                   {stockPieData.map((item, idx) => {
-                    const dotColors = { 'Stock Bajo': '#dc2626', 'Stock Medio': '#d97706', 'Stock Óptimo': '#059669' };
+                    const dotColors = { 'Sin Stock': '#dc2626', 'Con Stock': '#059669' };
                     return (
                     <span key={idx} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dotColors[item.name] }} />
@@ -593,19 +584,20 @@ const Dashboard = () => {
                 {stockBajo.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-4 text-slate-400">
                     <Box size={24} strokeWidth={1.5} />
-                    <p className="text-xs font-medium">Stock suficiente</p>
+                    <p className="text-xs font-medium">Todos los productos tienen stock</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {stockBajo.slice(0, 5).map((p, i) => {
-                      const pct = getProgressWidth(p.cantidad_disponible, p.stock_minimo);
-                      const barColor = getProgressColor(p.cantidad_disponible, p.stock_minimo);
+                      const st = getStock(p.id);
+                      const barColor = getStockColor(st);
+                      const pct = getStockWidth(st);
                       return (
                         <div key={i} className="p-2.5 rounded-lg bg-slate-50/80 hover:bg-red-50/50 transition-colors">
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-[11px] font-medium text-slate-700 truncate max-w-[70%]">{p.nombre || p.id}</span>
-                            <span className={`text-[10px] font-bold ${p.cantidad_disponible === 0 ? 'text-red-600' : 'text-amber-600'}`}>
-                              {p.cantidad_disponible}/{p.stock_minimo}
+                            <span className={`text-[10px] font-bold ${st === 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                              {st}
                             </span>
                           </div>
                           <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
@@ -615,7 +607,7 @@ const Dashboard = () => {
                             />
                           </div>
                           <p className="text-[9px] text-slate-400 mt-0.5">
-                            {p.cantidad_disponible === 0 ? 'Agotado' : `Faltan ${p.stock_minimo - p.cantidad_disponible}`}
+                            {st === 0 ? 'Agotado — sin stock' : `Stock: ${st} unidades`}
                           </p>
                         </div>
                       );
@@ -629,18 +621,19 @@ const Dashboard = () => {
                 {stockBajo.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-6 text-slate-400">
                     <Box size={28} strokeWidth={1.5} />
-                    <p className="text-xs font-medium">Todos los productos tienen stock suficiente</p>
+                    <p className="text-xs font-medium">Todos los productos tienen stock</p>
                   </div>
                 ) : (
                   stockBajo.slice(0, 5).map((p, i) => {
-                    const pct = getProgressWidth(p.cantidad_disponible, p.stock_minimo);
-                    const barColor = getProgressColor(p.cantidad_disponible, p.stock_minimo);
+                    const st = getStock(p.id);
+                    const barColor = getStockColor(st);
+                    const pct = getStockWidth(st);
                     return (
                       <div key={i} className="group p-3 rounded-lg bg-slate-50/80 hover:bg-red-50/50 transition-colors">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-slate-700 truncate max-w-[70%]">{p.nombre || p.id}</span>
-                          <span className={`text-[10px] font-bold ${p.cantidad_disponible === 0 ? 'text-red-600' : 'text-amber-600'}`}>
-                            {p.cantidad_disponible}/{p.stock_minimo}
+                          <span className={`text-[10px] font-bold ${st === 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                            {st}
                           </span>
                         </div>
                         <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
@@ -650,9 +643,9 @@ const Dashboard = () => {
                           />
                         </div>
                         <p className="text-[10px] text-slate-400 mt-1">
-                          {p.cantidad_disponible === 0
+                          {st === 0
                             ? 'Agotado — requiere reposición'
-                            : `Faltan ${p.stock_minimo - p.cantidad_disponible} para mínimo`}
+                            : `Stock: ${st} unidades`}
                         </p>
                       </div>
                     );
