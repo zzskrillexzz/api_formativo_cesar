@@ -17,8 +17,8 @@ export const proveedoresProductosService = {
     }
     return res.data;
   },
-  buscarPorProveedorConDatos: async (provId) => {
-    const res = await api.get(`/proveedores_productos/buscar-por-proveedor-con-datos/${provId}`);
+  buscarPorProveedorConDatos: async (provId, params = {}) => {
+    const res = await api.get(`/proveedores_productos/buscar-por-proveedor-con-datos/${provId}`, { params });
     return res.data;
   }
 };

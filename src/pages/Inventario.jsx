@@ -45,6 +45,9 @@ const Inventario = () => {
   const [selectedSupplierId, setSelectedSupplierId] = useState('');
   const [showNewProductForm, setShowNewProductForm] = useState(false);
   const [productosProveedor, setProductosProveedor] = useState([]);
+  const [searchProveedorProducto, setSearchProveedorProducto] = useState('');
+  const [paginaProveedorProducto, setPaginaProveedorProducto] = useState(1);
+  const [totalProveedorProductos, setTotalProveedorProductos] = useState(0);
 
   const getProductStock = (prodId) => {
     return lotes
@@ -57,6 +60,7 @@ const Inventario = () => {
   const [paginaLotes, setPaginaLotes] = useState(1);
   const POR_PAGINA = 10;
   const POR_PAGINA_MOV = 15;
+  const POR_PAGINA_PROV = 8;
   const isEditing = !!editingId;
   const formSnapshotRef = useRef({});
 
@@ -68,16 +72,26 @@ const Inventario = () => {
     setShowNewCategoryForm(false);
   };
 
-  const loadProductsBySupplier = async (provId) => {
+  const loadProductsBySupplier = async (provId, q, page) => {
     if (!provId) { setProdsBySupplier([]); return; }
     try {
-      const data = await proveedoresProductosService.buscarPorProveedorConDatos(provId);
-      setProdsBySupplier(Array.isArray(data) ? data : []);
+      const data = await proveedoresProductosService.buscarPorProveedorConDatos(provId, { q: q || undefined, page, limit: POR_PAGINA_PROV });
+      setProdsBySupplier(Array.isArray(data?.data) ? data.data : []);
+      setTotalProveedorProductos(data?.total || 0);
     } catch (err) {
       console.error('Error cargando productos del proveedor:', err?.response?.data || err);
       setProdsBySupplier([]);
+      setTotalProveedorProductos(0);
     }
   };
+
+  useEffect(() => {
+    if (!selectedSupplierId) return;
+    const timer = setTimeout(() => {
+      loadProductsBySupplier(selectedSupplierId, searchProveedorProducto, paginaProveedorProducto);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [selectedSupplierId, searchProveedorProducto, paginaProveedorProducto]);
 
   const openModal = () => {
     let defaultData = {};
@@ -1230,10 +1244,11 @@ const Inventario = () => {
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor <span className="required-star">*</span></label>
                       <select
                         value={selectedSupplierId}
-                        onChange={async (e) => {
+                        onChange={(e) => {
                           setSelectedSupplierId(e.target.value);
                           setShowNewProductForm(false);
-                          await loadProductsBySupplier(e.target.value);
+                          setSearchProveedorProducto('');
+                          setPaginaProveedorProducto(1);
                         }}
                         className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1"
                       >
@@ -1246,24 +1261,73 @@ const Inventario = () => {
                   )}
 
                   {!isEditing && selectedSupplierId && (
-                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-md">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Productos de este proveedor</label>
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-md space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Productos de este proveedor</label>
+                        <div className="relative">
+                          <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={searchProveedorProducto}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSearchProveedorProducto(val);
+                              setPaginaProveedorProducto(1);
+                            }}
+                            placeholder="Buscar producto..."
+                            className="w-40 pl-7 pr-2 py-1.5 bg-white border border-blue-200 rounded-md text-xs outline-none focus:ring-2 focus:ring-blue-400"
+                          />
+                        </div>
+                      </div>
                       {prodsBySupplier.length > 0 ? (
-                        <ul className="mt-2 space-y-1">
+                        <ul className="space-y-1 max-h-48 overflow-y-auto">
                           {prodsBySupplier.map(prod => (
                             <li key={prod.id} className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                               {prod.id} — {prod.nombre}
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-sm text-slate-500 mt-2 italic">No hay productos registrados para este proveedor</p>
+                        <p className="text-sm text-slate-500 italic">No hay productos registrados para este proveedor</p>
+                      )}
+                      {totalProveedorProductos > POR_PAGINA_PROV && (
+                        <div className="flex items-center justify-between pt-1 text-xs text-slate-400 font-bold">
+                          <span>
+                            {totalProveedorProductos > 0
+                              ? `${(paginaProveedorProducto - 1) * POR_PAGINA_PROV + 1}–${Math.min(paginaProveedorProducto * POR_PAGINA_PROV, totalProveedorProductos)} de ${totalProveedorProductos}`
+                              : `${totalProveedorProductos} productos`
+                            }
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPaginaProveedorProducto(p => Math.max(1, p - 1));
+                              }}
+                              disabled={paginaProveedorProducto <= 1}
+                              className="px-2 py-1 rounded border border-blue-200 bg-white hover:bg-blue-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider"
+                            >
+                              Anterior
+                            </button>
+                            <span className="text-slate-500">{paginaProveedorProducto} / {Math.max(1, Math.ceil(totalProveedorProductos / POR_PAGINA_PROV))}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPaginaProveedorProducto(p => p + 1);
+                              }}
+                              disabled={paginaProveedorProducto >= Math.ceil(totalProveedorProductos / POR_PAGINA_PROV)}
+                              className="px-2 py-1 rounded border border-blue-200 bg-white hover:bg-blue-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wider"
+                            >
+                              Siguiente
+                            </button>
+                          </div>
+                        </div>
                       )}
                       <button
                         type="button"
                         onClick={() => setShowNewProductForm(!showNewProductForm)}
-                        className="mt-3 flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-2 rounded-md hover:bg-emerald-700 transition-all text-xs font-bold uppercase tracking-wider"
+                        className="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-2 rounded-md hover:bg-emerald-700 transition-all text-xs font-bold uppercase tracking-wider"
                       >
                         <Plus size={14} /> {showNewProductForm ? 'Cancelar' : 'Agregar nuevo producto'}
                       </button>
