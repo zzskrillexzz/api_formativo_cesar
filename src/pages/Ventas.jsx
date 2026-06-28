@@ -326,6 +326,12 @@ const Ventas = () => {
   // ── Helpers para productos del pedido ──
   const [nuevoProducto, setNuevoProducto] = useState({ pro_id: '', cantidad: 1 });
   const [errorProducto, setErrorProducto] = useState('');
+  const [busquedaProducto, setBusquedaProducto] = useState('');
+  const productosFiltrados = productosDisponibles.filter(p => {
+    if (!busquedaProducto) return true;
+    const q = busquedaProducto.toLowerCase();
+    return p.id?.toLowerCase().includes(q) || p.nombre?.toLowerCase().includes(q);
+  });
 
   const agregarProducto = () => {
     setErrorProducto('');
@@ -346,10 +352,24 @@ const Ventas = () => {
       { pro_id: prod.id, pro_nombre: prod.nombre, cantidad, precio_unitario: precio, subtotal: cantidad * precio }
     ]);
     setNuevoProducto({ pro_id: '', cantidad: 1 });
+    setBusquedaProducto('');
   };
 
   const quitarProducto = (pro_id) => {
     setProductosSeleccionados(productosSeleccionados.filter(p => p.pro_id !== pro_id));
+  };
+
+  const actualizarCantidad = (pro_id, nuevaCantidad) => {
+    const cantidad = parseInt(nuevaCantidad, 10) || 1;
+    if (cantidad < 1) return;
+    const stock = getStockVentas(pro_id);
+    const cantValida = Math.min(cantidad, stock);
+    setProductosSeleccionados(prev =>
+      prev.map(p => p.pro_id === pro_id
+        ? { ...p, cantidad: cantValida, subtotal: cantValida * p.precio_unitario }
+        : p
+      )
+    );
   };
 
   const totalPedidoCalculado = productosSeleccionados.reduce((sum, p) => sum + p.subtotal, 0);
@@ -1592,6 +1612,15 @@ const Ventas = () => {
                         <span className="text-[10px] text-emerald-600 font-bold">{productosSeleccionados.length} producto{productosSeleccionados.length !== 1 ? 's' : ''} agregado{productosSeleccionados.length !== 1 ? 's' : ''}</span>
                       )}
                     </div>
+                    <div className="mb-2">
+                      <input
+                        type="text"
+                        placeholder="Filtrar productos por ID o nombre..."
+                        value={busquedaProducto}
+                        onChange={(e) => { setBusquedaProducto(e.target.value); setErrorProducto(''); }}
+                        className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-md outline-none text-sm font-medium"
+                      />
+                    </div>
                     <div className="flex gap-2 items-center">
                       <div className="flex-1">
                         <select
@@ -1600,7 +1629,7 @@ const Ventas = () => {
                           className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-md outline-none text-sm font-medium"
                         >
                           <option value="">Seleccionar producto...</option>
-                          {productosDisponibles.map(prod => (
+                          {productosFiltrados.map(prod => (
                             <option key={prod.id} value={prod.id}>
                               {prod.id} — {prod.nombre} ({getStockVentas(prod.id)} uds.)
                             </option>
@@ -1638,7 +1667,14 @@ const Ventas = () => {
                             {productosSeleccionados.map(p => (
                               <tr key={p.pro_id}>
                                 <td className="px-3 py-2 text-slate-400">{p.pro_id} — {p.pro_nombre}</td>
-                                <td className="px-3 py-2 text-right">{p.cantidad}</td>
+                                <td className="px-3 py-2 text-right">
+                                  <input
+                                    type="number" min="1" max={getStockVentas(p.pro_id)}
+                                    value={p.cantidad}
+                                    onChange={(e) => actualizarCantidad(p.pro_id, e.target.value)}
+                                    className="w-16 p-1 bg-white border border-slate-300 rounded text-xs text-right font-bold"
+                                  />
+                                </td>
                                 <td className="px-3 py-2 text-right">${parseFloat(p.precio_unitario || 0).toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right">${parseFloat(p.subtotal || 0).toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right">
