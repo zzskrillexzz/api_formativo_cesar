@@ -19,6 +19,7 @@ const Usuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroRol, setFiltroRol] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
@@ -85,6 +86,7 @@ const Usuarios = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    setRefreshing(true);
     try {
       const [resUsuarios, resRoles] = await Promise.all([
         api.get('/usuarios/').catch(() => ({ data: { data: [] } })),
@@ -95,7 +97,7 @@ const Usuarios = () => {
       setUsuarios(rawUsuarios.map(mapearUsuario));
       setRoles(rawRoles.map(mapearRol));
     } catch (_) {
-    } finally { setLoading(false); }
+    } finally { setLoading(false); setRefreshing(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -317,8 +319,8 @@ const Usuarios = () => {
           )}
         </div>
         <div className="flex gap-2">
-          <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
-            <RefreshCw size={18} className="text-slate-500" />
+          <button onClick={fetchData} disabled={refreshing} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm disabled:opacity-70" title="Actualizar datos">
+            <RefreshCw size={18} className={`text-slate-500 transition-transform ${refreshing ? 'animate-spin' : ''}`} />
           </button>
           {isAdmin && tab === 'usuarios' && (
             <button onClick={() => openUserModal()}

@@ -19,6 +19,7 @@ const Devoluciones = () => {
   const [compras, setCompras] = useState([]);
   const [lotes, setLotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filtroResumen, setFiltroResumen] = useState('todas'); // 'todas' | 'este-mes' | 'unidades-devueltas'
   const [detallesCompra, setDetallesCompra] = useState([]); // detalles de la compra seleccionada en el modal
   const [maxCantidad, setMaxCantidad] = useState(0); // cantidad máxima disponible para devolver
@@ -42,6 +43,7 @@ const Devoluciones = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    setRefreshing(true);
     try {
       const [devs, prods, comps, lotsRes] = await Promise.all([
         devolucionesService.listar().catch(() => []),
@@ -54,7 +56,7 @@ const Devoluciones = () => {
       setCompras(comps);
       // lotesService con params retorna { data: [...], total, page, ... }
       setLotes(Array.isArray(lotsRes) ? lotsRes : (lotsRes?.data ?? []));
-    } catch (_) {} finally { setLoading(false); }
+    } catch (_) {} finally { setLoading(false); setRefreshing(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -318,8 +320,8 @@ const Devoluciones = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm" title="Actualizar">
-            <RefreshCw size={18} className="text-slate-500" />
+          <button onClick={fetchData} disabled={refreshing} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm disabled:opacity-70" title="Actualizar datos">
+            <RefreshCw size={18} className={`text-slate-500 transition-transform ${refreshing ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={openModal}
             className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md btn-pulse">

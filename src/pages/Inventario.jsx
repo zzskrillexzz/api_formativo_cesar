@@ -20,6 +20,7 @@ const Inventario = () => {
   const [monitorias, setMonitorias] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // ── Modal para crear ──
@@ -553,6 +554,7 @@ const Inventario = () => {
 
   const fetchData = async (movParams = {}) => {
     setLoading(true);
+    setRefreshing(true);
     try {
       const [prods, lots, monsRes, provs, provProds] = await Promise.all([
         productosService.listar().catch(() => []),
@@ -571,6 +573,7 @@ const Inventario = () => {
       console.error('Error cargando inventario:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -709,8 +712,8 @@ const Inventario = () => {
             } else {
               fetchData();
             }
-          }} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
-            <RefreshCw size={18} className="text-slate-500" />
+          }} disabled={refreshing} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm disabled:opacity-70" title="Actualizar datos">
+            <RefreshCw size={18} className={`text-slate-500 transition-transform ${refreshing ? 'animate-spin' : ''}`} />
           </button>
           {tab !== 'movimientos' && (
             <button
