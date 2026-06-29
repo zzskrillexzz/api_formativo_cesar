@@ -848,7 +848,7 @@ const Ventas = () => {
     if (!pedidoAVerificar) return;
     setNotifLoading(true);
     try {
-      await pedidosService.verificarPago(pedidoAVerificar.ped_id, estado);
+      const res = await pedidosService.verificarPago(pedidoAVerificar.ped_id, estado);
       // Actualizar visualmente el estado en la tabla de inmediato
       setPedidos(prev => prev.map(p => {
         if (p.ped_id !== pedidoAVerificar.ped_id) return p;
@@ -862,6 +862,15 @@ const Ventas = () => {
         return updates;
       }));
       cerrarVerificarPago();
+      // Feedback de factura automática
+      const facturaCreada = res?.factura_creada;
+      if (estado === 'Verificado') {
+        if (facturaCreada === true) {
+          toast({ type: 'success', title: 'Factura generada', description: `Factura ${pedidoAVerificar.ped_id} creada automáticamente` });
+        } else if (facturaCreada && typeof facturaCreada === 'string') {
+          toast({ type: 'warning', title: 'Factura no creada', description: `Error al generar factura: ${facturaCreada}` });
+        }
+      }
       refreshData(); // refuerzo con datos frescos del backend
     } catch (err) {
       toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || err.message });
