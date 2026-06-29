@@ -54,6 +54,7 @@ const Inventario = () => {
   // ── Estado para el formulario de Lotes (proveedor → productos filtrados) ──
   const [loteSelectedProvId, setLoteSelectedProvId] = useState('');
   const [loteSearchProducto, setLoteSearchProducto] = useState('');
+  const [loteSearchMode, setLoteSearchMode] = useState('producto');
 
   const getProductStock = (prodId) => {
     return lotes
@@ -122,6 +123,7 @@ const Inventario = () => {
       defaultData = { lot_id: next, lot_numero: '' };
       setLoteSelectedProvId('');
       setLoteSearchProducto('');
+      setLoteSearchMode('producto');
     } else if (tab === 'movimientos') {
       let max = 0;
       monitorias.forEach(m => {
@@ -1616,32 +1618,58 @@ const Inventario = () => {
                           {errors.lot_numero && <p className="text-red-500 text-xs mt-1">{errors.lot_numero}</p>}
                         </div>
                       </div>
+
+                      {/* ── Fila de búsqueda (toggle + input) ── */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Buscar por</label>
+                          <div className="flex gap-1 mt-2">
+                            <button type="button" onClick={() => { setLoteSearchMode('proveedor'); setLoteSearchProducto(''); }}
+                              className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all ${loteSearchMode === 'proveedor' ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-orange-100'}`}>
+                              Proveedor
+                            </button>
+                            <button type="button" onClick={() => { setLoteSearchMode('producto'); setLoteSearchProducto(''); }}
+                              className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all ${loteSearchMode === 'producto' ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-orange-100'}`}>
+                              Producto
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Filtrar</label>
+                          <div className="relative mt-2">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                              name="loteSearchProducto"
+                              value={loteSearchProducto}
+                              onChange={handleChange}
+                              placeholder={loteSearchMode === 'proveedor' ? "Buscar proveedor..." : "Buscar producto..."}
+                              className="w-full pl-9 pr-3 py-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ── Fila Proveedor / Producto ── */}
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID <span className="required-star">*</span></label>
-                          <select name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_prov_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
+                          <select name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} disabled={loteSearchMode === 'producto' && !!formData.lot_prov_id_fk}
+                            className={`w-full p-3 border-2 rounded-md outline-none text-sm font-medium mt-1 ${loteSearchMode === 'producto' && !!formData.lot_prov_id_fk ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed' : 'bg-white border-slate-300 focus:ring-2 focus:ring-blue-500'} ${errors.lot_prov_id_fk ? 'border-red-400' : ''}`}>
                             <option value="">Seleccionar proveedor...</option>
-                            {proveedores.map(p => (
-                              <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
+                            {proveedores
+                              .filter(p => !loteSearchProducto || loteSearchMode !== 'proveedor' ||
+                                p.prov_id.toLowerCase().includes(loteSearchProducto.toLowerCase()) ||
+                                p.prov_nombre.toLowerCase().includes(loteSearchProducto.toLowerCase()))
+                              .map(p => (
+                                <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
                             ))}
                           </select>
                           {errors.lot_prov_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_prov_id_fk}</p>}
                         </div>
                         <div>
-                          {loteSelectedProvId ? (
+                          {loteSearchMode === 'producto' && loteSelectedProvId ? (
                             <>
-                              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Buscar producto</label>
-                              <div className="relative mt-1">
-                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input
-                                  name="loteSearchProducto"
-                                  value={loteSearchProducto}
-                                  onChange={handleChange}
-                                  placeholder="Buscar producto..."
-                                  className="w-full pl-9 pr-3 py-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-                                />
-                              </div>
-                              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-2 block">Producto ID</label>
+                              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto ID</label>
                               <select name="lot_pro_id_fk" value={formData.lot_pro_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_pro_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
                                 <option value="">Seleccionar producto...</option>
                                 {productos
@@ -1654,8 +1682,10 @@ const Inventario = () => {
                               {errors.lot_pro_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_pro_id_fk}</p>}
                             </>
                           ) : (
-                            <div className="flex items-center justify-center h-full min-h-[80px]">
-                              <p className="text-sm text-slate-400 italic">Seleccione un proveedor primero</p>
+                            <div className="flex items-center justify-center p-3 mt-1 border-2 border-dashed border-slate-200 rounded-md bg-slate-50 h-[50px]">
+                              <p className="text-sm text-slate-400 italic">
+                                {loteSearchMode === 'producto' ? 'Seleccione un proveedor primero' : 'Seleccione un proveedor de la lista'}
+                              </p>
                             </div>
                           )}
                         </div>
