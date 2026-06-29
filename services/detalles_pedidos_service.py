@@ -8,7 +8,7 @@ def listarDetallesPedidos(page=1, limit=50, q=None, order_by=None, **filters):
         table='t_detalle_pedido',
         search_fields=['det_id', 'det_ped_id_fk', 'det_pro_id_fk'],
         exact_fields=['det_ped_id_fk', 'det_pro_id_fk', 'det_lot_id_fk'],
-        default_order='det_id ASC'
+        default_order='det_id DESC'
     )
     result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
     c.close()

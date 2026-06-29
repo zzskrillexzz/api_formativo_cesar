@@ -9,7 +9,7 @@ def listarProductos(page=1, limit=50, q=None, order_by=None, **filters):
         search_fields=['pro_id', 'pro_nombre', 'pro_categoria', 'pro_descripcion'],
         exact_fields=['pro_estado', 'pro_categoria'],
         range_fields={'pro_precio': 'decimal'},
-        default_order='pro_id ASC'
+        default_order='pro_id DESC'
     )
     result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
     c.close()

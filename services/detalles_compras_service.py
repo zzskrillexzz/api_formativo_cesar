@@ -106,7 +106,7 @@ def listarDetallesCompras(page=1, limit=50, q=None, order_by=None, **filters):
         table='t_detalle_compra',
         search_fields=['dco_id', 'dco_com_id_fk', 'dco_pro_id_fk'],
         exact_fields=['dco_com_id_fk', 'dco_pro_id_fk', 'dco_lot_id_fk'],
-        default_order='dco_id ASC'
+        default_order='dco_id DESC'
     )
     result = sb.execute(c, page=page, limit=limit, q=q, order_by=order_by, **filters)
     c.close()
