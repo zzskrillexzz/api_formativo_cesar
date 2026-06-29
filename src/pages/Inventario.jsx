@@ -49,6 +49,10 @@ const Inventario = () => {
   const [paginaProveedorProducto, setPaginaProveedorProducto] = useState(1);
   const [totalProveedorProductos, setTotalProveedorProductos] = useState(0);
 
+  // ── Estado para el formulario de Lotes (proveedor → productos filtrados) ──
+  const [loteSelectedProvId, setLoteSelectedProvId] = useState('');
+  const [loteSearchProducto, setLoteSearchProducto] = useState('');
+
   const getProductStock = (prodId) => {
     return lotes
       .filter(l => l.lot_pro_id_fk === prodId && l.lot_estado === 'Activo')
@@ -114,6 +118,8 @@ const Inventario = () => {
       }
       const next = 'LOT' + String(nextNum).padStart(3, '0');
       defaultData = { lot_id: next, lot_numero: '' };
+      setLoteSelectedProvId('');
+      setLoteSearchProducto('');
     } else if (tab === 'movimientos') {
       let max = 0;
       monitorias.forEach(m => {
@@ -223,6 +229,8 @@ const Inventario = () => {
     setFormError('');
     setErrors({});
     setEditingId(lote.lot_id);
+    setLoteSelectedProvId(lote.lot_prov_id_fk || '');
+    setLoteSearchProducto('');
     setShowModal(true);
   };
 
@@ -231,9 +239,25 @@ const Inventario = () => {
   const handleChange = (e) => {
     let { name, value } = e.target;
     value = stripEmojis(value);
+
+    // ── El campo de búsqueda de productos no va a formData ──
+    if (name === 'loteSearchProducto') {
+      setLoteSearchProducto(value);
+      return;
+    }
+
     const max = FIELD_LIMITS[name];
     if (max && value.length > max) return;
     setFormData({ ...formData, [name]: value });
+
+    // ── Al seleccionar proveedor en lote, filtrar productos y limpiar selección ──
+    if (!editingId && tab === 'lotes' && name === 'lot_prov_id_fk') {
+      setLoteSelectedProvId(value);
+      setLoteSearchProducto('');
+      if (value !== formData.lot_prov_id_fk) {
+        setFormData(prev => ({ ...prev, lot_pro_id_fk: '', lot_numero: '' }));
+      }
+    }
 
     // ── Auto-generar lot_numero al seleccionar producto (solo nuevos lotes) ──
     if (!editingId && tab === 'lotes' && name === 'lot_pro_id_fk' && value) {
@@ -432,6 +456,16 @@ const Inventario = () => {
     if (!formData.lot_prov_id_fk) {
       setFormError('Selecciona un proveedor para el lote');
       return;
+    }
+    // Validar que el producto pertenezca al proveedor seleccionado
+    if (formData.lot_pro_id_fk && formData.lot_prov_id_fk) {
+      const tieneRelacion = productosProveedor.some(
+        pp => pp.proveedor_id === formData.lot_prov_id_fk && pp.producto_id === formData.lot_pro_id_fk
+      );
+      if (!tieneRelacion) {
+        setFormError(`El producto ${formData.lot_pro_id_fk} no está asociado al proveedor ${formData.lot_prov_id_fk}`);
+        return;
+      }
     }
     if (formData.lot_fecha_fabricacion && formData.lot_fecha_vencimiento) {
       const diff = (new Date(formData.lot_fecha_vencimiento) - new Date(formData.lot_fecha_fabricacion)) / (1000 * 60 * 60 * 24);
@@ -799,11 +833,11 @@ const Inventario = () => {
                       <td className="px-6 py-4 text-xs text-slate-400">
                         {(() => {
                           if (!productosProveedor || productosProveedor.length === 0) return <span className="text-slate-300">—</span>;
-                          const rels = productosProveedor.filter(pp => pp.ppp_pro_id_fk === p.id);
+                          const rels = productosProveedor.filter(pp => pp.producto_id === p.id);
                           if (rels.length === 0) return <span className="text-slate-300">—</span>;
                           const provNames = rels.map(r => {
-                            const prov = proveedores.find(pr => pr.prov_id === r.ppp_prov_id_fk);
-                            return prov ? prov.prov_nombre : r.ppp_prov_id_fk;
+                            const prov = proveedores.find(pr => pr.prov_id === r.proveedor_id);
+                            return prov ? prov.prov_nombre : r.proveedor_id;
                           });
                           return provNames.join(', ');
                         })()}
@@ -1464,16 +1498,6 @@ const Inventario = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto ID</label>
-                      <select name="lot_pro_id_fk" value={formData.lot_pro_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_pro_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
-                        <option value="">Seleccionar producto...</option>
-                        {productos.filter(p => p.estado === 'Activo').map(p => (
-                          <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>
-                        ))}
-                      </select>
-                      {errors.lot_pro_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_pro_id_fk}</p>}
-                    </div>
-                    <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID <span className="required-star">*</span></label>
                       <select name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_prov_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
                         <option value="">Seleccionar proveedor...</option>
@@ -1482,6 +1506,38 @@ const Inventario = () => {
                         ))}
                       </select>
                       {errors.lot_prov_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_prov_id_fk}</p>}
+                    </div>
+                    <div>
+                      {loteSelectedProvId ? (
+                        <>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Buscar producto</label>
+                          <div className="relative mt-1">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                              name="loteSearchProducto"
+                              value={loteSearchProducto}
+                              onChange={handleChange}
+                              placeholder="Buscar producto..."
+                              className="w-full pl-9 pr-3 py-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                            />
+                          </div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-2 block">Producto ID</label>
+                          <select name="lot_pro_id_fk" value={formData.lot_pro_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_pro_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
+                            <option value="">Seleccionar producto...</option>
+                            {productos
+                              .filter(p => p.estado === 'Activo' && productosProveedor.some(pp => pp.proveedor_id === loteSelectedProvId && pp.producto_id === p.id))
+                              .filter(p => !loteSearchProducto || p.id.toLowerCase().includes(loteSearchProducto.toLowerCase()) || p.nombre.toLowerCase().includes(loteSearchProducto.toLowerCase()))
+                              .map(p => (
+                                <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>
+                            ))}
+                          </select>
+                          {errors.lot_pro_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_pro_id_fk}</p>}
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-center h-full min-h-[80px]">
+                          <p className="text-sm text-slate-400 italic">Seleccione un proveedor primero</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
