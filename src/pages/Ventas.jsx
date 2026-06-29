@@ -84,6 +84,21 @@ const Ventas = () => {
   });
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
 
+  // ── Helper: fecha/hora actual Colombia (UTC-5) para input datetime-local ──
+  const ahoraColombia = () => {
+    const now = new Date();
+    // Colombia = UTC-5 todo el año (sin DST)
+    const colOffset = -5 * 60; // minutos
+    const localOffset = now.getTimezoneOffset();
+    const colTime = new Date(now.getTime() + (localOffset + colOffset) * 60000);
+    const yyyy = colTime.getFullYear();
+    const mm = String(colTime.getMonth() + 1).padStart(2, '0');
+    const dd = String(colTime.getDate()).padStart(2, '0');
+    const hh = String(colTime.getHours()).padStart(2, '0');
+    const min = String(colTime.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  };
+
   // Guardar la URL en localStorage cada vez que cambie
   const actualizarQrUrl = (url) => {
     setQrBaseUrl(url);
@@ -252,7 +267,7 @@ const Ventas = () => {
         setLotesVentas([]);
       }
     } else {
-      const defaultData = {};
+      const defaultData = { fecha_emision: ahoraColombia() };
       setFormData(defaultData);
       formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     }
@@ -642,7 +657,7 @@ const Ventas = () => {
     try {
       const payload = {
         id: formData.id,
-        fecha_emision: formData.fecha_emision,
+        fecha_emision: formData.fecha_emision ? formData.fecha_emision.replace('T', ' ') + ':00' : '',
         email_enviado: emailEnviado,
         forma_pago: formData.forma_pago,
         cuenta_bancaria: formData.forma_pago === 'Transferencia' ? formData.cuenta_bancaria || '' : null,
@@ -721,9 +736,14 @@ const Ventas = () => {
       const clienteNombre = detalle.cli_nombre
         ? `${detalle.cli_nombre}${detalle.cli_apellido ? ' ' + detalle.cli_apellido : ''}`
         : `Cliente #${detalle.cli_id_fk || '?'}`;
+      // Convertir fecha de BD (YYYY-MM-DD HH:MM:SS) a datetime-local (YYYY-MM-DDTHH:MM)
+      let fechaEdit = detalle.fecha_emision || '';
+      if (fechaEdit && fechaEdit.includes(' ')) {
+        fechaEdit = fechaEdit.replace(' ', 'T').slice(0, 16);
+      }
       const editData = {
         id: detalle.id,
-        fecha_emision: detalle.fecha_emision,
+        fecha_emision: fechaEdit,
         email_enviado: detalle.email_enviado,
         forma_pago: detalle.forma_pago,
         cuenta_bancaria: detalle.cuenta_bancaria || '',
@@ -868,7 +888,7 @@ const Ventas = () => {
       const facturaCreada = res?.factura_creada;
       if (estado === 'Verificado') {
         if (facturaCreada === true) {
-          toast({ type: 'success', title: 'Factura generada', description: `Factura ${pedidoAVerificar.ped_id} creada automáticamente` });
+          toast({ type: 'success', title: 'Factura generada', description: `Factura ${pedidoAVerificar.ped_id} creada correctamente` });
         } else if (facturaCreada && typeof facturaCreada === 'string') {
           toast({ type: 'warning', title: 'Factura no creada', description: `Error al generar factura: ${facturaCreada}` });
         }
@@ -1744,7 +1764,7 @@ const Ventas = () => {
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Emisión <span className="required-star">*</span></label>
-                      <input name="fecha_emision" type="date" value={formData.fecha_emision || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.fecha_emision ? 'border-red-400' : 'border-slate-300'}`} />
+                      <input name="fecha_emision" type="datetime-local" value={formData.fecha_emision || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.fecha_emision ? 'border-red-400' : 'border-slate-300'}`} />
                       {errors.fecha_emision && <p className="text-red-500 text-xs mt-1">{errors.fecha_emision}</p>}
                     </div>
                   </div>
@@ -1768,7 +1788,7 @@ const Ventas = () => {
                             total: ped.ped_total,
                             forma_pago: ped.ped_metodo_pago,
                             cuenta_bancaria: ped.ped_cuenta_bancaria || '',
-                            fecha_emision: formData.fecha_emision || ped.ped_fecha,
+                            fecha_emision: formData.fecha_emision || ped.ped_fecha || ahoraColombia(),
                             cli_nombre_mostrar: cli ? `${cli.cli_nombre} ${cli.cli_apellido}` : `Cliente #${ped.ped_cli_id_fk}`,
                             cli_correo_mostrar: cli?.cli_correo || ''
                           });
