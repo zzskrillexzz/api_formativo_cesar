@@ -74,6 +74,7 @@ const Ventas = () => {
   const [notifLoadingFactura, setNotifLoadingFactura] = useState(false);
   const [notifResultadoFactura, setNotifResultadoFactura] = useState(null);
   // ── QR confirmación de entrega ──
+  const [refreshing, setRefreshing] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [pedidoQR, setPedidoQR] = useState(null);
   // Cargar URL guardada en localStorage o usar localhost por defecto
@@ -248,10 +249,6 @@ const Ventas = () => {
         setProductosDisponibles([]);
         setLotesVentas([]);
       }
-    } else if (tab === 'facturas') {
-      const defaultData = { id: nextFacturaId, email_enviado: '0' };
-      setFormData(defaultData);
-      formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
     } else {
       const defaultData = {};
       setFormData(defaultData);
@@ -378,12 +375,6 @@ const Ventas = () => {
     const max = nums.length > 0 ? Math.max(...nums) : 0;
     return 'PED' + String(max + 1).padStart(3, '0');
   })();
-  const nextFacturaId = (() => {
-    const nums = facturas.map(f => { const m = (f.id || '').match(/FAC(\d+)/); return m ? parseInt(m[1]) : 0; });
-    const max = nums.length > 0 ? Math.max(...nums) : 0;
-    return 'FAC' + String(max + 1).padStart(3, '0');
-  })();
-
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -405,6 +396,7 @@ const Ventas = () => {
 
   // Actualización silenciosa (sin loader) para refrescos tras mutaciones o intervalos
   const refreshData = async () => {
+    setRefreshing(true);
     try {
       const [peds, facs, clis] = await Promise.all([
         pedidosService.listar().catch(() => []),
@@ -417,6 +409,8 @@ const Ventas = () => {
       setUltimaActualizacion(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Error refrescando ventas:', err);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -989,21 +983,23 @@ const Ventas = () => {
           />
         </div>
         <div className="flex gap-2">
-          <button onClick={refreshData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm" title="Actualizar datos">
-            <RefreshCw size={18} className="text-slate-500" />
+          <button onClick={refreshData} disabled={refreshing} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm disabled:opacity-70" title="Actualizar datos">
+            <RefreshCw size={18} className={`text-slate-500 transition-transform ${refreshing ? 'animate-spin' : ''}`} />
           </button>
           {ultimaActualizacion && (
             <span className="text-xs text-slate-400 flex items-center px-2">
               Actualizado: {ultimaActualizacion}
             </span>
           )}
-          <button
-            onClick={openModal}
-            disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md btn-pulse disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
-          >
-            <Plus size={16} /> Nuevo {tab === 'pedidos' ? 'Pedido' : tab === 'facturas' ? 'Factura' : 'Cliente'}
-          </button>
+          {tab !== 'facturas' && (
+            <button
+              onClick={openModal}
+              disabled={loading}
+              className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md btn-pulse disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+            >
+              <Plus size={16} /> Nuevo {tab === 'pedidos' ? 'Pedido' : 'Cliente'}
+            </button>
+          )}
         </div>
       </div>
 
