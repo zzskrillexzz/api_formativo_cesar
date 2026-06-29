@@ -324,7 +324,7 @@ def eliminarPedidos(ID):
 
 def buscarPedido(ID):
     c = current_app.mysql.connection.cursor()
-    sql = """SELECT ped_id, ped_fecha, ped_metodo_pago, ped_cuenta_bancaria, ped_comprobante, ped_comprobante_tipo, ped_estado_entrega, ped_estado_pago, ped_total, ped_cli_id_fk, ped_usu_id_fk FROM t_pedido WHERE ped_id=%s"""
+    sql = """SELECT ped_id, ped_fecha, ped_metodo_pago, ped_cuenta_bancaria, ped_comprobante, ped_comprobante_tipo, ped_estado_entrega, ped_estado_pago, ped_total, ped_cli_id_fk, ped_usu_id_fk, ped_token_entrega, ped_notificado, ped_factura_enviada FROM t_pedido WHERE ped_id=%s"""
     c.execute(sql, (ID,))
     r = c.fetchone()
     c.close()
@@ -333,8 +333,8 @@ def buscarPedido(ID):
         ped = pedidos(ID=r[0], FECHA=r[1], METODO_DE_PAGO=r[2], CUENTA_BANCARIA=r[3], ped_comprobante=r[4], ped_comprobante_tipo=r[5], ESTADO=r[6], TOTAL=r[8], ID_CLIENTE=r[9], ped_usu_id_fk=r[10]).a_diccionario()
         ped['ped_estado_pago'] = r[7] or 'Pendiente de pago'
         ped['ped_tiene_comprobante'] = tiene
-        ped['ped_token_entrega'] = None
-        ped['ped_notificado'] = False
-        ped['ped_factura_enviada'] = False
+        ped['ped_token_entrega'] = r[11]
+        ped['ped_notificado'] = bool(r[12]) if r[12] is not None else False
+        ped['ped_factura_enviada'] = bool(r[13]) if r[13] is not None else False
         return ped
     return None
