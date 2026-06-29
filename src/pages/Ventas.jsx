@@ -38,6 +38,7 @@ const Ventas = () => {
   const focusTrapRef = useFocusTrap(showModal);
   const [productosSeleccionados, setProductosSeleccionados] = useState([]);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [clienteSearchTerm, setClienteSearchTerm] = useState('');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [comprobanteFileName, setComprobanteFileName] = useState('');
   const lastToastRef = useRef(null); // Evita mostrar el mismo toast repetido
@@ -226,6 +227,7 @@ const Ventas = () => {
     setErrors({});
     setProductosSeleccionados([]);
     setShowNewClientForm(false);
+    setClienteSearchTerm('');
     setComprobanteFileName('');
     if (tab === 'pedidos') {
       // Obtener el siguiente ID real desde el backend (evita race condition con nextPedidoId)
@@ -1471,24 +1473,56 @@ const Ventas = () => {
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cliente <span className="required-star">*</span></label>
                     <div className="flex gap-2 mt-1">
-                      <select
-                        name="ped_cli_id_fk"
-                        value={formData.ped_cli_id_fk || ''}
-                        onChange={handleChange}
-                        className={`flex-1 p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium ${errors.ped_cli_id_fk ? 'border-red-400' : 'border-slate-300'}`}
-                      >
-                      {errors.ped_cli_id_fk && <p className="text-red-500 text-xs mt-1">{errors.ped_cli_id_fk}</p>}
-                        <option value="">Seleccionar cliente...</option>
-                        {clientes.map(c => (
-                          <option key={c.cli_id} value={c.cli_id}>
-                            {c.cli_id} - {c.cli_nombre} {c.cli_apellido}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex-1">
+                        <div className="relative">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            placeholder="Buscar por ID o nombre..."
+                            value={clienteSearchTerm}
+                            onChange={(e) => setClienteSearchTerm(e.target.value)}
+                            maxLength={50}
+                            className="w-full pl-9 pr-3 py-2.5 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          />
+                        </div>
+                        <select
+                          name="ped_cli_id_fk"
+                          value={formData.ped_cli_id_fk || ''}
+                          onChange={handleChange}
+                          size={6}
+                          className={`w-full mt-1 p-2 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm ${errors.ped_cli_id_fk ? 'border-red-400' : 'border-slate-300'}`}
+                        >
+                          <option value="">Seleccionar cliente...</option>
+                          {clientes
+                            .filter(c => {
+                              if (!clienteSearchTerm) return true;
+                              const term = clienteSearchTerm.toLowerCase();
+                              return String(c.cli_id).toLowerCase().includes(term) ||
+                                (c.cli_nombre || '').toLowerCase().includes(term) ||
+                                (c.cli_apellido || '').toLowerCase().includes(term) ||
+                                `${c.cli_nombre || ''} ${c.cli_apellido || ''}`.toLowerCase().includes(term);
+                            })
+                            .map(c => (
+                              <option key={c.cli_id} value={c.cli_id}>
+                                {c.cli_id} - {c.cli_nombre} {c.cli_apellido}
+                              </option>
+                            ))}
+                        </select>
+                        {clienteSearchTerm && clientes.filter(c => {
+                          const term = clienteSearchTerm.toLowerCase();
+                          return String(c.cli_id).toLowerCase().includes(term) ||
+                            (c.cli_nombre || '').toLowerCase().includes(term) ||
+                            (c.cli_apellido || '').toLowerCase().includes(term) ||
+                            `${c.cli_nombre || ''} ${c.cli_apellido || ''}`.toLowerCase().includes(term);
+                        }).length === 0 && (
+                          <p className="text-xs text-amber-600 mt-1">Sin resultados para "{clienteSearchTerm}"</p>
+                        )}
+                        {errors.ped_cli_id_fk && <p className="text-red-500 text-xs mt-1">{errors.ped_cli_id_fk}</p>}
+                      </div>
                       <button
                         type="button"
                         onClick={() => setShowNewClientForm(!showNewClientForm)}
-                        className="px-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-sm font-bold flex items-center gap-1"
+                        className="px-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-sm font-bold flex items-center gap-1 self-start"
                         title="Crear nuevo cliente"
                       >
                         <Plus size={16} />
