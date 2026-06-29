@@ -148,6 +148,13 @@ def cnregistrarlotes():
     if not c.fetchone():
         c.close()
         return jsonify({"mensaje": f"No existe un proveedor con el ID {data['lot_prov_id_fk']}"}), 404
+
+    # Validar que el producto esté asociado al proveedor
+    c.execute("SELECT ppp_prov_id_fk FROM t_proveedor_producto WHERE ppp_prov_id_fk = %s AND ppp_pro_id_fk = %s",
+              (data["lot_prov_id_fk"], data["lot_pro_id_fk"]))
+    if not c.fetchone():
+        c.close()
+        return jsonify({"mensaje": f"El producto {data['lot_pro_id_fk']} no está asociado al proveedor {data['lot_prov_id_fk']}"}), 400
     c.close()
 
     resultado = registrarLotes(
@@ -198,6 +205,16 @@ def cnEditarlotes():
         err_cant = _validar_cantidad_lote(data["lot_cantidad_actual"], "cantidad actual", permitir_cero=True)
         if err_cant:
             return jsonify({"mensaje": err_cant}), 400
+
+    # Validar relación producto-proveedor si ambos campos están presentes
+    if "lot_pro_id_fk" in data and "lot_prov_id_fk" in data and data["lot_pro_id_fk"] and data["lot_prov_id_fk"]:
+        c2 = current_app.mysql.connection.cursor()
+        c2.execute("SELECT ppp_prov_id_fk FROM t_proveedor_producto WHERE ppp_prov_id_fk = %s AND ppp_pro_id_fk = %s",
+                   (data["lot_prov_id_fk"], data["lot_pro_id_fk"]))
+        if not c2.fetchone():
+            c2.close()
+            return jsonify({"mensaje": f"El producto {data['lot_pro_id_fk']} no está asociado al proveedor {data['lot_prov_id_fk']}"}), 400
+        c2.close()
 
     resultado = editarLotes(data["lot_id"], data)
     return jsonify(resultado), 200
