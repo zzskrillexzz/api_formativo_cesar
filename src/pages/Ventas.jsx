@@ -1518,7 +1518,7 @@ const Ventas = () => {
                       <button
                         type="button"
                         onClick={() => setShowNewClientForm(!showNewClientForm)}
-                        className="px-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-sm font-bold flex items-center gap-1 self-start"
+                        className="px-4 py-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-sm font-bold flex items-center gap-1 self-start"
                         title="Crear nuevo cliente"
                       >
                         <Plus size={16} />
