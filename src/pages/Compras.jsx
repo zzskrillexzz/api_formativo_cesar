@@ -28,6 +28,7 @@ const Compras = () => {
   const [compras, setCompras] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroEstadoCompra, setFiltroEstadoCompra] = useState('');
   const [filtroProveedorCompra, setFiltroProveedorCompra] = useState('');
@@ -67,6 +68,7 @@ const Compras = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    setRefreshing(true);
     try {
       const [comps, provs] = await Promise.all([
         comprasService.listar().catch(() => []),
@@ -77,6 +79,7 @@ const Compras = () => {
     } catch (_) {
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -744,8 +747,8 @@ const Compras = () => {
           )}
         </div>
         <div className="flex gap-2">
-          <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
-            <RefreshCw size={18} className="text-slate-500" />
+          <button onClick={fetchData} disabled={refreshing} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm disabled:opacity-70" title="Actualizar datos">
+            <RefreshCw size={18} className={`text-slate-500 transition-transform ${refreshing ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={openModal}
             className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md btn-pulse">

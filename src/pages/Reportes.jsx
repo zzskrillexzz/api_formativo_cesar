@@ -45,6 +45,7 @@ const Reportes = () => {
   const [reportes, setReportes] = useState([]);
   const [anulaciones, setAnulaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // ── Reportes reales ──
   const [reporteTipo, setReporteTipo] = useState('ventas');
@@ -62,6 +63,7 @@ const Reportes = () => {
 
   const fetchData = async () => {
     if (isFirstLoad.current || manualRefresh.current) setLoading(true);
+    if (manualRefresh.current) setRefreshing(true);
     try {
       const [top, reps, anuls] = await Promise.all([
         masVendidosService.listar().catch(() => []),
@@ -75,6 +77,7 @@ const Reportes = () => {
       console.error('Error cargando reportes:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
       manualRefresh.current = false;
       if (isFirstLoad.current) {
         isFirstLoad.current = false;
@@ -251,8 +254,8 @@ const Reportes = () => {
             </button>
           ))}
         </div>
-        <button onClick={() => { manualRefresh.current = true; fetchData(); }} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
-          <RefreshCw size={18} className="text-slate-500" />
+        <button onClick={() => { manualRefresh.current = true; fetchData(); }} disabled={refreshing} className="p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm disabled:opacity-70" title="Actualizar datos">
+          <RefreshCw size={18} className={`text-slate-500 transition-transform ${refreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
