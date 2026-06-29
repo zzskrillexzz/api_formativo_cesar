@@ -71,7 +71,7 @@ const Devoluciones = () => {
 
   const getCompraInfo = (comId) => {
     const com = compras.find(c => c.comp_id === comId);
-    return com ? `${com.comp_id}` : comId;
+    return com ? `${com.comp_id} ${com.comp_prov_id_fk || ''}` : comId;
   };
 
   const getLotesPorProducto = (productoId) => {
@@ -281,7 +281,7 @@ const Devoluciones = () => {
 
   const filteredDevoluciones = devoluciones.filter(d => {
     const busca = searchTerm
-      ? [d.id, d.compra_id, getProductoNombre(d.producto_id), d.lote_id, d.motivo, d.usuario_id]
+      ? [d.id, d.compra_id, getProductoNombre(d.producto_id), d.lote_id, d.motivo, d.usuario_id, d.fecha, String(d.cantidad || ''), getCompraInfo(d.compra_id)]
           .filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
       : true;
     const porFechaDesde = !fechaDesde || (d.fecha && d.fecha >= fechaDesde);

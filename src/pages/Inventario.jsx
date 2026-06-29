@@ -629,7 +629,7 @@ const Inventario = () => {
   ];
 
   const filteredProductos = productos.filter(p => {
-    const busca = [p.id, p.nombre, p.categoria, p.descripcion, p.estado
+    const busca = [p.id, p.nombre, p.categoria, p.descripcion, p.estado, String(p.precio || '')
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     const porEstado = !filtroEstadoProducto || p.estado === filtroEstadoProducto;
     const porCategoria = !filtroCategoriaProducto || p.categoria === filtroCategoriaProducto;
@@ -649,8 +649,12 @@ const Inventario = () => {
   );
 
   const filteredLotes = lotes.filter(l => {
+    const prod = productos.find(p => p.id === l.lot_pro_id_fk);
+    const nombreProducto = prod ? prod.nombre : '';
+    const prov = proveedores.find(p => p.prov_id === l.lot_prov_id_fk);
+    const nombreProveedor = prov ? prov.prov_nombre : '';
     const busca = [l.lot_id, l.lot_numero, l.lot_fecha_fabricacion, l.lot_fecha_vencimiento,
-      l.lot_cantidad_inicial, l.lot_cantidad_actual, l.lot_pro_id_fk, l.lot_prov_id_fk, l.lot_estado
+      l.lot_cantidad_inicial, l.lot_cantidad_actual, l.lot_pro_id_fk, l.lot_prov_id_fk, l.lot_estado, nombreProducto, nombreProveedor
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     const porEstado = !filtroEstado
       ? true
