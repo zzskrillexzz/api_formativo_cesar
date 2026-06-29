@@ -396,9 +396,9 @@ const Ventas = () => {
     setLoading(true);
     try {
       const [peds, facs, clis] = await Promise.all([
-        pedidosService.listar().catch(() => []),
-        facturasService.listar().catch(() => []),
-        clientesService.listar().catch(() => [])
+        pedidosService.listar({ limit: 10000 }).catch(() => []),
+        facturasService.listar({ limit: 10000 }).catch(() => []),
+        clientesService.listar({ limit: 10000 }).catch(() => [])
       ]);
       setPedidos(peds);
       setFacturas(facs);
@@ -416,9 +416,9 @@ const Ventas = () => {
     setRefreshing(true);
     try {
       const [peds, facs, clis] = await Promise.all([
-        pedidosService.listar().catch(() => []),
-        facturasService.listar().catch(() => []),
-        clientesService.listar().catch(() => [])
+        pedidosService.listar({ limit: 10000 }).catch(() => []),
+        facturasService.listar({ limit: 10000 }).catch(() => []),
+        clientesService.listar({ limit: 10000 }).catch(() => [])
       ]);
       setPedidos(peds);
       setFacturas(facs);
@@ -657,7 +657,16 @@ const Ventas = () => {
     try {
       const payload = {
         id: formData.id,
-        fecha_emision: formData.fecha_emision ? formData.fecha_emision.replace('T', ' ') + ':00' : '',
+        fecha_emision: (() => {
+          const f = formData.fecha_emision;
+          if (!f) return '';
+          // Ya viene en formato MySQL datetime (YYYY-MM-DD HH:MM:SS) — pasar tal cual
+          if (f.includes(' ') && f.includes(':')) return f;
+          // Viene de datetime-local (YYYY-MM-DDTHH:MM) → convertir
+          if (f.includes('T')) return f.replace('T', ' ') + ':00';
+          // Solo fecha (YYYY-MM-DD) → agregar hora Colombia actual
+          return f + ' ' + ahoraColombia().split('T')[1] + ':00';
+        })(),
         email_enviado: emailEnviado,
         forma_pago: formData.forma_pago,
         cuenta_bancaria: formData.forma_pago === 'Transferencia' ? formData.cuenta_bancaria || '' : null,

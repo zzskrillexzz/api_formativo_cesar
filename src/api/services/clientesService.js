@@ -3,9 +3,7 @@ import api from '../axios';
 export const clientesService = {
   listar: async (params = {}) => {
     const res = await api.get('/clientes/', { params });
-    // Si se pidió paginación explícita, retornamos el objeto completo
-    if (params.page || params.limit) return res.data;
-    // Sin params: compatibilidad con Dashboard (retorna solo el array)
+    // Siempre extraer el array .data si existe
     if (res.data && Array.isArray(res.data.data)) return res.data.data;
     return res.data;
   },
