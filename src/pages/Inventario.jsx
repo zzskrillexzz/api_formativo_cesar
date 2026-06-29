@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Package, Layers, AlertTriangle, Search, Plus, X, RefreshCw, Edit, Loader2, Trash2 } from 'lucide-react';
+import { Package, Layers, AlertTriangle, Search, Plus, X, RefreshCw, Edit, Loader2, Trash2, Eye } from 'lucide-react';
 import { ThemeLoader } from '../components/ThemeLoader';
 import { productosService } from '../api/services/productosService';
 import { lotesService } from '../api/services/lotesService';
@@ -33,6 +33,7 @@ const Inventario = () => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
+  const [viewingId, setViewingId] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroProducto, setFiltroProducto] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
@@ -134,6 +135,7 @@ const Inventario = () => {
     setFormError('');
     setErrors({});
     setEditingId(null);
+    setViewingId(null);
     setShowModal(true);
   };
 
@@ -232,6 +234,24 @@ const Inventario = () => {
     setEditingId(lote.lot_id);
     setLoteSelectedProvId(lote.lot_prov_id_fk || '');
     setLoteSearchProducto('');
+    setShowModal(true);
+  };
+
+  const verDetalleLote = (lote) => {
+    const viewData = {
+      lot_id: lote.lot_id,
+      lot_numero: lote.lot_numero || '',
+      lot_fecha_fabricacion: lote.lot_fecha_fabricacion || '',
+      lot_fecha_vencimiento: lote.lot_fecha_vencimiento || '',
+      lot_cantidad_inicial: lote.lot_cantidad_inicial || 0,
+      lot_cantidad_actual: lote.lot_cantidad_actual || 0,
+      lot_pro_id_fk: lote.lot_pro_id_fk || '',
+      lot_prov_id_fk: lote.lot_prov_id_fk || '',
+      lot_estado: lote.lot_estado || 'Activo'
+    };
+    setFormData(viewData);
+    setViewingId(lote.lot_id);
+    setLoteSelectedProvId(lote.lot_prov_id_fk || '');
     setShowModal(true);
   };
 
@@ -422,6 +442,7 @@ const Inventario = () => {
       }
       setShowNewProductForm(false);
       setShowModal(false);
+      setViewingId(null);
       fetchData();
     } catch (err) {
       toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar producto' });
@@ -505,6 +526,7 @@ const Inventario = () => {
         toast({ type: 'success', title: 'Creado', description: 'Lote registrado correctamente' });
       }
       setShowModal(false);
+      setViewingId(null);
       fetchData();
     } catch (err) {
       toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al guardar lote' });
@@ -1056,6 +1078,9 @@ const Inventario = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-0.5">
+                          <button onClick={() => verDetalleLote(l)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Ver detalle">
+                            <Eye size={14} />
+                          </button>
                           <button onClick={() => abrirEditarLote(l)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Editar">
                             <Edit size={14} />
                           </button>
@@ -1258,9 +1283,9 @@ const Inventario = () => {
           <div ref={focusTrapRef} className="bg-white rounded-lg shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800">
-                {isEditing ? 'Editar' : 'Nuevo'} {tab === 'productos' ? 'Producto' : tab === 'lotes' ? 'Lote' : 'Movimiento'}
+                {viewingId ? 'Detalle del Lote' : isEditing ? 'Editar' : 'Nuevo'} {!viewingId && (tab === 'productos' ? 'Producto' : tab === 'lotes' ? 'Lote' : 'Movimiento')}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-md transition-colors">
+              <button onClick={() => { setShowModal(false); setViewingId(null); }} className="p-2 hover:bg-slate-100 rounded-md transition-colors">
                 <X size={20} className="text-slate-400" />
               </button>
             </div>
@@ -1488,95 +1513,189 @@ const Inventario = () => {
               {/* ─── LOTE ─── */}
               {tab === 'lotes' && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
-                      <input name="lot_id" value={formData.lot_id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" autoFocus />
+                  {viewingId ? (
+                    /* ── Vista detalle (read-only) ── */
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID</label>
+                          <p className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 mt-1">{formData.lot_id}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">N° Lote</label>
+                          <p className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 mt-1">{formData.lot_numero || '—'}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto</label>
+                          <p className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 mt-1">
+                            {(() => {
+                              const prod = productos.find(p => p.id === formData.lot_pro_id_fk);
+                              return prod ? `${prod.id} - ${prod.nombre}` : (formData.lot_pro_id_fk || '—');
+                            })()}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor</label>
+                          <p className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 mt-1">
+                            {(() => {
+                              const prov = proveedores.find(p => p.prov_id === formData.lot_prov_id_fk);
+                              return prov ? `${prov.prov_id} - ${prov.prov_nombre}` : (formData.lot_prov_id_fk || '—');
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Fabricación</label>
+                          <p className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 mt-1">{formData.lot_fecha_fabricacion || '—'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Vencimiento</label>
+                          <p className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 mt-1">
+                            {formData.lot_fecha_vencimiento || '—'}
+                            {formData.lot_fecha_vencimiento && (() => {
+                              const hoy = new Date();
+                              const ven = new Date(formData.lot_fecha_vencimiento);
+                              const diff = Math.ceil((ven - hoy) / (1000 * 60 * 60 * 24));
+                              if (diff < 0) return <span className="ml-2 text-xs font-bold text-red-600">(Vencido hace {Math.abs(diff)} días)</span>;
+                              if (diff <= 30) return <span className="ml-2 text-xs font-bold text-red-600">({diff} días restantes)</span>;
+                              if (diff <= 60) return <span className="ml-2 text-xs font-bold text-orange-500">({diff} días restantes)</span>;
+                              return <span className="ml-2 text-xs font-bold text-emerald-600">({diff} días restantes)</span>;
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad Inicial</label>
+                          <p className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 mt-1">{formData.lot_cantidad_inicial || 0}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad Actual</label>
+                          <p className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 mt-1">
+                            {formData.lot_cantidad_actual || 0}
+                            {formData.lot_cantidad_inicial > 0 && (() => {
+                              const pct = Math.round(((formData.lot_cantidad_inicial - formData.lot_cantidad_actual) / formData.lot_cantidad_inicial) * 100);
+                              const ancho = Math.min(formData.lot_cantidad_actual / formData.lot_cantidad_inicial * 100, 100);
+                              const color = pct >= 80 ? 'bg-red-400' : pct >= 50 ? 'bg-orange-400' : 'bg-emerald-400';
+                              return (
+                                <div className="mt-1.5 flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full ${color}`} style={{ width: `${ancho}%` }} />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-slate-400">{pct}% usado</span>
+                                </div>
+                              );
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
+                        <div className="mt-1">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase ${formData.lot_estado === 'Activo' ? 'text-emerald-600 bg-emerald-50' : formData.lot_estado === 'Agotado' ? 'text-slate-500 bg-slate-100' : formData.lot_estado === 'Vencido' ? 'text-red-600 bg-red-50' : 'text-yellow-600 bg-yellow-50'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${formData.lot_estado === 'Activo' ? 'bg-emerald-500' : formData.lot_estado === 'Agotado' ? 'bg-slate-400' : formData.lot_estado === 'Vencido' ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                            {formData.lot_estado}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">N° Lote <span className="required-star">*</span></label>
-                      <input name="lot_numero" value={formData.lot_numero || ''} disabled={!editingId} className="w-full p-3 bg-slate-100 border-2 border-slate-200 rounded-md outline-none text-sm font-medium text-slate-500 mt-1" />
-                      {errors.lot_numero && <p className="text-red-500 text-xs mt-1">{errors.lot_numero}</p>}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID <span className="required-star">*</span></label>
-                      <select name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_prov_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
-                        <option value="">Seleccionar proveedor...</option>
-                        {proveedores.map(p => (
-                          <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
-                        ))}
-                      </select>
-                      {errors.lot_prov_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_prov_id_fk}</p>}
-                    </div>
-                    <div>
-                      {loteSelectedProvId ? (
-                        <>
-                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Buscar producto</label>
-                          <div className="relative mt-1">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
-                              name="loteSearchProducto"
-                              value={loteSearchProducto}
-                              onChange={handleChange}
-                              placeholder="Buscar producto..."
-                              className="w-full pl-9 pr-3 py-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-                            />
-                          </div>
-                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-2 block">Producto ID</label>
-                          <select name="lot_pro_id_fk" value={formData.lot_pro_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_pro_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
-                            <option value="">Seleccionar producto...</option>
-                            {productos
-                              .filter(p => p.estado === 'Activo' && productosProveedor.some(pp => pp.proveedor_id === loteSelectedProvId && pp.producto_id === p.id))
-                              .filter(p => !loteSearchProducto || p.id.toLowerCase().includes(loteSearchProducto.toLowerCase()) || p.nombre.toLowerCase().includes(loteSearchProducto.toLowerCase()))
-                              .map(p => (
-                                <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>
+                  ) : (
+                    /* ── Formulario de lote (crear/editar) ── */
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">ID <span className="required-star">*</span></label>
+                          <input name="lot_id" value={formData.lot_id || ''} disabled className="w-full p-3 bg-slate-100 border border-slate-200 rounded-md outline-none text-sm font-medium text-slate-400 mt-1" autoFocus />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">N° Lote <span className="required-star">*</span></label>
+                          <input name="lot_numero" value={formData.lot_numero || ''} disabled={!editingId} className="w-full p-3 bg-slate-100 border-2 border-slate-200 rounded-md outline-none text-sm font-medium text-slate-500 mt-1" />
+                          {errors.lot_numero && <p className="text-red-500 text-xs mt-1">{errors.lot_numero}</p>}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor ID <span className="required-star">*</span></label>
+                          <select name="lot_prov_id_fk" value={formData.lot_prov_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_prov_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
+                            <option value="">Seleccionar proveedor...</option>
+                            {proveedores.map(p => (
+                              <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>
                             ))}
                           </select>
-                          {errors.lot_pro_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_pro_id_fk}</p>}
-                        </>
-                      ) : (
-                        <div className="flex items-center justify-center h-full min-h-[80px]">
-                          <p className="text-sm text-slate-400 italic">Seleccione un proveedor primero</p>
+                          {errors.lot_prov_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_prov_id_fk}</p>}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Fabricación</label>
-                      <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange}
-                        min={`${new Date().getFullYear() - 5}-01-01`} max={new Date().toISOString().split('T')[0]}
-                        className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_fabricacion ? 'border-red-400' : 'border-slate-300'}`} />
-                      {errors.lot_fecha_fabricacion && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_fabricacion}</p>}
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Vencimiento <span className="required-star">*</span></label>
-                      <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange}
-                        min={`${new Date().getFullYear() - 5}-01-01`} max={new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                        className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_vencimiento ? 'border-red-400' : 'border-slate-300'}`} />
-                      {errors.lot_fecha_vencimiento && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_vencimiento}</p>}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad Inicial</label>
-                      <input name="lot_cantidad_inicial" type="number" min="1" max="1000" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-300'}`} />
-                      {errors.lot_cantidad_inicial && <p className="text-red-500 text-xs mt-1">{errors.lot_cantidad_inicial}</p>}
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
-                      <select name="lot_estado" value={formData.lot_estado || 'Activo'} onChange={handleChange} disabled={!editingId}
-                        className={`w-full p-3 border-2 rounded-md outline-none text-sm font-medium mt-1 ${editingId ? 'bg-white border-slate-300 focus:ring-2 focus:ring-blue-500' : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'}`}>
-                        <option value="Activo">Activo</option>
-                        <option value="Agotado">Agotado</option>
-                        <option value="Vencido">Vencido</option>
-                        <option value="Cuarentena">Cuarentena</option>
-                      </select>
-                      {!editingId && <p className="text-[10px] text-amber-600 font-medium mt-0.5">Solo editable al modificar</p>}
-                    </div>
-                  </div>
+                        <div>
+                          {loteSelectedProvId ? (
+                            <>
+                              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Buscar producto</label>
+                              <div className="relative mt-1">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                  name="loteSearchProducto"
+                                  value={loteSearchProducto}
+                                  onChange={handleChange}
+                                  placeholder="Buscar producto..."
+                                  className="w-full pl-9 pr-3 py-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                />
+                              </div>
+                              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-2 block">Producto ID</label>
+                              <select name="lot_pro_id_fk" value={formData.lot_pro_id_fk || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_pro_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
+                                <option value="">Seleccionar producto...</option>
+                                {productos
+                                  .filter(p => p.estado === 'Activo' && productosProveedor.some(pp => pp.proveedor_id === loteSelectedProvId && pp.producto_id === p.id))
+                                  .filter(p => !loteSearchProducto || p.id.toLowerCase().includes(loteSearchProducto.toLowerCase()) || p.nombre.toLowerCase().includes(loteSearchProducto.toLowerCase()))
+                                  .map(p => (
+                                    <option key={p.id} value={p.id}>{p.id} - {p.nombre}</option>
+                                ))}
+                              </select>
+                              {errors.lot_pro_id_fk && <p className="text-red-500 text-xs mt-1">{errors.lot_pro_id_fk}</p>}
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center h-full min-h-[80px]">
+                              <p className="text-sm text-slate-400 italic">Seleccione un proveedor primero</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Fabricación</label>
+                          <input name="lot_fecha_fabricacion" type="date" value={formData.lot_fecha_fabricacion || ''} onChange={handleChange}
+                            min={`${new Date().getFullYear() - 5}-01-01`} max={new Date().toISOString().split('T')[0]}
+                            className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_fabricacion ? 'border-red-400' : 'border-slate-300'}`} />
+                          {errors.lot_fecha_fabricacion && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_fabricacion}</p>}
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha Vencimiento <span className="required-star">*</span></label>
+                          <input name="lot_fecha_vencimiento" type="date" value={formData.lot_fecha_vencimiento || ''} onChange={handleChange}
+                            min={`${new Date().getFullYear() - 5}-01-01`} max={new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                            className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_fecha_vencimiento ? 'border-red-400' : 'border-slate-300'}`} />
+                          {errors.lot_fecha_vencimiento && <p className="text-red-500 text-xs mt-1">{errors.lot_fecha_vencimiento}</p>}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cantidad Inicial</label>
+                          <input name="lot_cantidad_inicial" type="number" min="1" max="1000" value={formData.lot_cantidad_inicial || ''} onChange={handleChange} className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.lot_cantidad_inicial ? 'border-red-400' : 'border-slate-300'}`} />
+                          {errors.lot_cantidad_inicial && <p className="text-red-500 text-xs mt-1">{errors.lot_cantidad_inicial}</p>}
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</label>
+                          <select name="lot_estado" value={formData.lot_estado || 'Activo'} onChange={handleChange} disabled={!editingId}
+                            className={`w-full p-3 border-2 rounded-md outline-none text-sm font-medium mt-1 ${editingId ? 'bg-white border-slate-300 focus:ring-2 focus:ring-blue-500' : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'}`}>
+                            <option value="Activo">Activo</option>
+                            <option value="Agotado">Agotado</option>
+                            <option value="Vencido">Vencido</option>
+                            <option value="Cuarentena">Cuarentena</option>
+                          </select>
+                          {!editingId && <p className="text-[10px] text-amber-600 font-medium mt-0.5">Solo editable al modificar</p>}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
 
@@ -1648,16 +1767,28 @@ const Inventario = () => {
                 </>
               )}
 
-              <button
-                type="submit"
-                disabled={formSubmitting || Object.keys(errors).length > 0 || (tab === 'productos' && !isEditing && !showNewProductForm)}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-3.5 rounded-lg shadow-sm shadow-blue-100 transition-all active:scale-95 uppercase tracking-wider text-xs flex items-center justify-center gap-2"
-              >
-                {formSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
-                {isEditing ? 'Actualizar' : 'Guardar'}
-              </button>
-              {Object.keys(errors).length > 0 && !formSubmitting && (
-                <p className="text-red-500 text-xs text-center mt-2">Corrige los errores marcados antes de guardar</p>
+              {viewingId ? (
+                <button
+                  type="button"
+                  onClick={() => { setShowModal(false); setViewingId(null); }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg shadow-sm transition-all active:scale-95 uppercase tracking-wider text-xs flex items-center justify-center gap-2"
+                >
+                  Cancelar
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="submit"
+                    disabled={formSubmitting || Object.keys(errors).length > 0 || (tab === 'productos' && !isEditing && !showNewProductForm)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-3.5 rounded-lg shadow-sm shadow-blue-100 transition-all active:scale-95 uppercase tracking-wider text-xs flex items-center justify-center gap-2"
+                  >
+                    {formSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
+                    {isEditing ? 'Actualizar' : 'Guardar'}
+                  </button>
+                  {Object.keys(errors).length > 0 && !formSubmitting && (
+                    <p className="text-red-500 text-xs text-center mt-2">Corrige los errores marcados antes de guardar</p>
+                  )}
+                </>
               )}
             </form>
           </div>
