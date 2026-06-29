@@ -253,7 +253,8 @@ const Usuarios = () => {
   // ═══════════════════ FILTROS Y PAGINACIÓN ═══════════════════
 
   const filteredUsuarios = usuarios.filter(u => {
-    const busca = [u.usu_id, u.usu_nombre, u.usu_correo, u.usu_rol]
+    const estadoTexto = u.usu_estado === 1 || u.usu_estado === '1' || u.usu_estado === true ? 'Activo' : 'Inactivo';
+    const busca = [u.usu_id, u.usu_nombre, u.usu_correo, u.usu_rol, estadoTexto]
       .filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     const porRol = !filtroRol || u.usu_rol === filtroRol;
     const porEstado = filtroEstado === '' || u.usu_estado === Number(filtroEstado);

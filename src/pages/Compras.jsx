@@ -674,7 +674,9 @@ const Compras = () => {
   const filteredCompras = compras.filter(c => {
     const porEstado = !filtroEstadoCompra || c.comp_estado === filtroEstadoCompra;
     const porProveedor = !filtroProveedorCompra || c.comp_prov_id_fk === filtroProveedorCompra;
-    const busca = [c.comp_id, c.comp_fecha, c.comp_prov_id_fk, c.comp_estado, c.comp_total, c.comp_observacion
+    const prov = proveedores.find(p => p.prov_id === c.comp_prov_id_fk);
+    const nombreProveedor = prov ? `${prov.prov_nombre}` : '';
+    const busca = [c.comp_id, c.comp_fecha, c.comp_prov_id_fk, c.comp_estado, c.comp_total, c.comp_observacion, c.comp_usu_id_fk, nombreProveedor
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     return porEstado && porProveedor && busca;
   });

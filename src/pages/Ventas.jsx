@@ -448,8 +448,10 @@ const Ventas = () => {
 
   const filteredPedidos = pedidos.filter(p => {
     const porEstado = !filtroEstadoPedido || p.ped_estado_entrega === filtroEstadoPedido;
+    const cli = clientes.find(c => c.cli_id === p.ped_cli_id_fk);
+    const nombreCliente = cli ? `${cli.cli_nombre} ${cli.cli_apellido}` : '';
     const busca = [p.ped_id, p.ped_cli_id_fk, p.ped_fecha, p.ped_metodo_pago, p.ped_total,
-     p.ped_estado_pago, p.ped_estado_entrega, p.ped_cuenta_bancaria
+     p.ped_estado_pago, p.ped_estado_entrega, p.ped_cuenta_bancaria, p.ped_usu_id_fk, nombreCliente
     ].filter(Boolean).join(' ').toLowerCase().includes(searchTerm.toLowerCase());
     return porEstado && busca;
   });
@@ -1097,7 +1099,7 @@ const Ventas = () => {
                   paginatedPedidos.map((p, i) => (
                     <tr key={i} className="hover:bg-orange-100/70">
                       <td className="px-6 py-4 text-slate-400 text-xs">{p.ped_id}</td>
-                      <td className="px-6 py-4">{p.ped_cli_id_fk || '-'}</td>
+                      <td className="px-6 py-4">{(() => { const cli = clientes.find(c => c.cli_id === p.ped_cli_id_fk); return cli ? `${cli.cli_nombre} ${cli.cli_apellido}` : (p.ped_cli_id_fk || '-'); })()}</td>
                       <td className="px-6 py-4 text-slate-400">{p.ped_fecha || '-'}</td>
                       <td className="px-6 py-4">
                         {['Nequi', 'Daviplata', 'Transferencia'].includes(p.ped_metodo_pago)
