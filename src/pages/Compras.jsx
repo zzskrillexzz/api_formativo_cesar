@@ -104,7 +104,7 @@ const Compras = () => {
       setFormData(defaultData);
       setProductosSeleccionados([]);
       setBuscadorProducto('');
-      setBuscadorSearchMode('producto');
+      setBuscadorSearchMode('proveedor');
       setBuscadorProvId('');
       formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
       productosService.listar().then(prods => setProductosDisponibles(prods.filter(p => p.estado === 'Activo'))).catch(() => setProductosDisponibles([]));
@@ -208,6 +208,9 @@ const Compras = () => {
       setBuscadorProvId(value);
       setBuscadorProducto('');
       setProdSelector('');
+      if (value) {
+        setBuscadorSearchMode('producto');
+      }
     }
     const max = FIELD_LIMITS[name];
     if (max && cleanValue.length > max) return;
@@ -1074,7 +1077,8 @@ const Compras = () => {
                       <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Proveedor <span className="required-star">*</span></label>
                         <select name="com_prov_id_fk" value={formData.com_prov_id_fk || ''} onChange={handleChange}
-                          className={`w-full p-2 text-xs border rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5 ${errors.com_prov_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
+                          disabled={!!formData.com_prov_id_fk}
+                          className={`w-full p-2 text-xs border rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5 ${errors.com_prov_id_fk ? 'border-red-400' : 'border-slate-300'} ${formData.com_prov_id_fk ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}`}>
                           <option value="">Seleccionar proveedor...</option>
                           {proveedores
                             .filter(p => buscadorSearchMode !== 'proveedor' || !buscadorProducto ||
