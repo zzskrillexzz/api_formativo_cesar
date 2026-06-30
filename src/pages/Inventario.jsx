@@ -567,8 +567,8 @@ const Inventario = () => {
         inm_usu_id_fk: user?.id || ''
       });
       setShowModal(false);
+      setPagina(1);
       toast({ type: 'success', title: 'Creado', description: 'Movimiento registrado correctamente' });
-      fetchData();
     } catch (err) {
       toast({ type: 'error', title: 'Error', description: err.response?.data?.mensaje || 'Error al crear movimiento' });
     } finally {
