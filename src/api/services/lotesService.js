@@ -32,5 +32,9 @@ export const lotesService = {
       return res.data.data;
     }
     return res.data;
+  },
+  activar: async (id) => {
+    const res = await api.post(`/lotes/${id}/activar`);
+    return res.data;
   }
 };

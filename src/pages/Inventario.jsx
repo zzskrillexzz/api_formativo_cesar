@@ -220,6 +220,26 @@ const Inventario = () => {
     });
   };
 
+  const activarLotePendiente = async (id) => {
+    setConfirmAction({
+      type: 'activar',
+      danger: false,
+      title: 'Activar Lote',
+      message: `¿Activar el lote ${id}? Esto actualizará el stock y marcará la compra asociada como Recibida.`,
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          const res = await lotesService.activar(id);
+          toast({ type: 'success', title: 'Lote activado', description: res.mensaje || `Lote ${id} activado correctamente` });
+          fetchData();
+        } catch(e) {
+          toast({ type: 'error', title: 'Error', description: e.response?.data?.mensaje || e.message });
+        }
+      },
+      onCancel: () => setConfirmAction(null),
+    });
+  };
+
   const abrirEditarLote = (lote) => {
     const editData = {
       lot_id: lote.lot_id, lot_numero: lote.lot_numero || '',
@@ -678,6 +698,7 @@ const Inventario = () => {
       'Agotado': { cls: 'text-red-600 bg-red-50', dot: 'bg-red-500' },
       'Vencido': { cls: 'text-orange-600 bg-orange-50', dot: 'bg-orange-500' },
       'Cuarentena': { cls: 'text-yellow-600 bg-yellow-50', dot: 'bg-yellow-500' },
+      'Pendiente': { cls: 'text-sky-600 bg-sky-50', dot: 'bg-sky-500' },
       'Descontinuado': { cls: 'text-slate-500 bg-slate-100', dot: 'bg-slate-400' },
       'Suspendido': { cls: 'text-red-500 bg-red-50', dot: 'bg-red-400' },
     };
@@ -921,6 +942,7 @@ const Inventario = () => {
             >
               <option value="">Todos los estados</option>
               <option value="Activo">Activo</option>
+              <option value="Pendiente">Pendiente</option>
               <option value="Agotado">Agotado</option>
               <option value="Vencido">Vencido</option>
               <option value="Cuarentena">Cuarentena</option>
@@ -951,6 +973,7 @@ const Inventario = () => {
             const agotados = lotes.filter(l => l.lot_estado === 'Agotado').length;
             const vencidos = lotes.filter(l => l.lot_estado === 'Vencido').length;
             const cuarentena = lotes.filter(l => l.lot_estado === 'Cuarentena').length;
+            const pendientes = lotes.filter(l => l.lot_estado === 'Pendiente').length;
             const proximos = lotes.filter(l =>
               l.lot_estado === 'Activo' &&
               getDiasRestantes(l.lot_fecha_vencimiento) !== null &&
@@ -960,13 +983,14 @@ const Inventario = () => {
             const cards = [
               { label: 'Todos', count: lotes.length, icon: '📋', color: 'border-blue-200 bg-blue-50/50', text: 'text-blue-700', filtro: '' },
               { label: 'Activos', count: activos, icon: '✅', color: 'border-emerald-200 bg-emerald-50/50', text: 'text-emerald-700', filtro: 'Activo' },
+              { label: 'Pendientes', count: pendientes, icon: '⏳', color: 'border-sky-200 bg-sky-50/50', text: 'text-sky-600', filtro: 'Pendiente' },
               { label: 'Agotados', count: agotados, icon: '⛔', color: 'border-slate-200 bg-slate-50/50', text: 'text-slate-600', filtro: 'Agotado' },
               { label: 'Vencidos', count: vencidos, icon: '🚫', color: 'border-red-200 bg-red-50/50', text: 'text-red-700', filtro: 'Vencido' },
               { label: 'Cuarentena', count: cuarentena, icon: '⚠️', color: 'border-orange-200 bg-orange-50/50', text: 'text-orange-700', filtro: 'Cuarentena' },
               { label: 'Próx. vencer', count: proximos, icon: '⏳', color: 'border-amber-200 bg-amber-50/50', text: 'text-amber-700', filtro: '__proximos__' },
             ];
             return (
-              <div className="grid grid-cols-6 gap-2 px-6 pt-4 pb-2">
+              <div className="grid grid-cols-5 gap-2 px-6 pt-4 pb-2">
                 {cards.map((c, idx) => (
                   <button
                     key={idx}
@@ -1068,7 +1092,7 @@ const Inventario = () => {
                             {l.lot_estado}
                           </span>
                           <div className="absolute left-0 top-full mt-1 z-20 hidden group-hover:block bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
-                            {['Activo', 'Agotado', 'Vencido', 'Cuarentena']
+                            {['Activo', 'Pendiente', 'Agotado', 'Vencido', 'Cuarentena']
                               .filter(e => e !== l.lot_estado)
                               .map(e => (
                                 <button
@@ -1084,6 +1108,11 @@ const Inventario = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-0.5">
+                          {l.lot_estado === 'Pendiente' && (
+                            <button onClick={() => activarLotePendiente(l.lot_id)} className="p-2 text-emerald-500 hover:bg-emerald-50 transition-colors font-bold text-[10px] uppercase" title="Activar lote (Pendiente → Activo)">
+                              <span className="flex items-center gap-1"><Package size={14} /> Activar</span>
+                            </button>
+                          )}
                           <button onClick={() => verDetalleLote(l)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Ver detalle">
                             <Eye size={14} />
                           </button>

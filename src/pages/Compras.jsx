@@ -7,6 +7,7 @@ import { comprasService } from '../api/services/comprasService';
 import { proveedoresService } from '../api/services/proveedoresService';
 import { productosService } from '../api/services/productosService';
 import { detallesComprasService } from '../api/services/detallesComprasService';
+import { proveedoresProductosService } from '../api/services/proveedoresProductosService';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
@@ -54,6 +55,10 @@ const Compras = () => {
   const [prodSelector, setProdSelector] = useState('');
   const [prodCantidad, setProdCantidad] = useState('');
   const [prodPrecio, setProdPrecio] = useState('');
+  const [prodFechaFabricacion, setProdFechaFabricacion] = useState('');
+  const [prodFechaVencimiento, setProdFechaVencimiento] = useState('');
+  const [buscadorSearchMode, setBuscadorSearchMode] = useState('producto');
+  const [buscadorProvId, setBuscadorProvId] = useState('');
   const [showEditProveedorModal, setShowEditProveedorModal] = useState(false);
   const [editProveedorData, setEditProveedorData] = useState({});
   const [showViewModal, setShowViewModal] = useState(null);
@@ -70,12 +75,14 @@ const Compras = () => {
     setLoading(true);
     setRefreshing(true);
     try {
-      const [comps, provs] = await Promise.all([
+      const [comps, provs, provProds] = await Promise.all([
         comprasService.listar().catch(() => []),
-        proveedoresService.listar().catch(() => [])
+        proveedoresService.listar().catch(() => []),
+        proveedoresProductosService.listar().catch(() => [])
       ]);
       setCompras(comps);
       setProveedores(provs);
+      setProductosProveedor(Array.isArray(provProds) ? provProds : []);
     } catch (_) {
     } finally {
       setLoading(false);
@@ -97,6 +104,8 @@ const Compras = () => {
       setFormData(defaultData);
       setProductosSeleccionados([]);
       setBuscadorProducto('');
+      setBuscadorSearchMode('producto');
+      setBuscadorProvId('');
       formSnapshotRef.current = JSON.parse(JSON.stringify(defaultData));
       productosService.listar().then(prods => setProductosDisponibles(prods.filter(p => p.estado === 'Activo'))).catch(() => setProductosDisponibles([]));
     } else {
@@ -116,6 +125,8 @@ const Compras = () => {
     setFormError('');
     setComprobanteFile(null);
     setBuscadorProducto('');
+    setBuscadorSearchMode('producto');
+    setBuscadorProvId(compra.comp_prov_id_fk || '');
     try {
       const [detalle, todosDetalles, prods] = await Promise.all([
         comprasService.buscar(compra.comp_id),
@@ -192,6 +203,11 @@ const Compras = () => {
       cleanValue = cleanValue.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]/g, '');
     } else if (name === 'nit') {
       cleanValue = cleanValue.replace(/[^0-9]/g, '');
+    }
+    if (name === 'com_prov_id_fk') {
+      setBuscadorProvId(value);
+      setBuscadorProducto('');
+      setProdSelector('');
     }
     const max = FIELD_LIMITS[name];
     if (max && cleanValue.length > max) return;
@@ -295,13 +311,16 @@ const Compras = () => {
     if (!prodId) { setFormError('Selecciona un producto'); return; }
     if (!cantidad || cantidad <= 0) { setFormError('La cantidad debe ser mayor a 0'); return; }
     if (!precio || precio <= 0) { setFormError('El precio unitario debe ser mayor a 0'); return; }
+    if (!prodFechaFabricacion) { setFormError('La fecha de fabricación es obligatoria'); return; }
+    if (!prodFechaVencimiento) { setFormError('La fecha de vencimiento es obligatoria'); return; }
+    if (prodFechaVencimiento <= prodFechaFabricacion) { setFormError('La fecha de vencimiento debe ser posterior a la de fabricación'); return; }
     setFormError('');
     const producto = productosDisponibles.find(p => String(p.id) === String(prodId));
     if (!producto) return;
     const yaExiste = productosSeleccionados.find(p => String(p.pro_id) === String(prodId));
     if (yaExiste) { setFormError('El producto ya está agregado'); return; }
     const subtotal = cantidad * precio;
-    const nuevo = { pro_id: prodId, pro_nombre: producto.nombre, cantidad, precio_unitario: precio, subtotal };
+    const nuevo = { pro_id: prodId, pro_nombre: producto.nombre, cantidad, precio_unitario: precio, subtotal, fecha_fabricacion: prodFechaFabricacion, fecha_vencimiento: prodFechaVencimiento };
     const actualizados = [...productosSeleccionados, nuevo];
     setProductosSeleccionados(actualizados);
     const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
@@ -310,6 +329,8 @@ const Compras = () => {
     setProdSelector('');
     setProdCantidad('');
     setProdPrecio('');
+    setProdFechaFabricacion('');
+    setProdFechaVencimiento('');
   };
 
   const quitarProductoCompra = (proId) => {
@@ -327,13 +348,16 @@ const Compras = () => {
     if (!prodId) { setFormError('Selecciona un producto'); return; }
     if (!cantidad || cantidad <= 0) { setFormError('La cantidad debe ser mayor a 0'); return; }
     if (!precio || precio <= 0) { setFormError('El precio unitario debe ser mayor a 0'); return; }
+    if (!prodFechaFabricacion) { setFormError('La fecha de fabricación es obligatoria'); return; }
+    if (!prodFechaVencimiento) { setFormError('La fecha de vencimiento es obligatoria'); return; }
+    if (prodFechaVencimiento <= prodFechaFabricacion) { setFormError('La fecha de vencimiento debe ser posterior a la de fabricación'); return; }
     setFormError('');
     const producto = productosDisponibles.find(p => String(p.id) === String(prodId));
     if (!producto) return;
     const yaExiste = productosSeleccionados.find(p => String(p.pro_id) === String(prodId));
     if (yaExiste) { setFormError('El producto ya está agregado'); return; }
     const subtotal = cantidad * precio;
-    const nuevo = { pro_id: prodId, pro_nombre: producto.nombre, cantidad, precio_unitario: precio, subtotal };
+    const nuevo = { pro_id: prodId, pro_nombre: producto.nombre, cantidad, precio_unitario: precio, subtotal, fecha_fabricacion: prodFechaFabricacion, fecha_vencimiento: prodFechaVencimiento };
     const actualizados = [...productosSeleccionados, nuevo];
     setProductosSeleccionados(actualizados);
     const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
@@ -342,6 +366,8 @@ const Compras = () => {
     setProdSelector('');
     setProdCantidad('');
     setProdPrecio('');
+    setProdFechaFabricacion('');
+    setProdFechaVencimiento('');
   };
 
   const quitarProductoEditCompra = (proId) => {
@@ -350,13 +376,6 @@ const Compras = () => {
     const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
     setEditData(prev => ({ ...prev, comp_total: totalCalculado }));
   };
-
-  const productosFiltrados = buscadorProducto
-    ? productosDisponibles.filter(p =>
-        (p.id || '').toLowerCase().includes(buscadorProducto.toLowerCase()) ||
-        (p.nombre || '').toLowerCase().includes(buscadorProducto.toLowerCase())
-      )
-    : productosDisponibles;
 
   const handleSubmitCompra = async (e) => {
     e.preventDefault();
@@ -399,7 +418,9 @@ const Compras = () => {
           dco_pro_id_fk: p.pro_id,
           dco_cantidad: p.cantidad,
           dco_precio_compra: p.precio_unitario,
-          dco_subtotal: p.subtotal
+          dco_subtotal: p.subtotal,
+          dco_fecha_fabricacion: p.fecha_fabricacion || null,
+          dco_fecha_vencimiento: p.fecha_vencimiento || null
         });
       }
 
@@ -468,7 +489,9 @@ const Compras = () => {
             dco_pro_id_fk: p.pro_id,
             dco_cantidad: p.cantidad,
             dco_precio_compra: p.precio_unitario,
-            dco_subtotal: p.subtotal
+            dco_subtotal: p.subtotal,
+            dco_fecha_fabricacion: p.fecha_fabricacion || null,
+            dco_fecha_vencimiento: p.fecha_vencimiento || null
           });
         }
       }
@@ -1018,26 +1041,72 @@ const Compras = () => {
                       {errors.com_fecha && <p className="text-red-500 text-xs mt-1">{errors.com_fecha}</p>}
                     </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor <span className="required-star">*</span></label>
-                    <select name="com_prov_id_fk" value={formData.com_prov_id_fk || ''} onChange={handleChange}
-                      className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${errors.com_prov_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
-                      <option value="">Seleccionar proveedor...</option>
-                      {errors.com_prov_id_fk && <p className="text-red-500 text-xs mt-1">{errors.com_prov_id_fk}</p>}
-                      {proveedores.map(p => <option key={p.prov_id} value={p.prov_id}>{p.prov_nombre} ({p.prov_id})</option>)}
-                    </select>
-                  </div>
                   {/* ── Productos ── */}
                   <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/30">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Productos</label>
-                    <div className="grid grid-cols-4 gap-2 mb-2">
-                      <div className="col-span-1">
-                        <select value={prodSelector} onChange={(e) => handleProductSelect(e.target.value)} className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500">
-                          <option value="">Seleccionar...</option>
-                          {(productosDelProveedor || []).map(p => (
-                            <option key={p.id} value={p.id}>{p.id} — {p.nombre}</option>
-                          ))}
+                    {/* ── Fila de búsqueda (toggle + input) ── */}
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Buscar por</label>
+                        <div className="flex gap-1 mt-1">
+                          <button type="button" onClick={() => { setBuscadorSearchMode('proveedor'); setBuscadorProducto(''); setProdSelector(''); }}
+                            className={`px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${buscadorSearchMode === 'proveedor' ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-orange-100'}`}>
+                            Proveedor
+                          </button>
+                          <button type="button" onClick={() => { setBuscadorSearchMode('producto'); setBuscadorProducto(''); setProdSelector(''); }}
+                            className={`px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${buscadorSearchMode === 'producto' ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-orange-100'}`}>
+                            Producto
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Filtrar</label>
+                        <div className="relative mt-1">
+                          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input value={buscadorProducto}
+                            onChange={(e) => { setBuscadorProducto(e.target.value); setProdSelector(''); }}
+                            placeholder={buscadorSearchMode === 'proveedor' ? 'Buscar proveedor...' : 'Buscar producto...'}
+                            className="w-full pl-7 pr-2 py-2 bg-white border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-xs font-medium" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Proveedor <span className="required-star">*</span></label>
+                        <select name="com_prov_id_fk" value={formData.com_prov_id_fk || ''} onChange={handleChange}
+                          className={`w-full p-2 text-xs border rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5 ${errors.com_prov_id_fk ? 'border-red-400' : 'border-slate-300'}`}>
+                          <option value="">Seleccionar proveedor...</option>
+                          {proveedores
+                            .filter(p => buscadorSearchMode !== 'proveedor' || !buscadorProducto ||
+                              p.prov_id.toLowerCase().includes(buscadorProducto.toLowerCase()) ||
+                              p.prov_nombre.toLowerCase().includes(buscadorProducto.toLowerCase()))
+                            .map(p => <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>)}
                         </select>
+                        {errors.com_prov_id_fk && <p className="text-red-500 text-[10px] mt-0.5">{errors.com_prov_id_fk}</p>}
+                      </div>
+                      <div>
+                        {buscadorSearchMode === 'producto' && (buscadorProvId || formData.com_prov_id_fk) ? (
+                          <>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Producto ID</label>
+                            <select value={prodSelector} onChange={(e) => handleProductSelect(e.target.value)} className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5">
+                              <option value="">Seleccionar producto...</option>
+                              {(productosDisponibles || [])
+                                .filter(p => p.estado === 'Activo' && productosProveedor.some(pp => String(pp.proveedor_id) === String(buscadorProvId || formData.com_prov_id_fk) && String(pp.producto_id) === String(p.id)))
+                                .filter(p => !buscadorProducto || p.id.toLowerCase().includes(buscadorProducto.toLowerCase()) || p.nombre.toLowerCase().includes(buscadorProducto.toLowerCase()))
+                                .map(p => (
+                                  <option key={p.id} value={p.id}>{p.id} — {p.nombre}</option>
+                              ))}
+                            </select>
+                          </>
+                        ) : buscadorSearchMode === 'producto' ? (
+                          <div className="flex items-center justify-center p-2 border-2 border-dashed border-slate-200 rounded-md bg-slate-50 h-[38px] mt-0.5">
+                            <p className="text-[11px] text-slate-400 italic">Seleccione un proveedor primero</p>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center p-2 border-2 border-dashed border-slate-200 rounded-md bg-slate-50 h-[38px] mt-0.5">
+                            <p className="text-[11px] text-slate-400 italic">Cambie a modo Producto para seleccionar</p>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <input value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} type="number" min="1" placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
@@ -1046,8 +1115,16 @@ const Compras = () => {
                         <input value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} type="number" step="0.01" min="0.01" placeholder="Precio U." readOnly className="w-full p-2 text-xs border border-slate-200 rounded-md outline-none bg-slate-50 text-slate-500 cursor-not-allowed" />
                       </div>
                       <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">F. Fabricación</label>
+                        <input value={prodFechaFabricacion} onChange={(e) => setProdFechaFabricacion(e.target.value)} type="date" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">F. Vencimiento</label>
+                        <input value={prodFechaVencimiento} onChange={(e) => setProdFechaVencimiento(e.target.value)} type="date" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
+                      </div>
+                      <div className="col-span-2">
                         <button type="button" onClick={agregarProductoCompra} className="w-full p-2 text-xs font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all flex items-center justify-center gap-1">
-                          <Plus size={14} /> Agregar
+                          <Plus size={14} /> Agregar Producto
                         </button>
                       </div>
                     </div>
@@ -1187,30 +1264,75 @@ const Compras = () => {
                   <input name="comp_fecha" type="date" value={editData.comp_fecha || ''} onChange={handleEditChange} min={new Date().toISOString().split('T')[0]}
                     className="w-full p-3 bg-white border-2 border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1" />
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor</label>
-                  <select name="comp_prov_id_fk" value={editData.comp_prov_id_fk || ''} onChange={handleEditChange}
-                    disabled={editData.comp_tiene_detalles}
-                    className={`w-full p-3 bg-white border-2 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium mt-1 ${editData.comp_tiene_detalles ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed' : 'border-slate-300'}`}>
-                    <option value="">Seleccionar proveedor...</option>
-                    {proveedores.map(p => <option key={p.prov_id} value={p.prov_id}>{p.prov_nombre} ({p.prov_id})</option>)}
-                  </select>
-                  {editData.comp_tiene_detalles && (
-                    <p className="text-xs text-amber-600 mt-1">⛔ No se puede cambiar — la compra ya tiene productos asociados</p>
-                  )}
-                </div>
               </div>
               {/* ── Productos (editar) ── */}
               <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/30">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Productos</label>
-                <div className="grid grid-cols-4 gap-2 mb-2">
-                  <div className="col-span-1">
-                    <select value={prodSelector} onChange={(e) => handleProductSelect(e.target.value)} className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500">
-                      <option value="">Seleccionar...</option>
-                      {(productosDelProveedor || []).map(p => (
-                        <option key={p.id} value={p.id}>{p.id} — {p.nombre}</option>
-                      ))}
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Buscar por</label>
+                    <div className="flex gap-1 mt-1">
+                      <button type="button" onClick={() => { setBuscadorSearchMode('proveedor'); setBuscadorProducto(''); setProdSelector(''); }}
+                        className={`px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${buscadorSearchMode === 'proveedor' ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-orange-100'}`}>
+                        Proveedor
+                      </button>
+                      <button type="button" onClick={() => { setBuscadorSearchMode('producto'); setBuscadorProducto(''); setProdSelector(''); }}
+                        className={`px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${buscadorSearchMode === 'producto' ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-orange-100'}`}>
+                        Producto
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Filtrar</label>
+                    <div className="relative mt-1">
+                      <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input value={buscadorProducto}
+                        onChange={(e) => { setBuscadorProducto(e.target.value); setProdSelector(''); }}
+                        placeholder={buscadorSearchMode === 'proveedor' ? 'Buscar proveedor...' : 'Buscar producto...'}
+                        className="w-full pl-7 pr-2 py-2 bg-white border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-xs font-medium" />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Proveedor <span className="required-star">*</span></label>
+                    <select name="comp_prov_id_fk" value={editData.comp_prov_id_fk || ''} onChange={handleEditChange}
+                      disabled={editData.comp_tiene_detalles}
+                      className={`w-full p-2 text-xs border rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5 ${editData.comp_tiene_detalles ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed' : 'border-slate-300'}`}>
+                      <option value="">Seleccionar proveedor...</option>
+                      {proveedores
+                        .filter(p => buscadorSearchMode !== 'proveedor' || !buscadorProducto ||
+                          p.prov_id.toLowerCase().includes(buscadorProducto.toLowerCase()) ||
+                          p.prov_nombre.toLowerCase().includes(buscadorProducto.toLowerCase()))
+                        .map(p => <option key={p.prov_id} value={p.prov_id}>{p.prov_id} - {p.prov_nombre}</option>)}
                     </select>
+                    {editData.comp_tiene_detalles && (
+                      <p className="text-[10px] text-amber-600 mt-0.5">No se puede cambiar — la compra ya tiene productos</p>
+                    )}
+                  </div>
+                  <div>
+                    {buscadorSearchMode === 'producto' && (buscadorProvId || editData.comp_prov_id_fk) ? (
+                      <>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Producto ID</label>
+                        <select value={prodSelector} onChange={(e) => handleProductSelect(e.target.value)} className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5">
+                          <option value="">Seleccionar producto...</option>
+                          {(productosDisponibles || [])
+                            .filter(p => p.estado === 'Activo' && productosProveedor.some(pp => String(pp.proveedor_id) === String(buscadorProvId || editData.comp_prov_id_fk) && String(pp.producto_id) === String(p.id)))
+                            .filter(p => !buscadorProducto || p.id.toLowerCase().includes(buscadorProducto.toLowerCase()) || p.nombre.toLowerCase().includes(buscadorProducto.toLowerCase()))
+                            .map(p => (
+                              <option key={p.id} value={p.id}>{p.id} — {p.nombre}</option>
+                          ))}
+                        </select>
+                      </>
+                    ) : buscadorSearchMode === 'producto' ? (
+                      <div className="flex items-center justify-center p-2 border-2 border-dashed border-slate-200 rounded-md bg-slate-50 h-[38px] mt-0.5">
+                        <p className="text-[11px] text-slate-400 italic">Seleccione un proveedor primero</p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center p-2 border-2 border-dashed border-slate-200 rounded-md bg-slate-50 h-[38px] mt-0.5">
+                        <p className="text-[11px] text-slate-400 italic">Cambie a modo Producto para seleccionar</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <input value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} type="number" min="1" placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
@@ -1219,8 +1341,16 @@ const Compras = () => {
                     <input value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} type="number" step="0.01" min="0.01" placeholder="Precio U." readOnly className="w-full p-2 text-xs border border-slate-200 rounded-md outline-none bg-slate-50 text-slate-500 cursor-not-allowed" />
                   </div>
                   <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">F. Fabricación</label>
+                    <input value={prodFechaFabricacion} onChange={(e) => setProdFechaFabricacion(e.target.value)} type="date" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">F. Vencimiento</label>
+                    <input value={prodFechaVencimiento} onChange={(e) => setProdFechaVencimiento(e.target.value)} type="date" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
+                  </div>
+                  <div className="col-span-2">
                     <button type="button" onClick={() => agregarProductoEditCompra()} className="w-full p-2 text-xs font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all flex items-center justify-center gap-1">
-                      <Plus size={14} /> Agregar
+                      <Plus size={14} /> Agregar Producto
                     </button>
                   </div>
                 </div>
