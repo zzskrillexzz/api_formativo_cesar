@@ -1077,8 +1077,8 @@ const Compras = () => {
                       <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Proveedor <span className="required-star">*</span></label>
                         <select name="com_prov_id_fk" value={formData.com_prov_id_fk || ''} onChange={handleChange}
-                          disabled={!!formData.com_prov_id_fk}
-                          className={`w-full p-2 text-xs border rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5 ${errors.com_prov_id_fk ? 'border-red-400' : 'border-slate-300'} ${formData.com_prov_id_fk ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}`}>
+                          disabled={buscadorSearchMode === 'producto' && !!formData.com_prov_id_fk}
+                          className={`w-full p-2 text-xs border rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5 ${errors.com_prov_id_fk ? 'border-red-400' : 'border-slate-300'} ${buscadorSearchMode === 'producto' && !!formData.com_prov_id_fk ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}`}>
                           <option value="">Seleccionar proveedor...</option>
                           {proveedores
                             .filter(p => buscadorSearchMode !== 'proveedor' || !buscadorProducto ||

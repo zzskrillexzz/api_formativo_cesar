@@ -123,7 +123,7 @@ const Inventario = () => {
       defaultData = { lot_id: next, lot_numero: '' };
       setLoteSelectedProvId('');
       setLoteSearchProducto('');
-      setLoteSearchMode('producto');
+      setLoteSearchMode('proveedor');
     } else if (tab === 'movimientos') {
       let max = 0;
       monitorias.forEach(m => {
@@ -299,6 +299,9 @@ const Inventario = () => {
       setLoteSearchProducto('');
       if (value !== formData.lot_prov_id_fk) {
         setFormData(prev => ({ ...prev, lot_pro_id_fk: '', lot_numero: '' }));
+      }
+      if (value) {
+        setLoteSearchMode('producto');
       }
     }
 
