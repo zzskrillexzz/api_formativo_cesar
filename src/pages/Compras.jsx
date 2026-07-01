@@ -56,6 +56,7 @@ const Compras = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showComprobanteModal, setShowComprobanteModal] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmEditRecibida, setConfirmEditRecibida] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -550,35 +551,8 @@ const Compras = () => {
     }
   };
 
-  const handleEditCompra = async (e) => {
-    e.preventDefault();
-    setFormError('');
-    const dataCambiada = JSON.stringify(editData) !== JSON.stringify(formSnapshotRef.current);
-    const productosCambiados = JSON.stringify(productosSeleccionados) !== JSON.stringify(productosSnapshotRef.current);
-    if (!dataCambiada && !productosCambiados) {
-      toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en la compra' });
-      return;
-    }
-    // Validar estado de la compra antes de editar
-    const estadoActual = editData.comp_estado;
-    if (estadoActual === 'Cancelada') {
-      setFormError('No se puede editar una compra cancelada');
-      return;
-    }
-    if (estadoActual === 'Recibida') {
-      const confirmar = window.confirm('Esta compra ya fue recibida y tiene inventario ingresado. Editar revertirá el inventario actual y lo volverá a ingresar con los nuevos datos. ¿Desea continuar?');
-      if (!confirmar) return;
-    }
-    const tieneProductosBD = editData.comp_tiene_detalles;
-    if (productosSeleccionados.length === 0 && !tieneProductosBD) {
-      setFormError('Debes agregar al menos un producto a la compra');
-      return;
-    }
+  const ejecutarGuardadoCompra = async () => {
     const total = productosSeleccionados.reduce((sum, p) => sum + p.subtotal, 0);
-    if (total <= 0) {
-      setFormError('El total debe ser mayor a 0');
-      return;
-    }
     setFormSubmitting(true);
     try {
       // 1. Actualizar la compra
@@ -633,6 +607,43 @@ const Compras = () => {
     } finally {
       setFormSubmitting(false);
     }
+  };
+
+  const handleConfirmEditRecibida = () => {
+    setConfirmEditRecibida(false);
+    ejecutarGuardadoCompra();
+  };
+
+  const handleEditCompra = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    const dataCambiada = JSON.stringify(editData) !== JSON.stringify(formSnapshotRef.current);
+    const productosCambiados = JSON.stringify(productosSeleccionados) !== JSON.stringify(productosSnapshotRef.current);
+    if (!dataCambiada && !productosCambiados) {
+      toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en la compra' });
+      return;
+    }
+    // Validar estado de la compra antes de editar
+    const estadoActual = editData.comp_estado;
+    if (estadoActual === 'Cancelada') {
+      setFormError('No se puede editar una compra cancelada');
+      return;
+    }
+    if (estadoActual === 'Recibida') {
+      setConfirmEditRecibida(true);
+      return;
+    }
+    const tieneProductosBD = editData.comp_tiene_detalles;
+    if (productosSeleccionados.length === 0 && !tieneProductosBD) {
+      setFormError('Debes agregar al menos un producto a la compra');
+      return;
+    }
+    const total = productosSeleccionados.reduce((sum, p) => sum + p.subtotal, 0);
+    if (total <= 0) {
+      setFormError('El total debe ser mayor a 0');
+      return;
+    }
+    ejecutarGuardadoCompra();
   };
 
   const handleChangeStatus = async (compraId, nuevoEstado) => {
@@ -1894,6 +1905,16 @@ const Compras = () => {
           </div>
         </div>
       )}
+
+      {/* Confirmación de edición — Compra Recibida */}
+      <ConfirmModal
+        open={confirmEditRecibida}
+        title="Editar Compra Recibida"
+        message="Esta compra ya fue recibida y tiene inventario ingresado. Editar revertirá el inventario actual y lo volverá a ingresar con los nuevos datos. ¿Desea continuar?"
+        onConfirm={handleConfirmEditRecibida}
+        onCancel={() => setConfirmEditRecibida(false)}
+        confirmText="Sí, continuar"
+      />
 
       {/* Confirmación de eliminación — Compra */}
       <ConfirmModal
