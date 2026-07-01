@@ -570,22 +570,25 @@ const Compras = () => {
       }
       await comprasService.editar(editData.comp_id, payload);
 
-      // 2. Solo si hay productos nuevos, reemplazar los existentes
-      if (productosSeleccionados.length > 0) {
+      // 2. Sincronizar detalles: UPDATE existentes, INSERT nuevos, DELETE eliminados
+      if (productosSeleccionados.length > 0 || editData.comp_tiene_detalles) {
         const todosDetalles = await detallesComprasService.listar().catch(() => []);
         const viejosDetalles = todosDetalles.filter(d => d.compra_id === editData.comp_id);
+        const idsActuales = new Set(productosSeleccionados.filter(p => p.dco_id).map(p => p.dco_id));
+
+        // Eliminar detalles que ya no están en la lista
         for (const v of viejosDetalles) {
-          try {
-            await detallesComprasService.eliminar(v.id);
-          } catch { /* si falla, continuar */ }
+          if (!idsActuales.has(v.id)) {
+            try {
+              await detallesComprasService.eliminar(v.id);
+            } catch { /* si falla, continuar */ }
+          }
         }
 
-        // 3. Registrar los nuevos detalles
+        // Actualizar o insertar cada producto
         for (let i = 0; i < productosSeleccionados.length; i++) {
           const p = productosSeleccionados[i];
-          const dcoId = 'DCO' + editData.comp_id.replace('COM', '') + String(i + 1).padStart(2, '0');
-          await detallesComprasService.registrar({
-            dco_id: dcoId,
+          const detalleData = {
             dco_com_id_fk: editData.comp_id,
             dco_pro_id_fk: p.pro_id,
             dco_lot_id_fk: p.lote_id || null,
@@ -594,7 +597,19 @@ const Compras = () => {
             dco_subtotal: p.subtotal,
             dco_fecha_fabricacion: p.fecha_fabricacion || null,
             dco_fecha_vencimiento: p.fecha_vencimiento || null
-          });
+          };
+
+          if (p.dco_id) {
+            // Producto existente → UPDATE
+            await detallesComprasService.editar(p.dco_id, detalleData);
+          } else {
+            // Producto nuevo → INSERT
+            const dcoId = 'DCO' + editData.comp_id.replace('COM', '') + String(i + 1).padStart(2, '0');
+            await detallesComprasService.registrar({
+              dco_id: dcoId,
+              ...detalleData
+            });
+          }
         }
       }
 
