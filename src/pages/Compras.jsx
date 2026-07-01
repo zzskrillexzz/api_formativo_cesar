@@ -14,6 +14,18 @@ import { FIELD_LIMITS } from '../utils/fieldLimits';
 
 const ESTADOS = ['Pendiente', 'Recibida', 'Cancelada'];
 const ESTADOS_CREAR = ['Pendiente', 'Recibida'];
+const VIDA_UTIL_MINIMA = 14;
+const ANOS_ATRAS_MAX = 5;
+const ANOS_ADELANTE_MAX = 5;
+const CANTIDAD_MAXIMA = 1000;
+
+const dateRangeProps = () => {
+  const y = new Date().getFullYear();
+  const hoy = new Date().toISOString().split('T')[0];
+  const cincoAnosAtras = `${y - ANOS_ATRAS_MAX}-01-01`;
+  const cincoAnosAdelante = new Date(Date.now() + ANOS_ADELANTE_MAX * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  return { minFab: cincoAnosAtras, maxFab: hoy, minVen: cincoAnosAtras, maxVen: cincoAnosAdelante };
+};
 
 // Elimina emojis y caracteres especiales que rompen la BD
 const stripEmojis = (str) => {
@@ -57,6 +69,10 @@ const Compras = () => {
   const [prodPrecio, setProdPrecio] = useState('');
   const [prodFechaFabricacion, setProdFechaFabricacion] = useState('');
   const [prodFechaVencimiento, setProdFechaVencimiento] = useState('');
+  const [editandoProductoId, setEditandoProductoId] = useState(null);
+  const [editCantidadValor, setEditCantidadValor] = useState('');
+  const [editFabValor, setEditFabValor] = useState('');
+  const [editVenValor, setEditVenValor] = useState('');
   const [buscadorSearchMode, setBuscadorSearchMode] = useState('producto');
   const [buscadorProvId, setBuscadorProvId] = useState('');
   const [showEditProveedorModal, setShowEditProveedorModal] = useState(false);
@@ -306,6 +322,24 @@ const Compras = () => {
     reader.readAsDataURL(file);
   };
 
+  // ── Validación de fechas (mismas reglas que lotes) ──
+  const validarFechasProducto = (fabricacion, vencimiento) => {
+    const currentYear = new Date().getFullYear();
+    const fabYear = parseInt(fabricacion.split('-')[0]);
+    const venYear = parseInt(vencimiento.split('-')[0]);
+
+    if (fabYear < currentYear - ANOS_ATRAS_MAX || fabYear > currentYear)
+      return `La fecha de fabricación debe estar entre ${currentYear - ANOS_ATRAS_MAX} y ${currentYear}`;
+    if (venYear < currentYear - ANOS_ATRAS_MAX || venYear > currentYear + ANOS_ADELANTE_MAX)
+      return `La fecha de vencimiento debe estar entre ${currentYear - ANOS_ATRAS_MAX} y ${currentYear + ANOS_ADELANTE_MAX}`;
+
+    const diffDays = (new Date(vencimiento) - new Date(fabricacion)) / (1000 * 60 * 60 * 24);
+    if (diffDays < VIDA_UTIL_MINIMA)
+      return `La fecha de vencimiento debe ser al menos ${VIDA_UTIL_MINIMA} días después de la fabricación`;
+
+    return null;
+  };
+
   // ── Manejo de productos seleccionados en la compra ──
   const agregarProductoCompra = () => {
     const prodId = prodSelector;
@@ -313,10 +347,12 @@ const Compras = () => {
     const precio = parseFloat(prodPrecio);
     if (!prodId) { setFormError('Selecciona un producto'); return; }
     if (!cantidad || cantidad <= 0) { setFormError('La cantidad debe ser mayor a 0'); return; }
+    if (cantidad > CANTIDAD_MAXIMA) { setFormError(`La cantidad no puede ser mayor a ${CANTIDAD_MAXIMA.toLocaleString()}`); return; }
     if (!precio || precio <= 0) { setFormError('El precio unitario debe ser mayor a 0'); return; }
     if (!prodFechaFabricacion) { setFormError('La fecha de fabricación es obligatoria'); return; }
     if (!prodFechaVencimiento) { setFormError('La fecha de vencimiento es obligatoria'); return; }
-    if (prodFechaVencimiento <= prodFechaFabricacion) { setFormError('La fecha de vencimiento debe ser posterior a la de fabricación'); return; }
+    const errorFechas = validarFechasProducto(prodFechaFabricacion, prodFechaVencimiento);
+    if (errorFechas) { setFormError(errorFechas); return; }
     setFormError('');
     const producto = productosDisponibles.find(p => String(p.id) === String(prodId));
     if (!producto) return;
@@ -350,10 +386,12 @@ const Compras = () => {
     const precio = parseFloat(prodPrecio);
     if (!prodId) { setFormError('Selecciona un producto'); return; }
     if (!cantidad || cantidad <= 0) { setFormError('La cantidad debe ser mayor a 0'); return; }
+    if (cantidad > CANTIDAD_MAXIMA) { setFormError(`La cantidad no puede ser mayor a ${CANTIDAD_MAXIMA.toLocaleString()}`); return; }
     if (!precio || precio <= 0) { setFormError('El precio unitario debe ser mayor a 0'); return; }
     if (!prodFechaFabricacion) { setFormError('La fecha de fabricación es obligatoria'); return; }
     if (!prodFechaVencimiento) { setFormError('La fecha de vencimiento es obligatoria'); return; }
-    if (prodFechaVencimiento <= prodFechaFabricacion) { setFormError('La fecha de vencimiento debe ser posterior a la de fabricación'); return; }
+    const errorFechas = validarFechasProducto(prodFechaFabricacion, prodFechaVencimiento);
+    if (errorFechas) { setFormError(errorFechas); return; }
     setFormError('');
     const producto = productosDisponibles.find(p => String(p.id) === String(prodId));
     if (!producto) return;
@@ -378,6 +416,72 @@ const Compras = () => {
     setProductosSeleccionados(actualizados);
     const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
     setEditData(prev => ({ ...prev, comp_total: totalCalculado }));
+  };
+
+  // ── Helper: recalcular total según modal activo ──
+  const actualizarTotal = (productos) => {
+    const total = productos.reduce((sum, p) => sum + p.subtotal, 0);
+    if (showModal) {
+      setFormData(prev => ({ ...prev, com_total: String(total) }));
+    } else if (showEditModal) {
+      setEditData(prev => ({ ...prev, comp_total: total }));
+    }
+  };
+
+  // ── Edición inline de cantidad / fechas ──
+  const iniciarEdicion = (proId) => {
+    const p = productosSeleccionados.find(x => x.pro_id === proId);
+    if (!p) return;
+    setEditCantidadValor(String(p.cantidad));
+    setEditFabValor(p.fecha_fabricacion || '');
+    setEditVenValor(p.fecha_vencimiento || '');
+    setEditandoProductoId(proId);
+    setFormError('');
+  };
+
+  const guardarEdicion = () => {
+    const idx = productosSeleccionados.findIndex(p => p.pro_id === editandoProductoId);
+    if (idx === -1) { cancelarEdicion(); return; }
+
+    const nuevaCant = parseInt(editCantidadValor, 10);
+    if (!nuevaCant || nuevaCant <= 0) {
+      setFormError('La cantidad debe ser mayor a 0');
+      return;
+    }
+    if (nuevaCant > CANTIDAD_MAXIMA) {
+      setFormError(`La cantidad no puede ser mayor a ${CANTIDAD_MAXIMA.toLocaleString()}`);
+      return;
+    }
+    if (!editFabValor) {
+      setFormError('La fecha de fabricación es obligatoria');
+      return;
+    }
+    if (!editVenValor) {
+      setFormError('La fecha de vencimiento es obligatoria');
+      return;
+    }
+    const errorFechas = validarFechasProducto(editFabValor, editVenValor);
+    if (errorFechas) { setFormError(errorFechas); return; }
+
+    const item = { ...productosSeleccionados[idx] };
+    item.cantidad = nuevaCant;
+    item.subtotal = nuevaCant * item.precio_unitario;
+    item.fecha_fabricacion = editFabValor;
+    item.fecha_vencimiento = editVenValor;
+
+    const actualizados = [...productosSeleccionados];
+    actualizados[idx] = item;
+    setProductosSeleccionados(actualizados);
+    actualizarTotal(actualizados);
+    setFormError('');
+    cancelarEdicion();
+  };
+
+  const cancelarEdicion = () => {
+    setEditandoProductoId(null);
+    setEditCantidadValor('');
+    setEditFabValor('');
+    setEditVenValor('');
   };
 
   const handleSubmitCompra = async (e) => {
@@ -1113,18 +1217,18 @@ const Compras = () => {
                         )}
                       </div>
                       <div>
-                        <input value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} type="number" min="1" placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
+                        <input value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} type="number" min="1" max={CANTIDAD_MAXIMA} placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
                         <input value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} type="number" step="0.01" min="0.01" placeholder="Precio U." readOnly className="w-full p-2 text-xs border border-slate-200 rounded-md outline-none bg-slate-50 text-slate-500 cursor-not-allowed" />
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">F. Fabricación</label>
-                        <input value={prodFechaFabricacion} onChange={(e) => setProdFechaFabricacion(e.target.value)} type="date" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
+                        <input value={prodFechaFabricacion} onChange={(e) => setProdFechaFabricacion(e.target.value)} type="date" min={dateRangeProps().minFab} max={dateRangeProps().maxFab} className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">F. Vencimiento</label>
-                        <input value={prodFechaVencimiento} onChange={(e) => setProdFechaVencimiento(e.target.value)} type="date" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
+                        <input value={prodFechaVencimiento} onChange={(e) => setProdFechaVencimiento(e.target.value)} type="date" min={dateRangeProps().minVen} max={dateRangeProps().maxVen} className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
                       </div>
                       <div className="col-span-2">
                         <button type="button" onClick={agregarProductoCompra} className="w-full p-2 text-xs font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all flex items-center justify-center gap-1">
@@ -1136,20 +1240,61 @@ const Compras = () => {
                       <div className="max-h-28 overflow-y-auto border border-slate-200 rounded-md bg-white">
                         <table className="w-full text-xs">
                           <thead className="bg-slate-100 text-slate-500 font-bold uppercase">
-                            <tr><th className="p-2 text-left">Producto</th><th className="p-2 text-right">Cant.</th><th className="p-2 text-right">P/U</th><th className="p-2 text-right">Subtotal</th><th className="p-2 w-8"></th></tr>
+                            <tr><th className="p-2 text-left">Producto</th><th className="p-2 text-right">Cant.</th><th className="p-2 text-right">P/U</th><th className="p-2 text-right">Subtotal</th><th className="p-2 text-right">F. Fab.</th><th className="p-2 text-right">F. Ven.</th><th className="p-2 w-12"></th></tr>
                           </thead>
                           <tbody>
-                            {productosSeleccionados.map(p => (
-                              <tr key={p.pro_id} className="border-t border-slate-100">
-                                <td className="p-2 text-slate-700">{p.pro_nombre}</td>
-                                <td className="p-2 text-right text-slate-600">{p.cantidad}</td>
-                                <td className="p-2 text-right text-slate-600">${p.precio_unitario.toFixed(2)}</td>
-                                <td className="p-2 text-right text-slate-800 font-bold">${p.subtotal.toFixed(2)}</td>
-                                <td className="p-2 text-center">
-                                  <button type="button" onClick={() => quitarProductoCompra(p.pro_id)} className="text-red-400 hover:text-red-600 transition-colors"><X size={14} /></button>
-                                </td>
-                              </tr>
-                            ))}
+                            {productosSeleccionados.map(p => {
+                              const editando = editandoProductoId === p.pro_id;
+                              return (
+                                <tr key={p.pro_id} className={`border-t border-slate-100 ${editando ? 'bg-blue-50/40' : ''}`}>
+                                  <td className="p-2 text-slate-700">{p.pro_nombre}</td>
+                                  <td className="p-2 text-right text-slate-600">
+                                    {editando ? (
+                                      <input type="number" min="1" max={CANTIDAD_MAXIMA} value={editCantidadValor}
+                                        onChange={e => setEditCantidadValor(e.target.value)}
+                                        className="w-14 p-1 text-xs border border-blue-300 rounded outline-none focus:ring-1 focus:ring-blue-400 text-right" />
+                                    ) : (
+                                      <span>{p.cantidad}</span>
+                                    )}
+                                  </td>
+                                  <td className="p-2 text-right text-slate-600">${p.precio_unitario.toFixed(2)}</td>
+                                  <td className="p-2 text-right text-slate-800 font-bold">${p.subtotal.toFixed(2)}</td>
+                                  <td className="p-2 text-right text-slate-600 text-[10px]">
+                                    {editando ? (
+                                      <input type="date" value={editFabValor}
+                                        onChange={e => setEditFabValor(e.target.value)}
+                                        min={dateRangeProps().minFab} max={dateRangeProps().maxFab}
+                                        className="w-24 p-1 text-xs border border-blue-300 rounded outline-none focus:ring-1 focus:ring-blue-400" />
+                                    ) : (
+                                      <span>{p.fecha_fabricacion || '-'}</span>
+                                    )}
+                                  </td>
+                                  <td className="p-2 text-right text-slate-600 text-[10px]">
+                                    {editando ? (
+                                      <input type="date" value={editVenValor}
+                                        onChange={e => setEditVenValor(e.target.value)}
+                                        min={dateRangeProps().minVen} max={dateRangeProps().maxVen}
+                                        className="w-24 p-1 text-xs border border-blue-300 rounded outline-none focus:ring-1 focus:ring-blue-400" />
+                                    ) : (
+                                      <span>{p.fecha_vencimiento || '-'}</span>
+                                    )}
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    {editando ? (
+                                      <span className="inline-flex items-center gap-0.5">
+                                        <button type="button" onClick={guardarEdicion} className="text-emerald-500 hover:text-emerald-700 transition-colors p-0.5" title="Guardar"><span className="text-sm font-bold">✓</span></button>
+                                        <button type="button" onClick={cancelarEdicion} className="text-red-400 hover:text-red-600 transition-colors p-0.5" title="Cancelar"><span className="text-sm font-bold">✗</span></button>
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-0.5">
+                                        <button type="button" onClick={() => iniciarEdicion(p.pro_id)} className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors p-0.5 rounded" title="Editar producto"><Edit3 size={14} /></button>
+                                        <button type="button" onClick={() => quitarProductoCompra(p.pro_id)} className="text-red-400 hover:text-red-600 transition-colors p-0.5" title="Quitar producto"><X size={14} /></button>
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -1339,18 +1484,18 @@ const Compras = () => {
                     )}
                   </div>
                   <div>
-                    <input value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} type="number" min="1" placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input value={prodCantidad} onChange={(e) => setProdCantidad(e.target.value)} type="number" min="1" max={CANTIDAD_MAXIMA} placeholder="Cant." className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
                   <div>
                     <input value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} type="number" step="0.01" min="0.01" placeholder="Precio U." readOnly className="w-full p-2 text-xs border border-slate-200 rounded-md outline-none bg-slate-50 text-slate-500 cursor-not-allowed" />
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">F. Fabricación</label>
-                    <input value={prodFechaFabricacion} onChange={(e) => setProdFechaFabricacion(e.target.value)} type="date" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
+                    <input value={prodFechaFabricacion} onChange={(e) => setProdFechaFabricacion(e.target.value)} type="date" min={dateRangeProps().minFab} max={dateRangeProps().maxFab} className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">F. Vencimiento</label>
-                    <input value={prodFechaVencimiento} onChange={(e) => setProdFechaVencimiento(e.target.value)} type="date" className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
+                    <input value={prodFechaVencimiento} onChange={(e) => setProdFechaVencimiento(e.target.value)} type="date" min={dateRangeProps().minVen} max={dateRangeProps().maxVen} className="w-full p-2 text-xs border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 mt-0.5" />
                   </div>
                   <div className="col-span-2">
                     <button type="button" onClick={() => agregarProductoEditCompra()} className="w-full p-2 text-xs font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all flex items-center justify-center gap-1">
@@ -1362,20 +1507,61 @@ const Compras = () => {
                   <div className="max-h-28 overflow-y-auto border border-slate-200 rounded-md bg-white">
                     <table className="w-full text-xs">
                       <thead className="bg-slate-100 text-slate-500 font-bold uppercase">
-                        <tr><th className="p-2 text-left">Producto</th><th className="p-2 text-right">Cant.</th><th className="p-2 text-right">P/U</th><th className="p-2 text-right">Subtotal</th><th className="p-2 w-8"></th></tr>
+                        <tr><th className="p-2 text-left">Producto</th><th className="p-2 text-right">Cant.</th><th className="p-2 text-right">P/U</th><th className="p-2 text-right">Subtotal</th><th className="p-2 text-right">F. Fab.</th><th className="p-2 text-right">F. Ven.</th><th className="p-2 w-12"></th></tr>
                       </thead>
                       <tbody>
-                        {productosSeleccionados.map(p => (
-                          <tr key={p.pro_id} className="border-t border-slate-100">
-                            <td className="p-2 text-slate-700">{p.pro_nombre}</td>
-                            <td className="p-2 text-right text-slate-600">{p.cantidad}</td>
-                            <td className="p-2 text-right text-slate-600">${p.precio_unitario.toFixed(2)}</td>
-                            <td className="p-2 text-right text-slate-800 font-bold">${p.subtotal.toFixed(2)}</td>
-                            <td className="p-2 text-center">
-                              <button type="button" onClick={() => quitarProductoEditCompra(p.pro_id)} className="text-red-400 hover:text-red-600 transition-colors"><X size={14} /></button>
-                            </td>
-                          </tr>
-                        ))}
+                        {productosSeleccionados.map(p => {
+                          const editando = editandoProductoId === p.pro_id;
+                          return (
+                            <tr key={p.pro_id} className={`border-t border-slate-100 ${editando ? 'bg-blue-50/40' : ''}`}>
+                              <td className="p-2 text-slate-700">{p.pro_nombre}</td>
+                              <td className="p-2 text-right text-slate-600">
+                                {editando ? (
+                                  <input type="number" min="1" max={CANTIDAD_MAXIMA} value={editCantidadValor}
+                                    onChange={e => setEditCantidadValor(e.target.value)}
+                                    className="w-14 p-1 text-xs border border-blue-300 rounded outline-none focus:ring-1 focus:ring-blue-400 text-right" />
+                                ) : (
+                                  <span>{p.cantidad}</span>
+                                )}
+                              </td>
+                              <td className="p-2 text-right text-slate-600">${p.precio_unitario.toFixed(2)}</td>
+                              <td className="p-2 text-right text-slate-800 font-bold">${p.subtotal.toFixed(2)}</td>
+                              <td className="p-2 text-right text-slate-600 text-[10px]">
+                                {editando ? (
+                                  <input type="date" value={editFabValor}
+                                    onChange={e => setEditFabValor(e.target.value)}
+                                    min={dateRangeProps().minFab} max={dateRangeProps().maxFab}
+                                    className="w-24 p-1 text-xs border border-blue-300 rounded outline-none focus:ring-1 focus:ring-blue-400" />
+                                ) : (
+                                  <span>{p.fecha_fabricacion || '-'}</span>
+                                )}
+                              </td>
+                              <td className="p-2 text-right text-slate-600 text-[10px]">
+                                {editando ? (
+                                  <input type="date" value={editVenValor}
+                                    onChange={e => setEditVenValor(e.target.value)}
+                                    min={dateRangeProps().minVen} max={dateRangeProps().maxVen}
+                                    className="w-24 p-1 text-xs border border-blue-300 rounded outline-none focus:ring-1 focus:ring-blue-400" />
+                                ) : (
+                                  <span>{p.fecha_vencimiento || '-'}</span>
+                                )}
+                              </td>
+                              <td className="p-2 text-center">
+                                {editando ? (
+                                  <span className="inline-flex items-center gap-0.5">
+                                    <button type="button" onClick={guardarEdicion} className="text-emerald-500 hover:text-emerald-700 transition-colors p-0.5" title="Guardar"><span className="text-sm font-bold">✓</span></button>
+                                    <button type="button" onClick={cancelarEdicion} className="text-red-400 hover:text-red-600 transition-colors p-0.5" title="Cancelar"><span className="text-sm font-bold">✗</span></button>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-0.5">
+                                    <button type="button" onClick={() => iniciarEdicion(p.pro_id)} className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors p-0.5 rounded" title="Editar producto"><Edit3 size={14} /></button>
+                                    <button type="button" onClick={() => quitarProductoEditCompra(p.pro_id)} className="text-red-400 hover:text-red-600 transition-colors p-0.5" title="Quitar producto"><X size={14} /></button>
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
