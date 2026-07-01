@@ -126,7 +126,8 @@ insert  into `t_compra`(`com_id`,`com_fecha`,`com_prov_id_fk`,`com_usu_id_fk`,`c
 ('COM002','2025-03-12','PROV003','USU004',49000.00,'Recibida','Reposición Loratadina',NULL,NULL),
 ('COM050','2026-04-09','PROV050','USU051',850000.00,'Recibida','Compra de Ibuprofeno',NULL,NULL),
 ('COM051','2026-04-09','PROV051','USU051',450000.00,'Pendiente','Compra de Amoxicilina',NULL,NULL),
-('COM052','2026-04-09','PROV052','USU052',260000.00,'Recibida','Compra de Loratadina',NULL,NULL);
+('COM052','2026-04-09','PROV052','USU052',260000.00,'Recibida','Compra de Loratadina',NULL,NULL),
+('COM053','2026-07-01','PROV001','USU001',34000.00,'Recibida','xd',NULL,NULL);
 
 /*Table structure for table `t_detalle_compra` */
 
@@ -153,12 +154,13 @@ CREATE TABLE `t_detalle_compra` (
 
 /*Data for the table `t_detalle_compra` */
 
-insert  into `t_detalle_compra`(`dco_id`,`dco_com_id_fk`,`dco_pro_id_fk`,`dco_lot_id_fk`,`dco_cantidad`,`dco_precio_compra`,`dco_subtotal`) values 
-('DCO001','COM001','PRO001','LOT001',100,850.00,85000.00),
-('DCO002','COM002','PRO003','LOT003',50,980.00,49000.00),
-('DCO050','COM050','PRO006','LOT050',100,8500.00,850000.00),
-('DCO051','COM051','PRO007','LOT051',30,15000.00,450000.00),
-('DCO052','COM052','PRO008','LOT052',50,5200.00,260000.00);
+insert  into `t_detalle_compra`(`dco_id`,`dco_com_id_fk`,`dco_pro_id_fk`,`dco_lot_id_fk`,`dco_cantidad`,`dco_precio_compra`,`dco_subtotal`,`dco_fecha_fabricacion`,`dco_fecha_vencimiento`) values 
+('DCO001','COM001','PRO001','LOT001',100,850.00,85000.00,NULL,NULL),
+('DCO002','COM002','PRO003','LOT003',50,980.00,49000.00,NULL,NULL),
+('DCO050','COM050','PRO006','LOT050',100,8500.00,850000.00,NULL,NULL),
+('DCO051','COM051','PRO007','LOT051',30,15000.00,450000.00,NULL,NULL),
+('DCO052','COM052','PRO008','LOT052',50,5200.00,260000.00,NULL,NULL),
+('DCO05301','COM053','PRO001','LOT201',40,850.00,34000.00,'2026-08-01','2027-11-01');
 
 /*Table structure for table `t_detalle_pedido` */
 
@@ -310,7 +312,9 @@ insert  into `t_inventario_movimiento`(`inm_id`,`inm_tipo_movimiento`,`inm_pro_i
 ('INM064','Salida','PRO006','LOT050',1,'2026-06-27','Venta PED058',NULL),
 ('INM065','Salida','PRO001','LOT001',6,'2026-06-27','Venta PED059',NULL),
 ('INM066','Salida','PRO001','LOT001',18,'2026-06-29','Venta PED060',NULL),
-('INM067','Salida','PRO001','LOT001',9,'2026-06-29','Venta PED061',NULL);
+('INM067','Salida','PRO001','LOT001',9,'2026-06-29','Venta PED061',NULL),
+('INM068','Entrada','PRO001','LOT201',40,'2026-07-01','Activacion lote LOT201',NULL),
+('INM069','Salida','PRO001','LOT201',40,'2026-07-01','Reversion compra COM053',NULL);
 
 /*Table structure for table `t_lote` */
 
@@ -348,7 +352,8 @@ insert  into `t_lote`(`lot_id`,`lot_numero`,`lot_fecha_fabricacion`,`lot_fecha_v
 ('LOT050','LT-IBU-2026-050','2026-01-15','2027-06-30',100,99,'PRO006','PROV050','Activo'),
 ('LOT051','LT-AMO-2026-051','2026-02-01','2027-09-15',150,150,'PRO007','PROV051','Activo'),
 ('LOT052','LT-LOR-2026-052','2026-03-10','2028-01-20',300,293,'PRO008','PROV052','Activo'),
-('LOT200','LOT200','2026-06-01','2027-06-01',100,100,'PRO009','PROV001','Activo');
+('LOT200','LOT200','2026-06-01','2027-06-01',100,100,'PRO009','PROV001','Activo'),
+('LOT201','LT-ACE-2027-001','2026-08-01','2027-11-01',40,40,'PRO001','PROV001','Activo');
 
 /*Table structure for table `t_monitoria` */
 
@@ -413,7 +418,11 @@ insert  into `t_monitoria`(`mon_id`,`mon_pro_id_fk`,`mon_lot_id_fk`,`mon_inm_id_
 ('MON26062914570178','PRO001','LOT001','INM066','2026-06-29','Salida',18,269,251,850.00,15300.00),
 ('MON26062914570179','PRO001','LOT001','INM066','2026-06-29','Salida',18,287,269,850.00,15300.00),
 ('MON26062915203084','PRO001','LOT001','INM067','2026-06-29','Salida',9,460,451,850.00,7650.00),
-('MON26062915203085','PRO001','LOT001','INM067','2026-06-29','Salida',9,469,460,850.00,7650.00);
+('MON26062915203085','PRO001','LOT001','INM067','2026-06-29','Salida',9,469,460,850.00,7650.00),
+('MON26070107570424','PRO001','LOT201','INM068','2026-07-01','Entrada',40,500,540,850.00,34000.00),
+('MON26070107570425','PRO001','LOT201','INM068','2026-07-01','Entrada',40,460,500,850.00,34000.00),
+('MON26070107570426','PRO001','LOT201','INM069','2026-07-01','Salida',40,500,460,850.00,34000.00),
+('MON2607010829242','PRO001','LOT201','INM069','2026-07-01','Salida',40,460,420,850.00,34000.00);
 
 /*Table structure for table `t_pedido` */
 
@@ -448,7 +457,7 @@ insert  into `t_pedido`(`ped_id`,`ped_fecha`,`ped_metodo_pago`,`ped_cuenta_banca
 ('PED002','2025-03-16','Tarjeta',NULL,'PED002_1782224912.png','image/png','En preparación','Verificado',NULL,0,0,12700.00,1023456789,'USU003'),
 ('PED005','2025-03-19','Daviplata',NULL,'PED005_1782225263.png','image/png','En preparación','Verificado',NULL,0,0,9800.00,1065432198,'USU002'),
 ('PED051','2026-04-09','Tarjeta',NULL,'PED051_1782225560.jpg','image/jpeg','En camino','Comprobante recibido',NULL,0,0,30000.00,1087654321,'USU051'),
-('PED052','2026-04-09','Transferencia',NULL,'PED052_1782224244.png','image/png','En preparación','Verificado',NULL,0,0,5200.00,900123456,'USU052'),
+('PED052','2026-04-09','Transferencia',NULL,'PED052_1782224244.png','image/png','En camino','Verificado','9a9c7d412f394f388c30d286de4f326f',0,0,5200.00,900123456,'USU052'),
 ('PED053','2026-06-15','Efectivo','USU001',NULL,NULL,'Anulado','Pendiente de pago','1d55b20c3f56441ca4610358c9d09a10',0,0,850.00,900123456,NULL),
 ('PED054','2026-06-23','Transferencia','USU001',NULL,NULL,'Anulado','Pendiente de pago',NULL,0,0,850.00,900123456,NULL),
 ('PED055','2026-06-27','Efectivo',NULL,NULL,NULL,'Pendiente','Pendiente de pago',NULL,0,0,900000.00,900123456,'USU001'),
@@ -456,8 +465,8 @@ insert  into `t_pedido`(`ped_id`,`ped_fecha`,`ped_metodo_pago`,`ped_cuenta_banca
 ('PED057','2026-09-16','Efectivo',NULL,NULL,NULL,'Entregado','Pendiente de pago','dce531e2cecf4c5b8d328fc7c4a2e31c',0,0,36400.00,1023456789,'USU001'),
 ('PED058','2026-06-30','Tarjeta',NULL,NULL,NULL,'Pendiente','Pendiente de pago',NULL,0,0,8500.00,998877665,'USU001'),
 ('PED059','2026-06-30','Efectivo',NULL,NULL,NULL,'Pendiente','Pendiente de pago',NULL,0,0,5100.00,998877665,'USU001'),
-('PED060','2026-06-30','Efectivo',NULL,NULL,NULL,'En preparación','Pendiente de pago',NULL,0,0,15300.00,1076543219,'USU001'),
-('PED061','2026-06-29','Efectivo',NULL,NULL,NULL,'En camino','Pendiente de pago','bcc38f36141a4c94915c8213174e5ec9',0,0,7650.00,1076543219,'USU001');
+('PED060','2026-06-30','Efectivo',NULL,NULL,NULL,'Entregado','Pendiente de pago','cfe7b6aec6dd4b8b942b0003a6004c19',0,0,15300.00,1076543219,'USU001'),
+('PED061','2026-06-29','Efectivo',NULL,NULL,NULL,'Entregado','Pendiente de pago','bcc38f36141a4c94915c8213174e5ec9',0,0,7650.00,1076543219,'USU001');
 
 /*Table structure for table `t_producto` */
 
@@ -513,8 +522,7 @@ insert  into `t_producto`(`pro_id`,`pro_nombre`,`pro_categoria`,`pro_descripcion
 ('PRO035','Venda elastica 10cm','Insumo',NULL,1800.00,'Activo'),
 ('PRO036','Bajalenguas','Insumo',NULL,500.00,'Activo'),
 ('PRO037','poco','Analgesico','hola',2000.00,'Activo'),
-('PRO038','paracetamina','Analgesico','no se',2000.00,'Activo'),
-('PRO039','Acetaminofen 500','Analgesico','Tabletas x 10 unidades',300.00,'Activo');
+('PRO038','paracetamina','Analgesico','no se',2000.00,'Activo');
 
 /*Table structure for table `t_proveedor` */
 
@@ -600,7 +608,6 @@ insert  into `t_proveedor_producto`(`ppp_prov_id_fk`,`ppp_pro_id_fk`) values
 ('PROV052','PRO008'),
 ('PROV052','PRO032'),
 ('PROV052','PRO033'),
-('PROV099','PRO039'),
 ('PROV200','PRO034'),
 ('PROV200','PRO035'),
 ('PROV200','PRO036');
