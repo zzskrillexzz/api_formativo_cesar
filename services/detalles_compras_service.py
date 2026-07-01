@@ -180,16 +180,19 @@ def registrarDetallesCompras(DCO_ID, DCO_COM_ID_FK, DCO_PRO_ID_FK, DCO_LOT_ID_FK
         sql = """
             INSERT INTO t_detalle_compra
                 (dco_id, dco_com_id_fk, dco_pro_id_fk, dco_lot_id_fk,
-                 dco_cantidad, dco_precio_compra, dco_subtotal)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                 dco_cantidad, dco_precio_compra, dco_subtotal,
+                 dco_fecha_fabricacion, dco_fecha_vencimiento)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         c.execute(sql, (DCO_ID, DCO_COM_ID_FK, DCO_PRO_ID_FK, DCO_LOT_ID_FK,
-                        DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL))
+                        DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL,
+                        DCO_FECHA_FABRICACION, DCO_FECHA_VENCIMIENTO))
 
         current_app.mysql.connection.commit()
         c.close()
         return detalles_compras(DCO_ID, DCO_COM_ID_FK, DCO_PRO_ID_FK, DCO_LOT_ID_FK,
-                                DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL).todic()
+                                DCO_CANTIDAD, DCO_PRECIO_COMPRA, DCO_SUBTOTAL,
+                                DCO_FECHA_FABRICACION, DCO_FECHA_VENCIMIENTO).todic()
     except Exception as e:
         current_app.mysql.connection.rollback()
         c.close()
