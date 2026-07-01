@@ -32,25 +32,25 @@ def registrar_pedidos():
 
 @pedidos_bp.route('/<string:id>', methods=["PUT"])
 @token_requerido
-@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
+@rol_requerido('Administrador', 'Bodeguero')
 def editar_pedidos(id):
     return cneditarpedidos(id)
 
 @pedidos_bp.route('/<string:id>/enviar-factura', methods=["POST"])
 @token_requerido
-@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
+@rol_requerido('Administrador', 'Bodeguero')
 def enviar_factura(id):
     return cnenviarfactura(id)
 
 @pedidos_bp.route('/<string:id>/avanzar-estado', methods=["PUT"])
 @token_requerido
-@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
+@rol_requerido('Administrador', 'Bodeguero')
 def avanzar_estado(id):
     return cnavanzarestado(id)
 
 @pedidos_bp.route('/<string:id>/comprobante', methods=["PUT"])
 @token_requerido
-@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
+@rol_requerido('Administrador', 'Bodeguero')
 def subir_comprobante(id):
     return cnsubircomprobante(id)
 
@@ -67,7 +67,7 @@ def verificar_pago_pedido(id):
 
 @pedidos_bp.route('/<string:id>/notificar', methods=["POST"])
 @token_requerido
-@rol_requerido('Administrador', 'Vendedor', 'Bodeguero')
+@rol_requerido('Administrador', 'Bodeguero')
 def notificar_pedido(id):
     return cnnotificarpedido(id)
 
