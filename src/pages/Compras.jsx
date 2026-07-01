@@ -166,7 +166,8 @@ const Compras = () => {
           subtotal: d.subtotal,
           fecha_fabricacion: d.fecha_fabricacion || '',
           fecha_vencimiento: d.fecha_vencimiento || '',
-          dco_id: d.id
+          dco_id: d.id,
+          lote_id: d.lote_id || null
         }));
         setProductosSeleccionados(productosCargados);
         detalle.comp_tiene_detalles = true;
@@ -405,7 +406,7 @@ const Compras = () => {
     const yaExiste = productosSeleccionados.find(p => String(p.pro_id) === String(prodId));
     if (yaExiste) { setFormError('El producto ya está agregado'); return; }
     const subtotal = cantidad * precio;
-    const nuevo = { pro_id: prodId, pro_nombre: producto.nombre, cantidad, precio_unitario: precio, subtotal, fecha_fabricacion: prodFechaFabricacion, fecha_vencimiento: prodFechaVencimiento };
+    const nuevo = { pro_id: prodId, pro_nombre: producto.nombre, cantidad, precio_unitario: precio, subtotal, fecha_fabricacion: prodFechaFabricacion, fecha_vencimiento: prodFechaVencimiento, lote_id: null };
     const actualizados = [...productosSeleccionados, nuevo];
     setProductosSeleccionados(actualizados);
     const totalCalculado = actualizados.reduce((sum, p) => sum + p.subtotal, 0);
@@ -558,6 +559,16 @@ const Compras = () => {
       toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en la compra' });
       return;
     }
+    // Validar estado de la compra antes de editar
+    const estadoActual = editData.comp_estado;
+    if (estadoActual === 'Cancelada') {
+      setFormError('No se puede editar una compra cancelada');
+      return;
+    }
+    if (estadoActual === 'Recibida') {
+      const confirmar = window.confirm('Esta compra ya fue recibida y tiene inventario ingresado. Editar revertirá el inventario actual y lo volverá a ingresar con los nuevos datos. ¿Desea continuar?');
+      if (!confirmar) return;
+    }
     const tieneProductosBD = editData.comp_tiene_detalles;
     if (productosSeleccionados.length === 0 && !tieneProductosBD) {
       setFormError('Debes agregar al menos un producto a la compra');
@@ -603,6 +614,7 @@ const Compras = () => {
             dco_id: dcoId,
             dco_com_id_fk: editData.comp_id,
             dco_pro_id_fk: p.pro_id,
+            dco_lot_id_fk: p.lote_id || null,
             dco_cantidad: p.cantidad,
             dco_precio_compra: p.precio_unitario,
             dco_subtotal: p.subtotal,
