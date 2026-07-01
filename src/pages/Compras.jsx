@@ -152,17 +152,17 @@ const Compras = () => {
       setEditData(detalle);
       setProductosDisponibles(prods.filter(p => p.estado === 'Activo'));
       // Cargar detalles existentes
-      const misDetalles = todosDetalles.filter(d => d.dco_com_id_fk === compra.comp_id);
+      const misDetalles = todosDetalles.filter(d => d.compra_id === compra.comp_id);
       if (misDetalles.length > 0) {
         const prodsMap = {};
         prods.forEach(p => { prodsMap[p.id] = p.nombre; });
         const items = misDetalles.map(d => ({
-          pro_id: d.dco_pro_id_fk,
-          pro_nombre: prodsMap[d.dco_pro_id_fk] || d.dco_pro_id_fk,
-          cantidad: d.dco_cantidad,
-          precio_unitario: d.dco_precio_compra,
-          subtotal: d.dco_subtotal,
-          dco_id: d.dco_id
+          pro_id: d.producto_id,
+          pro_nombre: prodsMap[d.producto_id] || d.producto_id,
+          cantidad: d.cantidad,
+          precio_unitario: d.precio_compra,
+          subtotal: d.subtotal,
+          dco_id: d.id
         }));
         setProductosSeleccionados(items);
         detalle.comp_tiene_detalles = true;
@@ -579,10 +579,10 @@ const Compras = () => {
       // 2. Solo si hay productos nuevos, reemplazar los existentes
       if (productosSeleccionados.length > 0) {
         const todosDetalles = await detallesComprasService.listar().catch(() => []);
-        const viejosDetalles = todosDetalles.filter(d => d.dco_com_id_fk === editData.comp_id);
+        const viejosDetalles = todosDetalles.filter(d => d.compra_id === editData.comp_id);
         for (const v of viejosDetalles) {
           try {
-            await detallesComprasService.eliminar(v.dco_id);
+            await detallesComprasService.eliminar(v.id);
           } catch { /* si falla, continuar */ }
         }
 
