@@ -13,7 +13,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { FIELD_LIMITS } from '../utils/fieldLimits';
 
 const ESTADOS = ['Pendiente', 'Recibida', 'Cancelada'];
-const ESTADOS_CREAR = ['Pendiente', 'Recibida'];
+const ESTADOS_CREAR = ['Pendiente'];
 const VIDA_UTIL_MINIMA = 14;
 const ANOS_ATRAS_MAX = 5;
 const ANOS_ADELANTE_MAX = 5;
