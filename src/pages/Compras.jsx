@@ -50,6 +50,7 @@ const Compras = () => {
   const [paginaProveedores, setPaginaProveedores] = useState(1);
   const [filtroTipoProveedor, setFiltroTipoProveedor] = useState('');
   const formSnapshotRef = useRef({});
+  const productosSnapshotRef = useRef([]);
 
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -153,10 +154,11 @@ const Compras = () => {
       setProductosDisponibles(prods.filter(p => p.estado === 'Activo'));
       // Cargar detalles existentes
       const misDetalles = todosDetalles.filter(d => d.compra_id === compra.comp_id);
+      let productosCargados = [];
       if (misDetalles.length > 0) {
         const prodsMap = {};
         prods.forEach(p => { prodsMap[p.id] = p.nombre; });
-        const items = misDetalles.map(d => ({
+        productosCargados = misDetalles.map(d => ({
           pro_id: d.producto_id,
           pro_nombre: prodsMap[d.producto_id] || d.producto_id,
           cantidad: d.cantidad,
@@ -166,7 +168,7 @@ const Compras = () => {
           fecha_vencimiento: d.fecha_vencimiento || '',
           dco_id: d.id
         }));
-        setProductosSeleccionados(items);
+        setProductosSeleccionados(productosCargados);
         detalle.comp_tiene_detalles = true;
       } else {
         setProductosSeleccionados([]);
@@ -174,6 +176,7 @@ const Compras = () => {
       }
       setEditData({ ...detalle });
       formSnapshotRef.current = JSON.parse(JSON.stringify(detalle));
+      productosSnapshotRef.current = JSON.parse(JSON.stringify(productosCargados));
       setShowEditModal(true);
     } catch (_) {
       setFormError('Error al cargar datos de la compra');
@@ -549,7 +552,9 @@ const Compras = () => {
   const handleEditCompra = async (e) => {
     e.preventDefault();
     setFormError('');
-    if (JSON.stringify(editData) === JSON.stringify(formSnapshotRef.current)) {
+    const dataCambiada = JSON.stringify(editData) !== JSON.stringify(formSnapshotRef.current);
+    const productosCambiados = JSON.stringify(productosSeleccionados) !== JSON.stringify(productosSnapshotRef.current);
+    if (!dataCambiada && !productosCambiados) {
       toast({ type: 'warning', title: 'Sin cambios', description: 'No se identificaron modificaciones en la compra' });
       return;
     }
