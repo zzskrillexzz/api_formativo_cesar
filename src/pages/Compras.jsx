@@ -162,6 +162,8 @@ const Compras = () => {
           cantidad: d.cantidad,
           precio_unitario: d.precio_compra,
           subtotal: d.subtotal,
+          fecha_fabricacion: d.fecha_fabricacion || '',
+          fecha_vencimiento: d.fecha_vencimiento || '',
           dco_id: d.id
         }));
         setProductosSeleccionados(items);
@@ -195,7 +197,9 @@ const Compras = () => {
         pro_nombre: prodsMap[d.producto_id] || d.producto_id,
         cantidad: d.cantidad,
         precio_unitario: d.precio_compra,
-        subtotal: d.subtotal
+        subtotal: d.subtotal,
+        fecha_fabricacion: d.fecha_fabricacion || '',
+        fecha_vencimiento: d.fecha_vencimiento || ''
       }));
       setViewData({ ...detalle, proveedor: prov || null, productos: items });
       setShowViewModal(compra.comp_id);
