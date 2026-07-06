@@ -10,21 +10,21 @@ echo =============================================
 echo.
 
 :: ──────────────────────────────────────────────
-:: Obtener Backend si no existe
+:: Detectar Backend (rama test clonada junto a esta carpeta)
 :: ──────────────────────────────────────────────
-set "BACKEND_DIR=%~dp0Backend"
-set "REPO_URL=https://github.com/zzskrillexzz/api_formatativo_cesar.git"
-
+set "BACKEND_DIR=%~dp0..\"
 if not exist "%BACKEND_DIR%\app.py" (
-    echo Descargando Backend...
-    git clone -b test "%REPO_URL%" "%BACKEND_DIR%"
-    if %ERRORLEVEL% NEQ 0 (
-        echo ADVERTENCIA: No se pudo descargar el Backend.
-        echo Copia manualmente la carpeta Backend junto a este .bat
-    ) else (
-        echo Backend descargado OK
-    )
+    set "BACKEND_DIR=%~dp0Backend"
 )
+if not exist "%BACKEND_DIR%\app.py" (
+    set "BACKEND_DIR=%~dp0..\api_formatativo_cesar"
+)
+if not exist "%BACKEND_DIR%\app.py" (
+    echo ERROR: No se encontro el Backend ^(app.py^).
+    echo Asegurate de que el repo con rama test esta en ..\ ^(un nivel arriba^)
+    pause & exit /b 1
+)
+echo   Backend encontrado en: %BACKEND_DIR%
 
 :: ──────────────────────────────────────────────
 :: 1. Verificar Git
@@ -37,13 +37,14 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 :: ──────────────────────────────────────────────
-:: 2. Actualizar Flutter app desde app_movil
+:: 2. Actualizar ambos repos si usan git
 :: ──────────────────────────────────────────────
-echo [2/8] Actualizando Flutter app...
-git pull origin app_movil
-if %ERRORLEVEL% NEQ 0 (
-    echo AVISO: No se pudo actualizar. Continuando...
-)
+echo [2/8] Actualizando repos...
+git pull origin app_movil 2>nul
+cd /d "%BACKEND_DIR%"
+git pull origin test 2>nul
+cd /d "%~dp0"
+echo   OK
 
 :: ──────────────────────────────────────────────
 :: 3. Instalar dependencias Python
