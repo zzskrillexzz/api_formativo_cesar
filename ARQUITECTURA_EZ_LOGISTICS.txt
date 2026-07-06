@@ -1,0 +1,237 @@
+ARQUITECTURA DE LA APP MOVIL — Ez Logistics
+============================================
+
+1. ESTRUCTURA DEL PROYECTO
+--------------------------
+
+lib/
+├── main.dart                  # Entry point, AuthGate, MainShell, forms inline
+├── theme.dart                 # Colores, gradientes, tema Material
+├── config.dart                # URL base de la API (IP del backend)
+├── models/
+│   ├── producto.dart          # Modelo Producto (id, nombre, categoria, etc.)
+│   ├── pedido.dart            # Modelo Pedido (pedId, fecha, total, etc.)
+│   ├── lote.dart              # Modelo Lote (id, numero, cantidades, estado)
+│   ├── cliente.dart           # Modelo Cliente (id, nombre, apellido, correo)
+│   ├── proveedor.dart         # Modelo Proveedor
+│   └── dashboard_data.dart    # Modelo Dashboard (KPIs, top vendidos)
+├── providers/
+│   └── auth_provider.dart     # ChangeNotifier: estado login, token, sesion
+├── services/
+│   ├── api_client.dart        # Singleton HTTP (get/post/put/delete + token)
+│   ├── api_services.dart      # Servicios: ProductoService, PedidoService, etc.
+│   └── auth_service.dart      # Login/logout HTTP calls
+├── screens/
+│   ├── login_screen.dart      # Pantalla de login
+│   ├── dashboard_screen.dart  # KPIs, graficos, top vendidos, alertas
+│   ├── productos_screen.dart  # Tabla productos + forms inline
+│   ├── lotes_screen.dart      # Lista lotes + forms inline
+│   └── pedidos_screen.dart    # Cards de pedidos
+└── widgets/
+    └── app_drawer.dart        # Menu lateral con gradiente
+
+
+2. FLUJO DE AUTENTICACION
+--------------------------
+
+main.dart: AuthGate
+   ├── auth.isLoading → CircularProgressIndicator
+   ├── !auth.isLogged → LoginScreen
+   └── auth.isLogged  → MainShell (app principal)
+
+AuthProvider es un ChangeNotifier:
+  - checkSession(): verifica si hay token en SharedPreferences
+  - login(email, password): POST /login → guarda token + user_data
+  - logout(): limpia token, vuelve a LoginScreen
+
+
+3. CLIENTE HTTP (ApiClient) — Singleton
+----------------------------------------
+
+class ApiClient {
+  static final ApiClient _instance = ApiClient._internal();
+  factory ApiClient() => _instance;
+
+  Future<Map<String, String>> _headers() async {
+    final token = await getToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // Metodos: get(), post(), put(), delete()
+  // Timeout: 10 segundos en todos
+}
+
+Patron singleton: una sola instancia HTTP para toda la app.
+Cada request adjunta el JWT automaticamente.
+
+
+4. NAVEGACION (MainShell) — 4 tabs con IndexedStack
+----------------------------------------------------
+
+class _MainShellState extends State<MainShell> {
+  int _currentIndex = 0;
+  int _prodRefresh = 0, _loteRefresh = 0, _pedRefresh = 0;
+
+  final screens = [
+    DashboardScreen(),
+    ProductosScreen(refreshCount: _prodRefresh),
+    LotesScreen(refreshCount: _loteRefresh),
+    PedidosScreen(refreshCount: _pedRefresh),
+  ];
+}
+
+Mecanismo de refresh entre modulos: cada screen implementa didUpdateWidget:
+
+  @override
+  void didUpdateWidget(ProductosScreen oldWidget) {
+    if (widget.refreshCount != oldWidget.refreshCount) {
+      _loadProductos();  // Recarga datos del backend
+    }
+  }
+
+Cuando se crea un pedido (afecta lotes y pedidos):
+  onCreated: () => setState(() { _pedRefresh++; _loteRefresh++; })
+
+
+5. FLUJO DE CREACION DE UN PEDIDO (el mas complejo)
+----------------------------------------------------
+
+Usuario abre formulario (FAB naranja)
+  │
+  ├── _cargar() → Future.wait([       // 4 llamadas en paralelo
+  │     GET /pedidos/next-id,         // Obtiene ID auto (ej: PED067)
+  │     GET /clientes/,               // Dropdown de clientes
+  │     GET /productos/,              // Productos activos para vender
+  │     GET /lotes/                   // Stock por producto (mostrar en dropdown)
+  │   ])
+  │
+  ├── Usuario selecciona producto → auto-llena precio del catalogo
+  ├── Usuario ajusta cantidad → clic en "+" → _agregarProducto()
+  │     │
+  │     └── Valida stock, cantidad>0, precio≥0, sin duplicados
+  │         Agrega a lista _productos[]
+  │         Recalcula _total = sum(subtotales)
+  │
+  └── Usuario clic "GUARDAR PEDIDO" → _guardar()
+        │
+        ├── 1. POST /pedidos/
+        │     Body: {ped_id, fecha, metodo_pago, total, cliente_id}
+        │     → Crea el registro del pedido en t_pedido
+        │
+        └── 2. POST /detalles_pedidos/ (por cada producto)
+              Body: {det_id, det_ped_id_fk, pro_id, cantidad, precio, subtotal}
+              → Backend ejecuta _descontarInventario():
+                 • Encuentra lotes disponibles (FIFO por vencimiento mas cercano)
+                 • Deduce cantidad del lote (UPDATE lot_cantidad_actual)
+                 • Si stock llega a 0 → marca lote como "Agotado"
+                 • Registra movimiento de inventario (t_inventario_movimiento, tipo Salida)
+                 • Registra monitoria (t_monitoria)
+
+
+6. MODELOS — Factory fromJson
+------------------------------
+
+Cada modelo convierte la respuesta JSON del backend:
+
+  factory Producto.fromJson(Map<String, dynamic> json) {
+    return Producto(
+      id: json['pro_id']?.toString() ?? '',
+      nombre: json['pro_nombre']?.toString() ?? '',
+      precio: (json['pro_precio'] != null)
+        ? (json['pro_precio'] as num).toDouble() : null,
+      estado: json['pro_estado']?.toString() ?? 'Activo',
+    );
+  }
+
+
+7. VALIDACIONES EN FORMULARIOS
+-------------------------------
+
+Form                    | Validaciones
+------------------------|----------------------------------------------
+Producto (crear)        | nombre requerido, precio 100-999,999 COP,
+                        | estado solo "Activo", proveedor opcional
+Producto (editar)       | igual + los 3 estados habilitados
+Lote (crear)            | ID unico, n° lote max 50 chars,
+                        | fechas +/-5 anios, vencimiento >= 14 dias
+                        | post-fabricacion, cantidad 1-1000
+Pedido                  | fecha >= hoy, cliente existente (select),
+                        | banco obligatorio si Transferencia,
+                        | >= 1 producto, total > 0
+
+
+8. DROPDOWNS CON VALORES COMPUESTOS
+------------------------------------
+
+Problema: DropdownButton requiere que el value coincida exactamente
+con un item de la lista. Si guardamos solo el ID ("1023456789")
+pero el item es "1023456789 - Carlos Gomez", no coincide y
+no se muestra seleccionado.
+
+Solucion: guardar el string completo y extraer el ID al guardar:
+
+  // En el dropdown: guardar string completo
+  _dd(_cliSel, clientes.map((c) =>
+    '${c.id} - ${c.nombreCompleto}').toList(),
+    (v) => setState(() { _cliSel = v ?? ''; }));
+
+  // Al enviar: extraer ID
+  _cliId = int.tryParse(_cliSel.split(' - ').first);
+
+
+9. DECISIONES CLAVE DE DISENO
+------------------------------
+
+Decision                       | Razon
+-------------------------------|--------------------------------------
+IDs como String                | Backend usa IDs alfanumericos
+                               | (PRO001, LOT002, PED067)
+Forms en showModalBottomSheet  | Mejor UX movil que navegacion
+                               | a otra pantalla; isScrollControlled:
+                               | true para ocupar toda la pantalla
+IndexedStack en vez de PageView | Mantiene estado de cada pestana
+                               | al cambiar tabs
+Refresh por contadores +       | Evita recrear widgets
+didUpdateWidget                | (pierde scroll y filtros)
+Flujo pedido en 2 pasos        | POST /pedidos/ crea el registro;
+                               | POST /detalles_pedidos/ descuenta
+                               | stock con FIFO y registra movimientos
+Sin emulador                   | APK release instalado directamente
+                               | en Xiaomi real via adb install
+Ruta sin caracteres especiales | C:\ez_app como copia limpia para
+                               | evitar errores de encoding en release
+
+
+10. SERVICIOS DISPONIBLES
+--------------------------
+
+Clase            | Metodos                              | Endpoints
+-----------------|--------------------------------------|-----------------
+ProductoService  | getProductos()                       | /productos/
+                 | registrarProducto()                  | /productos/
+                 | editarProducto()                     | /productos/
+                 | eliminarProducto()                   | /productos/<id>
+                 | getNextProductoId()                  | /productos/next-id
+                 | getProveedores()                     | /proveedores/
+PedidoService    | getPedidos()                         | /pedidos/
+                 | getNextPedidoId()                    | /pedidos/next-id
+LoteService      | getLotes()                           | /lotes/
+                 | registrarLote()                      | /lotes/
+                 | editarLote()                         | /lotes/
+                 | eliminarLote()                       | /lotes/<id>
+                 | activarLote()                        | /lotes/<id>/activar
+ClienteService   | getClientes()                        | /clientes/
+                 | registrarCliente()                   | /clientes/
+
+
+11. COMPILACION E INSTALACION
+------------------------------
+
+# Compilar APK release (desde C:\ez_app para evitar errores de encoding)
+flutter build apk --release
+
+# Instalar en celular via USB
+adb install -r -d build\app\outputs\flutter-apk\app-release.apk
