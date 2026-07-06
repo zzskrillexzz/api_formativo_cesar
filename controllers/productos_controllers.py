@@ -2,6 +2,7 @@ from flask import jsonify, request, current_app
 from services.productos_service import listarProductos, registrarProductos, editarProductos, eliminarProductos
 from utils.validators import validar_campos_texto
 from utils.error_handler import safe_controller
+from utils.id_generator import generarIdSiguiente
 
 PRECIO_MINIMO = 100
 PRECIO_MAXIMO = 999999.99
@@ -34,12 +35,14 @@ def cnRegistrarProductos():
     if not data:
         return jsonify({"mensaje": "No se enviaron datos JSON"}), 400
 
-    requerido = ["id", "nombre", "categoria", "descripcion", "precio"]
+    requerido = ["nombre", "categoria", "descripcion", "precio"]
     faltantes = [x for x in requerido if x not in data]
     if faltantes:
         return jsonify({"mensaje": f"Faltan los siguientes campos: {faltantes}"}), 400
 
-    for campo in ["id", "nombre", "categoria", "descripcion"]:
+    pro_id = data.get("id") or generarIdSiguiente("t_producto", "pro_id", "PRO", 3)
+
+    for campo in ["nombre", "categoria", "descripcion"]:
         if str(data[campo]).strip() == "":
             return jsonify({"mensaje": f"El campo {campo} no puede estar vacío"}), 400
 
@@ -55,10 +58,10 @@ def cnRegistrarProductos():
         return jsonify({"mensaje": f"Estado inválido. Valores permitidos: {ESTADOS_VALIDOS}"}), 400
 
     c = current_app.mysql.connection.cursor()
-    c.execute("SELECT pro_id FROM t_producto WHERE pro_id = %s", (data["id"],))
+    c.execute("SELECT pro_id FROM t_producto WHERE pro_id = %s", (pro_id,))
     if c.fetchone():
         c.close()
-        return jsonify({"mensaje": f"Ya existe un producto con el ID {data['id']}"}), 409
+        return jsonify({"mensaje": f"Ya existe un producto con el ID {pro_id}"}), 409
     c.close()
 
     proveedor_id = data.get("proveedor_id")
@@ -70,6 +73,7 @@ def cnRegistrarProductos():
             return jsonify({"mensaje": f"No existe un proveedor con el ID {proveedor_id}"}), 404
         c.close()
 
+    data['id'] = pro_id
     resultado = registrarProductos(data, proveedor_id=proveedor_id)
     return jsonify(resultado), 201
 
